@@ -226,8 +226,91 @@ class USLMParser:
         return subsections  # pragma: no cover
 
     def _get_text_content(self, elem: etree._Element) -> str:
-        """Get all text content from an element, including nested elements."""
-        return "".join(elem.itertext()).strip()  # pragma: no cover
+        """Get all text content from an element, including nested elements.
+
+        Tables (XHTML <table> elements) are converted to markdown format
+        to preserve column structure in the plain-text output.
+        """
+        return self._extract_text_with_tables(elem).strip()  # pragma: no cover
+
+    def _extract_text_with_tables(self, elem: etree._Element) -> str:  # pragma: no cover
+        """Recursively extract text, converting tables to markdown."""
+        tag = etree.QName(elem.tag).localname if isinstance(elem.tag, str) else ""
+
+        if tag == "table":
+            return self._table_to_markdown(elem)
+
+        parts: list[str] = []
+        if elem.text:
+            parts.append(elem.text)
+        for child in elem:
+            parts.append(self._extract_text_with_tables(child))
+            if child.tail:
+                parts.append(child.tail)
+        return "".join(parts)
+
+    def _table_to_markdown(self, table_elem: etree._Element) -> str:  # pragma: no cover
+        """Convert an XHTML table element to a markdown table string."""
+        rows: list[list[str]] = []
+        header_count = 0
+
+        for elem in table_elem.iter():
+            tag = etree.QName(elem.tag).localname if isinstance(elem.tag, str) else ""
+            if tag == "tr":
+                cells: list[str] = []
+                for cell in elem:
+                    cell_tag = etree.QName(cell.tag).localname if isinstance(cell.tag, str) else ""
+                    if cell_tag in ("td", "th"):
+                        # Join text from child <p> elements with spaces
+                        p_texts = []
+                        for p in cell:
+                            p_tag = etree.QName(p.tag).localname if isinstance(p.tag, str) else ""
+                            if p_tag == "p":
+                                p_texts.append("".join(p.itertext()).strip())
+                        if p_texts:
+                            text = " ".join(p_texts)
+                        else:
+                            text = "".join(cell.itertext()).strip()
+                        text = " ".join(text.split())
+                        cells.append(text)
+                if cells:
+                    rows.append(cells)
+                    # Track header rows
+                    parent = elem.getparent()
+                    if parent is not None:
+                        parent_tag = etree.QName(parent.tag).localname if isinstance(parent.tag, str) else ""
+                        if parent_tag == "thead":
+                            header_count += 1
+
+        if not rows:
+            return ""
+
+        # Determine column widths for alignment
+        num_cols = max(len(r) for r in rows)
+        # Pad short rows
+        for row in rows:
+            while len(row) < num_cols:
+                row.append("")
+
+        col_widths = [max(len(row[i]) for row in rows) for i in range(num_cols)]
+        col_widths = [max(w, 3) for w in col_widths]  # Minimum width of 3
+
+        def format_row(cells: list[str]) -> str:
+            padded = [cells[i].ljust(col_widths[i]) for i in range(num_cols)]
+            return "| " + " | ".join(padded) + " |"
+
+        lines: list[str] = []
+        separator = "| " + " | ".join("-" * w for w in col_widths) + " |"
+
+        if header_count == 0:
+            header_count = 1  # Treat first row as header if no thead
+
+        for i, row in enumerate(rows):
+            lines.append(format_row(row))
+            if i == header_count - 1:
+                lines.append(separator)
+
+        return "\n" + "\n".join(lines) + "\n"
 
     def _get_direct_text(self, elem: etree._Element) -> str:
         """Get text content directly in this element, not in child subsections."""
