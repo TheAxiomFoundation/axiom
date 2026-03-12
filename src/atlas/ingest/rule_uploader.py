@@ -4,6 +4,8 @@ import time
 from typing import Iterable
 import httpx
 
+_TIMEOUT = httpx.Timeout(180.0, connect=30.0, read=180.0, write=180.0)
+
 
 class RuleUploader:
     def __init__(self, url: str | None = None, key: str | None = None):
@@ -33,7 +35,12 @@ class RuleUploader:
                     return key["api_key"]
         raise ValueError("Could not find service_role key")
 
-    def upsert_batch(self, rules: list[dict], max_retries: int = 5) -> int:
+    def upsert_batch(
+        self,
+        rules: list[dict],
+        max_retries: int = 5,
+        client: httpx.Client | None = None,
+    ) -> int:
         """Upsert a batch of rules. Adds line_count, retries on timeout/5xx."""
         if not rules:
             return 0
@@ -42,12 +49,10 @@ class RuleUploader:
             body = rule.get("body") or ""
             rule["line_count"] = len(body.split("\n"))
 
-        timeout = httpx.Timeout(180.0, connect=30.0, read=180.0, write=180.0)
-
-        for attempt in range(max_retries):
-            try:
-                with httpx.Client(timeout=timeout) as client:
-                    response = client.post(
+        def _do_post(c: httpx.Client) -> int:
+            for attempt in range(max_retries):
+                try:
+                    response = c.post(
                         f"{self.rest_url}/rules",
                         headers={
                             "apikey": self.key,
@@ -59,41 +64,45 @@ class RuleUploader:
                         json=rules,
                     )
                     response.raise_for_status()
-                return len(rules)
-            except (httpx.ReadTimeout, httpx.HTTPStatusError) as e:
-                is_server_error = (
-                    isinstance(e, httpx.HTTPStatusError)
-                    and e.response.status_code >= 500
-                )
-                is_timeout = isinstance(e, httpx.ReadTimeout)
+                    return len(rules)
+                except (httpx.ReadTimeout, httpx.HTTPStatusError) as e:
+                    is_server_error = (
+                        isinstance(e, httpx.HTTPStatusError)
+                        and e.response.status_code >= 500
+                    )
+                    is_timeout = isinstance(e, httpx.ReadTimeout)
 
-                if (is_server_error or is_timeout) and attempt < max_retries - 1:
-                    time.sleep(2**attempt)
-                    continue
-                raise
+                    if (is_server_error or is_timeout) and attempt < max_retries - 1:
+                        time.sleep(2**attempt)
+                        continue
+                    raise
+            return len(rules)
 
-        return len(rules)
+        if client:
+            return _do_post(client)
+        with httpx.Client(timeout=_TIMEOUT) as c:
+            return _do_post(c)
 
     def upsert_all(
         self, rules: list[dict] | Iterable[dict], batch_size: int = 50
     ) -> int:
         """Deduplicate by citation_path then batch upsert."""
-        rules_list = list(rules)
-        if not rules_list:
-            return 0
-
-        # Deduplicate: last wins
+        # Deduplicate in single pass: last wins
         seen: dict[str, dict] = {}
-        for rule in rules_list:
+        for rule in rules:
             path = rule.get("citation_path", "")
             if path:
                 seen[path] = rule
             else:
                 seen[str(id(rule))] = rule
-        unique = list(seen.values())
 
+        if not seen:
+            return 0
+
+        unique = list(seen.values())
         total = 0
-        for i in range(0, len(unique), batch_size):
-            batch = unique[i : i + batch_size]
-            total += self.upsert_batch(batch)
+        with httpx.Client(timeout=_TIMEOUT) as client:
+            for i in range(0, len(unique), batch_size):
+                batch = unique[i : i + batch_size]
+                total += self.upsert_batch(batch, client=client)
         return total

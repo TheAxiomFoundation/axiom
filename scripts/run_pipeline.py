@@ -14,59 +14,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from atlas.ingest.state_orchestrator import STATE_CONVERTER_MODULES as STATE_CONVERTERS
 from atlas.storage.r2 import get_r2_atlas, get_r2_rules_xml
-
-
-# State converter imports - we'll dynamically import based on state
-STATE_CONVERTERS = {
-    'ak': 'atlas.converters.us_states.ak',
-    'al': 'atlas.converters.us_states.al',
-    'ar': 'atlas.converters.us_states.ar',
-    'az': 'atlas.converters.us_states.az',
-    'ca': 'atlas.converters.us_states.ca',
-    'co': 'atlas.converters.us_states.co',
-    'ct': 'atlas.converters.us_states.ct',
-    'fl': 'atlas.converters.us_states.fl',
-    'hi': 'atlas.converters.us_states.hi',
-    'id': 'atlas.converters.us_states.id_',
-    'il': 'atlas.converters.us_states.il',
-    'in': 'atlas.converters.us_states.in_',
-    'ks': 'atlas.converters.us_states.ks',
-    'ky': 'atlas.converters.us_states.ky',
-    'la': 'atlas.converters.us_states.la',
-    'ma': 'atlas.converters.us_states.ma',
-    'md': 'atlas.converters.us_states.md',
-    'me': 'atlas.converters.us_states.me',
-    'mi': 'atlas.converters.us_states.mi',
-    'mn': 'atlas.converters.us_states.mn',
-    'mo': 'atlas.converters.us_states.mo',
-    'ms': 'atlas.converters.us_states.ms',
-    'mt': 'atlas.converters.us_states.mt',
-    'nc': 'atlas.converters.us_states.nc',
-    'nd': 'atlas.converters.us_states.nd',
-    'ne': 'atlas.converters.us_states.ne',
-    'nh': 'atlas.converters.us_states.nh',
-    'nj': 'atlas.converters.us_states.nj',
-    'nm': 'atlas.converters.us_states.nm',
-    'nv': 'atlas.converters.us_states.nv',
-    'ny': 'atlas.converters.us_states.ny',
-    'oh': 'atlas.converters.us_states.oh',
-    'ok': 'atlas.converters.us_states.ok',
-    'or': 'atlas.converters.us_states.or_',
-    'pa': 'atlas.converters.us_states.pa',
-    'ri': 'atlas.converters.us_states.ri',
-    'sc': 'atlas.converters.us_states.sc',
-    'sd': 'atlas.converters.us_states.sd',
-    'tn': 'atlas.converters.us_states.tn',
-    'tx': 'atlas.converters.us_states.tx',
-    'ut': 'atlas.converters.us_states.ut',
-    'va': 'atlas.converters.us_states.va',
-    'vt': 'atlas.converters.us_states.vt',
-    'wa': 'atlas.converters.us_states.wa',
-    'wi': 'atlas.converters.us_states.wi',
-    'wv': 'atlas.converters.us_states.wv',
-    'wy': 'atlas.converters.us_states.wy',
-}
 
 
 def section_to_akn_xml(section, state: str) -> str:
@@ -448,7 +397,7 @@ def run_supabase_ingestion(state: str | None = None, all_states: bool = False):
 
     if all_states:
         print("Ingesting all states into Supabase...")
-        results = orch.ingest_all_states(mode="local")
+        results = orch.ingest_all_states()
         print(f"\n{'='*60}")
         print("SUPABASE INGESTION RESULTS:")
         total = 0
@@ -458,7 +407,7 @@ def run_supabase_ingestion(state: str | None = None, all_states: bool = False):
         print(f"  TOTAL: {total} rules")
     elif state:
         print(f"Ingesting {state.upper()} into Supabase...")
-        count = orch.ingest_state(state.lower(), mode="local")
+        count = orch.ingest_state(state.lower())
         print(f"Done! {count} rules upserted for {state.upper()}")
     else:
         print("Specify --state or --all-states with --supabase")

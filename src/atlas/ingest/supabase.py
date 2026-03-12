@@ -811,14 +811,13 @@ class SupabaseIngestor:
     # State Ingestion (via StateOrchestrator)
     # -------------------------------------------------------------------------
 
-    def ingest_state(self, state_code: str, mode: str = "local") -> int:
+    def ingest_state(self, state_code: str) -> int:
         """Ingest all statutes for a state from local HTML files.
 
         Delegates to StateOrchestrator for file discovery, parsing, and upload.
 
         Args:
             state_code: Two-letter state code (e.g., "oh", "ca")
-            mode: "local" to read from data/statutes/us-{state}/
 
         Returns:
             Number of rules upserted
@@ -828,13 +827,10 @@ class SupabaseIngestor:
 
         uploader = RuleUploader(url=self.url, key=self.key)
         orch = StateOrchestrator(uploader=uploader)
-        return orch.ingest_state(state_code, mode=mode)
+        return orch.ingest_state(state_code)
 
-    def ingest_all_states(self, mode: str = "local") -> dict[str, int]:
+    def ingest_all_states(self) -> dict[str, int]:
         """Ingest all states that have local HTML data.
-
-        Args:
-            mode: "local" to read from data/statutes/us-{state}/
 
         Returns:
             Dict mapping state code to number of rules upserted
@@ -844,4 +840,4 @@ class SupabaseIngestor:
 
         uploader = RuleUploader(url=self.url, key=self.key)
         orch = StateOrchestrator(uploader=uploader)
-        return orch.ingest_all_states(mode=mode)
+        return orch.ingest_all_states()

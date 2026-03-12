@@ -248,33 +248,20 @@ class StateOrchestrator:
                 return (section_num, "0")
         return (section_num,)
 
-    def _parse_local_file(self, html_path: Path, state: str):
+    def _parse_local_file(
+        self, html_path: Path, state: str, converter, param_count: int
+    ):
         """Parse a single local HTML file into a Section."""
-        converter = self._get_converter(state)
-
-        # Skip converters without _parse_section_html
-        if not hasattr(converter, "_parse_section_html"):
-            print(f"  Skipping {html_path.name}: {type(converter).__name__} has no _parse_section_html")
-            return None
-
         section_num = self._extract_section_number(html_path.name, state)
         html = html_path.read_text(errors="replace")
         url = f"file://{html_path}"
         try:
-            # Check how many params the converter expects (excluding self)
-            sig = inspect.signature(converter._parse_section_html)
-            param_count = len(sig.parameters)
-
             if param_count == 4:
-                # Non-standard: (html, extra_arg, section_number, url)
-                # e.g. TX: (html, code, section_number, url)
-                # e.g. ME: (html, title, section_number, url)
                 parts = self._split_section_for_converter(section_num, state)
                 parsed = converter._parse_section_html(
                     html, parts[0], parts[1], url
                 )
             else:
-                # Standard: (html, section_number, url)
                 parsed = converter._parse_section_html(
                     html, section_num, url
                 )
@@ -283,7 +270,7 @@ class StateOrchestrator:
             print(f"  Warning: Could not parse {html_path.name}: {e}")
             return None
 
-    def ingest_state(self, state_code: str, mode: str = "local") -> int:
+    def ingest_state(self, state_code: str) -> int:
         """Ingest all HTML files for a single state.
 
         Returns the number of rules upserted.
@@ -295,9 +282,23 @@ class StateOrchestrator:
         if not html_files:
             return 0
 
+        converter = self._get_converter(state_code)
+        if not hasattr(converter, "_parse_section_html"):
+            print(
+                f"  Skipping {state_code.upper()}:"
+                f" {type(converter).__name__} has no _parse_section_html"
+            )
+            return 0
+
+        param_count = len(
+            inspect.signature(converter._parse_section_html).parameters
+        )
+
         all_rules = []
         for html_path in html_files:
-            section = self._parse_local_file(html_path, state_code)
+            section = self._parse_local_file(
+                html_path, state_code, converter, param_count
+            )
             if section:
                 rules = list(
                     section_to_rules(section, jurisdiction=f"us-{state_code}")
@@ -313,7 +314,7 @@ class StateOrchestrator:
         )
         return self.uploader.upsert_all(all_rules)
 
-    def ingest_all_states(self, mode: str = "local") -> dict[str, int]:
+    def ingest_all_states(self) -> dict[str, int]:
         """Ingest all states that have local data.
 
         Returns a dict mapping state code to rules upserted.
@@ -323,7 +324,7 @@ class StateOrchestrator:
         results = {}
         for state in states:
             try:
-                count = self.ingest_state(state, mode=mode)
+                count = self.ingest_state(state)
                 results[state] = count
             except Exception as e:
                 print(f"Error ingesting {state}: {e}")

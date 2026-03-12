@@ -32,23 +32,28 @@ class TestIngestStateLocal:
         )
         mock_uploader = MagicMock()
         mock_uploader.upsert_all.return_value = 2
+
+        mock_converter = MagicMock()
+        mock_converter._parse_section_html = MagicMock()
+
         orch = StateOrchestrator(data_dir=tmp_path, uploader=mock_uploader)
-        with patch.object(
-            orch,
-            "_parse_local_file",
-            side_effect=[
-                _make_section("5747.01"),
-                _make_section("5747.02"),
-            ],
-        ):
-            result = orch.ingest_state("oh", mode="local")
+        with patch.object(orch, "_get_converter", return_value=mock_converter), \
+             patch.object(
+                orch,
+                "_parse_local_file",
+                side_effect=[
+                    _make_section("5747.01"),
+                    _make_section("5747.02"),
+                ],
+             ):
+            result = orch.ingest_state("oh")
         assert result > 0
         mock_uploader.upsert_all.assert_called_once()
 
     def test_ingest_state_no_data(self, tmp_path):
         mock_uploader = MagicMock()
         orch = StateOrchestrator(data_dir=tmp_path, uploader=mock_uploader)
-        result = orch.ingest_state("zz", mode="local")
+        result = orch.ingest_state("zz")
         assert result == 0
 
 
@@ -61,7 +66,7 @@ class TestIngestAllStates:
         mock_uploader = MagicMock()
         orch = StateOrchestrator(data_dir=tmp_path, uploader=mock_uploader)
         with patch.object(orch, "ingest_state", return_value=10) as mock_ingest:
-            result = orch.ingest_all_states(mode="local")
+            result = orch.ingest_all_states()
         assert mock_ingest.call_count == 3
         states_called = {call.args[0] for call in mock_ingest.call_args_list}
         assert states_called == {"oh", "ak", "ca"}
@@ -76,13 +81,13 @@ class TestErrorResilience:
         mock_uploader = MagicMock()
         orch = StateOrchestrator(data_dir=tmp_path, uploader=mock_uploader)
 
-        def side_effect(state, **kwargs):
+        def side_effect(state):
             if state == "oh":
                 raise RuntimeError("OH converter failed")
             return 5
 
         with patch.object(orch, "ingest_state", side_effect=side_effect):
-            result = orch.ingest_all_states(mode="local")
+            result = orch.ingest_all_states()
         assert "ak" in result
         assert result["ak"] == 5
 
@@ -223,7 +228,7 @@ class TestParseLocalFile:
         mock_uploader.upsert_all.return_value = 0
         orch = StateOrchestrator(data_dir=tmp_path, uploader=mock_uploader)
         # Should not crash, just return 0
-        result = orch.ingest_state("de", mode="local")
+        result = orch.ingest_state("de")
         assert result == 0
 
 
@@ -266,8 +271,8 @@ class TestMultiArgConverters:
             def _to_section(self, parsed):
                 return _make_section()
 
-        with patch.object(orch, "_get_converter", return_value=FakeConverter()):
-            result = orch._parse_local_file(html_file, "tx")
+        converter = FakeConverter()
+        result = orch._parse_local_file(html_file, "tx", converter, 4)
 
         assert result is not None
         assert captured_args[1] == "AG"  # code
@@ -291,8 +296,8 @@ class TestMultiArgConverters:
             def _to_section(self, parsed):
                 return _make_section()
 
-        with patch.object(orch, "_get_converter", return_value=FakeConverter()):
-            result = orch._parse_local_file(html_file, "oh")
+        converter = FakeConverter()
+        result = orch._parse_local_file(html_file, "oh", converter, 3)
 
         assert result is not None
         assert captured_args[0] == "<html>test</html>"  # html
