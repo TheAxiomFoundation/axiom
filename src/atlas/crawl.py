@@ -12,6 +12,42 @@ Usage:
 
     # Download from Archive.org bulk data
     uv run python -m arch.crawl --archive us-ar us-co us-ga
+
+Per-state dispatch
+==================
+
+State crawling is driven by two lookup tables, **not** by a class
+hierarchy. Adding a state means adding an entry to each; there is no
+subclassing of ``StateCrawler`` per jurisdiction.
+
+1. ``atlas.sources.registry.get_all_configs()`` returns a
+   ``SourceConfig`` per jurisdiction (``base_url``, ``toc_url_pattern``,
+   ``codes``). This drives *where* to crawl.
+
+2. ``SECTION_PATTERNS`` (below) or the YAML specs in
+   ``atlas.sources.specs`` map a jurisdiction to a regex that identifies
+   a "section page" vs. a navigation page. This drives *what to keep*
+   during the recursive link walk in
+   ``StateCrawler.discover_sections``.
+
+Fallback order inside ``_get_section_pattern``:
+    - spec YAML pattern for the jurisdiction (preferred);
+    - hardcoded entry in ``SECTION_PATTERNS`` for the jurisdiction;
+    - ``SECTION_PATTERNS["_default"]`` (a permissive catch-all that
+      matches URLs containing ``section`` / ``§`` / ``sec`` / ``statute``
+      followed by digits).
+
+The default fallback is *deliberately loose* and will usually either
+capture noise (nav pages that happen to contain the word "section") or
+miss content entirely on sites with non-obvious URL shapes (postback
+forms, embedded query IDs, JavaScript-rendered tables of contents).
+When a new state produces 0 fetches or a huge pile of TOC pages, the
+first thing to check is whether its pattern in ``SECTION_PATTERNS`` is
+specific enough.
+
+Known-broken jurisdictions (patterns either don't match real section
+pages or the site requires more than a plain HTTP GET) are tracked in
+``DATA_INVENTORY.md`` under "Known upstream issues".
 """
 
 import asyncio
@@ -577,7 +613,12 @@ class StateCrawler:
                 return section_urls, child_links, depth
 
             except Exception as e:
-                self.stats.errors.append(f"Crawl {url}: {e}")
+                # Include jurisdiction so multi-state crawls are debuggable
+                # when errors surface in the aggregate summary.
+                self.stats.errors.append(
+                    f"[{self.config.jurisdiction}] Crawl {url}: "
+                    f"{type(e).__name__}: {e}"
+                )
                 return section_urls, child_links, depth
 
     async def _rate_limit(self):
@@ -613,7 +654,10 @@ class StateCrawler:
                 except Exception as e:
                     if attempt == max_retries - 1:
                         self.stats.sections_failed += 1
-                        self.stats.errors.append(f"Fetch {url}: {e}")
+                        self.stats.errors.append(
+                            f"[{self.config.jurisdiction}] Fetch {url}: "
+                            f"{type(e).__name__}: {e}"
+                        )
                     await asyncio.sleep(1)
 
             self.stats.sections_failed += 1
@@ -639,7 +683,10 @@ class StateCrawler:
             self.stats.bytes_uploaded += len(html.encode("utf-8"))
             return True
         except Exception as e:
-            self.stats.errors.append(f"R2 upload: {e}")
+            self.stats.errors.append(
+                f"[{self.config.jurisdiction}] R2 upload {url}: "
+                f"{type(e).__name__}: {e}"
+            )
             return False
 
     async def crawl(self, max_sections: int | None = None) -> CrawlStats:
@@ -657,7 +704,16 @@ class StateCrawler:
                 section_urls = section_urls[:max_sections]
 
             if not section_urls:
-                print(f"  [{self.config.jurisdiction}] No sections found")
+                # Most common cause: SECTION_PATTERNS entry doesn't match
+                # real section URLs for this jurisdiction. Surface the
+                # pattern so the failure is actionable in logs.
+                pattern_repr = self._get_section_pattern().pattern
+                print(
+                    f"  [{self.config.jurisdiction}] No sections found — "
+                    f"section pattern did not match any discovered links "
+                    f"(pattern: {pattern_repr!r}). Check the entry in "
+                    f"SECTION_PATTERNS or the YAML spec for this state."
+                )
                 self.stats.end_time = time.time()
                 return self.stats
 

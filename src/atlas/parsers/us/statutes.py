@@ -6,6 +6,7 @@ the Law Revision Counsel at uscode.house.gov.
 Schema documentation: https://uscode.house.gov/download/resources/USLM-User-Guide.pdf
 """
 
+import logging
 from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
@@ -13,6 +14,8 @@ from pathlib import Path
 from lxml import etree
 
 from atlas.models import Citation, Section, Subsection
+
+logger = logging.getLogger(__name__)
 
 # USLM namespaces - the actual namespace varies by source
 USLM_NS_GPO = {"uslm": "http://schemas.gpo.gov/xml/uslm"}
@@ -123,7 +126,12 @@ class USLMParser:
             except Exception as e:  # pragma: no cover
                 # Log but continue - don't let one bad section stop everything
                 identifier = section_elem.get("identifier", "unknown")  # pragma: no cover
-                print(f"Warning: Failed to parse section {identifier}: {e}")  # pragma: no cover
+                logger.warning(  # pragma: no cover
+                    "[USLM] Failed to parse section %s: %s",
+                    identifier,
+                    e,
+                    exc_info=True,
+                )
 
     def get_section(self, section_num: str) -> Section | None:
         """Get a specific section by number.

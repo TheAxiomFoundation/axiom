@@ -17,6 +17,7 @@ Bulk Download (alternative):
 - Format: Tab-delimited .dat files with .lob files for content
 """
 
+import logging
 import re
 import time
 from collections.abc import Iterator
@@ -25,6 +26,8 @@ from typing import Literal
 
 import httpx
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 # Note: Using CA-specific dataclasses rather than generic models
 # since Citation model is designed for US Code (title as int)
@@ -248,7 +251,14 @@ class CACodeParser:
             response = self._client.get(url)  # pragma: no cover
             response.raise_for_status()
         except httpx.HTTPError as e:  # pragma: no cover
-            print(f"Error fetching {self.code} § {section_num}: {e}")  # pragma: no cover
+            logger.warning(  # pragma: no cover
+                "[CA] Error fetching %s § %s at %s: %s",
+                self.code,
+                section_num,
+                url,
+                e,
+                exc_info=True,
+            )
             return None  # pragma: no cover
 
         soup = BeautifulSoup(response.text, "html.parser")  # pragma: no cover
@@ -360,7 +370,12 @@ class CACodeParser:
                         yield section  # pragma: no cover
 
             except httpx.HTTPError as e:  # pragma: no cover
-                print(f"Error fetching TOC {entry['url']}: {e}")  # pragma: no cover
+                logger.warning(  # pragma: no cover
+                    "[CA] Error fetching TOC %s: %s",
+                    entry["url"],
+                    e,
+                    exc_info=True,
+                )
                 continue  # pragma: no cover
 
         print(f"Downloaded {count} sections from {self.code}")  # pragma: no cover

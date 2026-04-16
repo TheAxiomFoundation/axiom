@@ -12,6 +12,7 @@ The eCFR XML uses a hierarchical DIV structure:
 Source: https://github.com/usgpo/bulk-data/blob/main/ECFR-XML-User-Guide.md
 """
 
+import logging
 import re
 from datetime import date
 from typing import Iterator, Optional
@@ -22,6 +23,8 @@ from atlas.models_regulation import (
     Regulation,
     RegulationSubsection,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def extract_subsection_id(text: str) -> Optional[str]:
@@ -205,7 +208,16 @@ def parse_part(xml_str: str) -> dict:
         try:
             section = _parse_section_element(section_elem, authority)
             sections.append(section)
-        except Exception:  # pragma: no cover
+        except Exception as e:  # pragma: no cover
+            section_id = (
+                section_elem.get("N") or section_elem.get("TYPE") or "unknown"
+            )
+            logger.warning(  # pragma: no cover
+                "[CFR] Failed to parse section %s: %s",
+                section_id,
+                e,
+                exc_info=True,
+            )
             continue  # pragma: no cover
 
     return {
@@ -307,7 +319,17 @@ class CFRParser:
                         subsection=section.citation.subsection,
                     )
                     yield section
-                except Exception:  # pragma: no cover
+                except Exception as e:  # pragma: no cover
+                    section_id = (
+                        section_elem.get("N") or section_elem.get("TYPE") or "unknown"
+                    )
+                    logger.warning(  # pragma: no cover
+                        "[CFR] Failed to parse section %s in title %s: %s",
+                        section_id,
+                        self.title_number,
+                        e,
+                        exc_info=True,
+                    )
                     continue  # pragma: no cover
 
     def get_section(self, part: int, section: str) -> Optional[Regulation]:

@@ -13,6 +13,7 @@ URL Patterns:
 - Section: index.cfm?App_mode=Display_Statute&URL=0200-0299/0212/Sections/0212.05.html
 """
 
+import logging
 import re
 import time
 from collections.abc import Iterator
@@ -23,6 +24,8 @@ import httpx
 from bs4 import BeautifulSoup
 
 from atlas.models import Citation, Section, Subsection
+
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://leg.state.fl.us/statutes"
 
@@ -367,7 +370,12 @@ class FLStatutesClient:
                 yield self.get_section(section_info.number)  # pragma: no cover
             except FLStatutesError as e:  # pragma: no cover
                 # Log but continue with other sections
-                print(f"Warning: Could not fetch {section_info.number}: {e}")  # pragma: no cover
+                logger.warning(  # pragma: no cover
+                    "[FL] Could not fetch section %s: %s",
+                    section_info.number,
+                    e,
+                    exc_info=True,
+                )
                 continue  # pragma: no cover
 
     def iter_chapters(self, chapters: list[int] | None = None) -> Iterator[FLSection]:
