@@ -63,9 +63,16 @@ results = archive.search("child tax credit", title=26)
 for section in results:
     print(f"{section.citation}: {section.title}")
 
-# Get historical version
+# Get historical version (see status note below)
 eitc_2020 = archive.get("26 USC 32", as_of="2020-01-01")
 ```
+
+> **Status: `as_of` historical versioning is incomplete.** It is honored
+> for eCFR regulations (via the eCFR API's native point-in-time support)
+> but is currently a no-op on statutes stored in SQLite/Postgres — the
+> parameter is accepted and the current version is returned. See
+> [`docs/historical-versioning.md`](docs/historical-versioning.md) for
+> the known gaps and what full support would require.
 
 ## REST API
 

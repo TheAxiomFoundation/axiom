@@ -10,6 +10,7 @@ Supported patterns:
 - Nested HTML structure with consistent selectors
 """
 
+import logging
 import re
 import time
 from abc import ABC, abstractmethod
@@ -19,6 +20,8 @@ from typing import Any, Callable
 
 import httpx
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -273,7 +276,14 @@ class GenericStateParser:
                 soup = BeautifulSoup(html, "html.parser")
                 return self.config.section_parser(soup, url)
             except httpx.HTTPError as e:
-                print(f"Error fetching {section_num}: {e}")
+                logger.warning(
+                    "[%s] Error fetching section %s at %s: %s",
+                    self.config.state_code,
+                    section_num,
+                    url,
+                    e,
+                    exc_info=True,
+                )
                 return None
 
         # Default parsing logic
@@ -282,7 +292,14 @@ class GenericStateParser:
         try:
             html = self._get(url)
         except httpx.HTTPError as e:
-            print(f"Error fetching {section_num}: {e}")
+            logger.warning(
+                "[%s] Error fetching section %s at %s: %s",
+                self.config.state_code,
+                section_num,
+                url,
+                e,
+                exc_info=True,
+            )
             return None
 
         soup = BeautifulSoup(html, "html.parser")
@@ -295,7 +312,16 @@ class GenericStateParser:
                 break
 
         if not content_div:
-            print(f"No content found for {section_num}")
+            # Silent-failure trap: the page loaded but no selector in
+            # ``content_selector`` matched. Usually means the site changed
+            # its markup or this state needs a custom selector.
+            logger.warning(
+                "[%s] No content matched selector %r for section %s at %s",
+                self.config.state_code,
+                self.config.content_selector,
+                section_num,
+                url,
+            )
             return None
 
         text = content_div.get_text(separator="\n", strip=True)
@@ -367,7 +393,13 @@ class GenericStateParser:
         try:
             html = self._get(url)
         except httpx.HTTPError as e:
-            print(f"Error fetching TOC: {e}")
+            logger.warning(
+                "[%s] Error fetching TOC at %s: %s",
+                self.config.state_code,
+                url,
+                e,
+                exc_info=True,
+            )
             return
 
         soup = BeautifulSoup(html, "html.parser")

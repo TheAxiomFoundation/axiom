@@ -226,8 +226,15 @@ class SQLiteStorage(StorageBackend):
         subsection: str | None = None,
         as_of: date | None = None,
     ) -> Section | None:
-        """Retrieve a section by citation."""
-        # TODO: Implement historical versions (as_of parameter)
+        """Retrieve a section by citation.
+
+        Note: the ``as_of`` parameter is accepted but currently ignored by
+        this backend. There is no version table; the most recently
+        ingested row is always returned. See
+        ``docs/historical-versioning.md`` for the roadmap.
+        """
+        # TODO: Implement historical versions (as_of parameter) —
+        # see docs/historical-versioning.md.
         row = self.db.execute(
             "SELECT * FROM sections WHERE title = ? AND section = ?", [title, section]
         ).fetchone()
