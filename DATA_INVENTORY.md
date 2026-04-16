@@ -41,6 +41,9 @@ Pre-scraped data cached by arch CLI commands.
 - **DC Code**: 21,163 sections from DC Council (`sources/dc/dc-law-xml/`)
 - **UK Acts**: 3,239 acts in CLML XML (`~/.arch/uk/ukpga/`)
 - **Canada**: 958 federal statutes in LIMS XML (`~/.arch/canada/`)
+- **7 CFR 271–283 (SNAP)**: 210 rows (parts, subparts, sections) in
+  `arch.rules` as of 2026-04-16 (eCFR `2024-04-16` snapshot). Ingested via
+  `scripts/ingest_cfr_parts.py`.
 
 ### Partial or Problematic
 - **State statutes** (`data/statutes/us-*`): Quality varies significantly
