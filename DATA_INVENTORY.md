@@ -1,131 +1,199 @@
-# Arch Data Inventory
+# Atlas Data Inventory
 
-This document catalogs all data sources that have been downloaded and scraped into the arch repository. **DO NOT re-scrape or re-crawl** - use the existing data.
+This document catalogs data sources that have been downloaded and scraped into
+the Atlas archive. **Treat existing caches as the source of truth** — don't
+re-scrape unless upstream content has changed.
 
-## Data Locations
+**Last hand-curated:** 2026-04-16
 
-### ~/.arch/ (User Cache Directory)
-Pre-scraped data cached by arch CLI commands.
+> Status values used below:
+>
+> - **Complete** — parsed, ingested, and queryable. Covers the full corpus.
+> - **Partial** — some content present but coverage is incomplete (missing
+>   codes, subset of titles, or known gaps).
+> - **Navigation-only** — we scraped the site but only captured TOC / nav
+>   pages, not actual statute section text. **Not usable for queries.**
+> - **Broken** — download failed (404s, empty files, or wrong MIME). **Not
+>   usable.**
+> - **Not started** — repo/placeholder exists but no ingestion has run.
+
+## Jurisdictions at a glance
+
+### Federal / international (complete)
+
+| Jurisdiction | Source | Format | Location | Status |
+|---|---|---|---|---|
+| US Code (federal) | uscode.house.gov | USLM XML | `data/uscode/` | Complete — 53 titles |
+| UK Public General Acts | legislation.gov.uk | CLML XML | `~/.arch/uk/ukpga/` | Complete — 3,239 acts, 1916-2025 |
+| Canada federal statutes | laws-lois.justice.gc.ca | LIMS XML | `~/.arch/canada/` | Complete — 958 files |
+| DC Code | lims.dccouncil.gov | DC XML | `sources/dc/dc-law-xml/` | Complete — 21,163 sections across 28,432 files |
+| 7 CFR 271–283 (SNAP) | ecfr.gov | eCFR XML | `arch.rules` (Supabase) | Complete — 210 rows, eCFR snapshot 2024-04-16, ingested 2026-04-16 via `scripts/ingest_cfr_parts.py` |
+
+### US states — complete
+
+| Jurisdiction | Sections | Repo |
+|---|---|---|
+| DC | 21,163 | `rules-us-dc` |
+| NV | 11,842 | `rules-us-nv` |
+| NY (selected consolidated laws) | 10,976 | `rules-us-ny` |
+
+### US states — partial (content present, gaps known)
+
+| Jurisdiction | Repo | Notes |
+|---|---|---|
+| AZ | `rules-us-az` | Arizona Revised Statutes, partial |
+| DE | `rules-us-de` | Delaware Code, partial |
+| IA | `rules-us-ia` | Iowa Code, partial |
+| KY | `rules-us-ky` | Kentucky Revised Statutes, partial |
+| ME | `rules-us-me` | Maine Revised Statutes, partial |
+| ND | `rules-us-nd` | North Dakota Century Code, partial |
+| NE | `rules-us-ne` | Nebraska Revised Statutes, partial |
+| NH | `rules-us-nh` | New Hampshire Revised Statutes, partial |
+| OH | `rules-us-oh` | Ohio Revised Code, partial |
+| RI | `rules-us-ri` | Rhode Island General Laws, partial |
+| TX | `rules-us-tx` | Texas Statutes, partial |
+| VA | `rules-us-va` | Virginia Code, partial |
+| VT | `rules-us-vt` | Vermont Statutes, partial |
+| WY | `rules-us-wy` | Wyoming Statutes, partial |
+
+### US states — repo exists but 0 `.rac` files
+
+These state repos were scaffolded but do not yet contain any encoded rules.
+Content ingestion either hasn't run or hasn't produced usable output:
+
+| Jurisdiction | Repo | Likely reason |
+|---|---|---|
+| AL | `rules-us-al` | Crawled; converter/ingest not run |
+| AR | `rules-us-ar` | LexisNexis host; scrape captured only default pages (see below) |
+| FL | `rules-us-fl` | Scrape present in `data/statutes/`; converter output empty |
+| GA | `rules-us-ga` | Archive.org bulk download available; ingestion not yet run |
+| MD | `rules-us-md` | Not yet scraped |
+| NC | `rules-us-nc` | Archive.org bulk download available; ingestion not yet run |
+| SC | `rules-us-sc` | Scrape present; converter output empty |
+| TN | `rules-us-tn` | Archive.org bulk download available; ingestion not yet run |
+
+### US states — navigation-only scrapes (NOT usable)
+
+`data/statutes/us-{code}/` contains HTML, but the captured pages are
+Tables of Contents or site navigation — **no section text was retrieved**.
+These need revised crawl patterns in
+`src/atlas/sources/specs/` and/or `src/atlas/crawl.py:SECTION_PATTERNS`
+before re-ingesting.
+
+| Jurisdiction | Symptom |
+|---|---|
+| LA | Only TOC/index pages captured |
+| MN | Only navigation/UI pages captured |
+| PA | Only navigation/UI pages captured |
+| WA | Only navigation/UI pages captured |
+| WI | Only navigation/UI pages captured |
+| OK | Only index pages captured |
+
+### US states — broken downloads
+
+| Jurisdiction | Symptom |
+|---|---|
+| AK | All downloads returned 404 error pages |
+| TX (`data/texas_cache/`) | Empty directory — prior crawl produced no output |
+
+### US states — not yet scraped
+
+Remaining state repositories are scaffolded but have no source data in
+`data/statutes/` and no Archive.org mirror configured. Needs source
+decisions before crawling.
+
+## Data locations
+
+### `~/.arch/` (user cache directory)
 
 | Directory | Contents | Count | Format | Status |
-|-----------|----------|-------|--------|--------|
+|---|---|---|---|---|
 | `~/.arch/canada/` | Canada federal statutes | 958 files | LIMS XML | Complete |
 | `~/.arch/federal/` | US federal agency guidance | varies | HTML/PDF | Partial |
 | `~/.arch/irs/` | IRS guidance documents | varies | PDF | Partial |
-| `~/.arch/policyengine-us/` | State tax forms/instructions by state | ~40 states | PDF | Reference docs |
+| `~/.arch/policyengine-us/` | State tax forms/instructions | ~40 states | PDF | Reference docs |
 | `~/.arch/uk/ukpga/` | UK Public General Acts | 3,239 files | CLML XML | Complete (1916-2025) |
 | `~/.arch/us-ca/` | California statutes | 3 files | HTML | Partial |
 
-### data/ (Repository Data Directory)
+### `data/` (repository data directory)
 
 | Directory | Contents | Count | Format | Status |
-|-----------|----------|-------|--------|--------|
-| `data/uscode/` | US Code titles (USLM XML) | 53 titles | USLM XML | Complete |
-| `data/statutes/us-*` | State statute downloads | 48 states | Mixed | Varies (some 404s) |
+|---|---|---|---|---|
+| `data/uscode/` | US Code titles | 53 titles | USLM XML | Complete |
+| `data/statutes/us-*` | State statute downloads | 48 states | Mixed | **Varies — see tables above** |
 | `data/microdata/census_blocks/` | Census PL 94-171 data | 1 file | Parquet | Complete |
 | `data/us/guidance/irs/` | IRS guidance by year/title | varies | Mixed | Partial |
 | `data/ca/` | California statutes/guidance | ~33 items | Mixed | Partial |
-| `data/texas_cache/` | Texas statutes | empty | - | Failed |
+| `data/texas_cache/` | Texas statutes | empty | — | Broken |
 
-### sources/ (Source Document Archives)
+### `sources/` (source document archives)
 
 | Directory | Contents | Count | Format | Status |
-|-----------|----------|-------|--------|--------|
+|---|---|---|---|---|
 | `sources/dc/dc-law-xml/` | DC Council Law Library | 28,432 files | DC XML | Complete |
 | `sources/policyengine-us/` | PolicyEngine state data | varies | Mixed | Reference |
 
-## Data Quality Notes
+## Known upstream issues
 
-### Complete and Usable
-- **US Code**: All 54 titles in USLM XML format (`data/uscode/`)
-- **DC Code**: 21,163 sections from DC Council (`sources/dc/dc-law-xml/`)
-- **UK Acts**: 3,239 acts in CLML XML (`~/.arch/uk/ukpga/`)
-- **Canada**: 958 federal statutes in LIMS XML (`~/.arch/canada/`)
-- **7 CFR 271–283 (SNAP)**: 210 rows (parts, subparts, sections) in
-  `arch.rules` as of 2026-04-16 (eCFR `2024-04-16` snapshot). Ingested via
-  `scripts/ingest_cfr_parts.py`.
+When a source is flagged broken or navigation-only, the fix usually lives
+upstream or requires a revised crawl pattern rather than re-running the
+existing scraper.
 
-### Partial or Problematic
-- **State statutes** (`data/statutes/us-*`): Quality varies significantly
-  - Some states have 404 error pages (failed downloads)
-  - Some have PDFs saved with wrong extensions
-  - Check file contents before using
+- **Alaska (AK)** — `akleg.gov` returns 404 pages for the patterns in
+  `SECTION_PATTERNS` at `src/atlas/crawl.py`. Needs a new crawl strategy
+  (likely the legislature's document server, not the public site).
+- **Louisiana (LA)** — `legis.la.gov` serves statute text inside
+  ASP.NET postback forms; the current crawler only captures the landing
+  TOC. Needs a Playwright-based fetcher or a Public.Resource.org mirror.
+- **Minnesota (MN)** — `revisor.mn.gov/statutes/` pattern matches the
+  chapter browser UI, not individual sections. Needs `/statutes/cite/...`
+  pattern refinement.
+- **Washington (WA)** — Similar to MN; `app.leg.wa.gov` routes through a
+  JavaScript-rendered TOC. Needs Playwright or the bulk RCW XML dump.
+- **Wisconsin (WI)** — `docs.legis.wisconsin.gov` PDF-first delivery;
+  HTML pages captured are navigation only.
+- **Pennsylvania (PA)** — `legis.state.pa.us` uses dynamic
+  `view-statute?...` links not currently resolved by the crawler.
+- **Oklahoma (OK)** — `oscn.net` requires session cookies and
+  `DeliverDocument.asp` CiteID resolution; current crawl gets index
+  pages only.
+- **Arkansas (AR) and Mississippi (MS)** — Both are LexisNexis-hosted.
+  Archive.org has historical dumps for AR volumes but they are split
+  across multiple items (not yet wired into `ARCHIVE_ORG_STATES` in
+  `src/atlas/crawl.py`).
 
-### Not Yet Scraped
-- Most US state statutes need better sources
-- International jurisdictions (except CA, UK, NZ)
-
-## Rules Repositories Status
+## Rules repositories
 
 Akoma Ntoso XML files pushed to GitHub:
 
-### Complete Repositories
+### Complete repositories
 
 | Repository | Sections | Source |
-|------------|----------|--------|
+|---|---|---|
 | `RulesFoundation/rules-us` | 60,204 | US Code USLM XML |
 | `RulesFoundation/rules-ca` | 601 | Canada LIMS XML |
 | `RulesFoundation/rules-us-dc` | 21,163 | DC Law XML |
 | `RulesFoundation/rules-uk` | ~3,236 | UK CLML XML |
 
-### State Repositories with Content
+### State repositories
 
-| Repository | Sections | Notes |
-|------------|----------|-------|
-| `rules-us-al` | varies | Alabama Code |
-| `rules-us-az` | varies | Arizona Revised Statutes |
-| `rules-us-de` | varies | Delaware Code |
-| `rules-us-ga` | varies | Georgia Code |
-| `rules-us-ia` | varies | Iowa Code |
-| `rules-us-ky` | varies | Kentucky Revised Statutes |
-| `rules-us-me` | varies | Maine Revised Statutes |
-| `rules-us-nc` | varies | North Carolina General Statutes |
-| `rules-us-nd` | varies | North Dakota Century Code |
-| `rules-us-ne` | varies | Nebraska Revised Statutes |
-| `rules-us-nh` | varies | New Hampshire Revised Statutes |
-| `rules-us-nv` | 11,842 | Nevada Revised Statutes |
-| `rules-us-ny` | 10,976 | NY Consolidated Laws (Tax, Social Services, Education, etc.) |
-| `rules-us-oh` | varies | Ohio Revised Code |
-| `rules-us-ri` | varies | Rhode Island General Laws |
-| `rules-us-sc` | varies | South Carolina Code of Laws |
-| `rules-us-tn` | varies | Tennessee Code |
-| `rules-us-tx` | varies | Texas Statutes |
-| `rules-us-va` | varies | Virginia Code |
-| `rules-us-vt` | varies | Vermont Statutes |
-| `rules-us-wy` | varies | Wyoming Statutes |
+See "US states" tables above for per-jurisdiction status.
 
-### Empty Scaffolds (30 repos)
+## Adding new data
 
-Remaining state repos created but awaiting quality source data.
+1. **Check this inventory first** — data may already exist
+2. **Use existing scrapers** in `src/atlas/parsers/` and `src/atlas/converters/`
+3. **Cache to `~/.arch/`** for reuse across workflows
+4. **Update this file** after scraping — include a status flag and date
 
-### Source Data Issues
+## Converter reference
 
-States with unusable source data in `data/statutes/`:
-- **AK**: 404 error pages (download failures)
-- **LA**: Table of Contents pages only
-- **MN, WA, WI, PA**: Navigation/UI pages only
-- **OK**: Index pages only
+Converters in `src/atlas/converters/`:
 
-## Adding New Data
-
-When adding new data sources:
-
-1. **Check this inventory first** - data may already exist
-2. **Use existing scrapers** in `src/arch/parsers/` and `src/arch/converters/`
-3. **Cache to ~/.arch/** for reuse
-4. **Document in this file** after scraping
-
-## Converter Reference
-
-Converters in `src/arch/converters/`:
-
-| Converter | Input Format | Output Format |
-|-----------|-------------|---------------|
-| `uk_clml.py` | UK CLML XML | Arch models |
-| `ca_laws.py` | Canada LIMS XML | Arch models |
-| `ecfr.py` | eCFR XML | Arch models |
-| `nz_pco.py` | NZ PCO XML | Arch models |
+| Converter | Input format | Output format |
+|---|---|---|
+| `uk_clml.py` | UK CLML XML | Atlas models |
+| `ca_laws.py` | Canada LIMS XML | Atlas models |
+| `ecfr.py` | eCFR XML | Atlas models |
+| `nz_pco.py` | NZ PCO XML | Atlas models |
 | `us_states/*.py` | State HTML/XML | USLM XML |
-
----
-Last updated: 2025-12-31

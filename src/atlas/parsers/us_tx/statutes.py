@@ -17,6 +17,7 @@ Bulk XML available at:
 - https://statutes.capitol.texas.gov/Download/html/TX.zip (Tax Code HTML)
 """
 
+import logging
 import re
 import time
 import zipfile
@@ -30,6 +31,8 @@ import httpx
 from bs4 import BeautifulSoup
 
 from atlas.models import Citation, Section, Subsection
+
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://statutes.capitol.texas.gov"
 
@@ -216,7 +219,12 @@ class TXStatutesClient:
                         html_content, code, code_name, html_file
                     )
                 except Exception as e:  # pragma: no cover
-                    print(f"Warning: Error parsing {html_file}: {e}")  # pragma: no cover
+                    logger.warning(  # pragma: no cover
+                        "[TX] Error parsing %s: %s",
+                        html_file,
+                        e,
+                        exc_info=True,
+                    )
                     continue  # pragma: no cover
 
     def _parse_html_file(

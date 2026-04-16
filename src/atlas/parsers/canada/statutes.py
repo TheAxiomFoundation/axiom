@@ -12,6 +12,7 @@ Structure:
 Source: https://laws-lois.justice.gc.ca
 """
 
+import logging
 from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
@@ -24,6 +25,8 @@ from atlas.models_canada import (
     CanadaSection,
     CanadaSubsection,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # LIMS namespace
@@ -136,7 +139,12 @@ class CanadaStatuteParser:
                     yield section
             except Exception as e:  # pragma: no cover
                 lims_id = section_elem.get("{http://justice.gc.ca/lims}id", "unknown")  # pragma: no cover
-                print(f"Warning: Failed to parse section {lims_id}: {e}")  # pragma: no cover
+                logger.warning(  # pragma: no cover
+                    "[CA-LIMS] Failed to parse section %s: %s",
+                    lims_id,
+                    e,
+                    exc_info=True,
+                )
 
     def get_section(self, section_num: str) -> CanadaSection | None:
         """Get a specific section by number.
