@@ -134,6 +134,46 @@ def resolve_target_ids(service_key: str, citation_paths: set[str]) -> dict[str, 
     return out
 
 
+def _retrying_urlopen(req: urllib.request.Request, timeout: int = 60) -> bytes:
+    """Open ``req`` with retries on transient upstream errors.
+
+    Supabase / PostgREST occasionally returns 500 / 502 / 503 under
+    contention (e.g. when a parallel ingest is saturating the same
+    pool). These are almost always transient; retry with exponential
+    backoff up to a short cap before bubbling the error to the caller.
+    """
+    max_attempts = 5
+    for attempt in range(1, max_attempts + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return resp.read()
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode()[:300]
+            if exc.code in (500, 502, 503, 504, 429) and attempt < max_attempts:
+                sleep_s = min(30.0, 2.0**attempt)
+                print(
+                    f"  transient {exc.code} (attempt {attempt}), "
+                    f"retrying in {sleep_s:.1f}s: {body[:100]}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                time.sleep(sleep_s)
+                continue
+            raise RuntimeError(f"HTTP {exc.code}: {body}") from exc
+        except (urllib.error.URLError, TimeoutError) as exc:
+            if attempt < max_attempts:
+                sleep_s = min(30.0, 2.0**attempt)
+                print(
+                    f"  network error (attempt {attempt}), retrying in {sleep_s:.1f}s: {exc}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                time.sleep(sleep_s)
+                continue
+            raise
+    raise RuntimeError("exhausted retries")
+
+
 def delete_existing(service_key: str, source_ids: list[str]) -> None:
     if not source_ids:
         return
@@ -147,10 +187,7 @@ def delete_existing(service_key: str, source_ids: list[str]) -> None:
         },
         method="DELETE",
     )
-    try:
-        urllib.request.urlopen(req, timeout=60).read()
-    except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"delete failed: {exc.code} {exc.read().decode()[:300]}") from exc
+    _retrying_urlopen(req, timeout=60)
 
 
 def insert_rows(service_key: str, rows: list[dict]) -> None:
@@ -168,11 +205,7 @@ def insert_rows(service_key: str, rows: list[dict]) -> None:
         },
         method="POST",
     )
-    try:
-        urllib.request.urlopen(req, timeout=120).read()
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode()[:500]
-        raise RuntimeError(f"insert failed: {exc.code} {body}") from exc
+    _retrying_urlopen(req, timeout=120)
 
 
 def process_batch(
