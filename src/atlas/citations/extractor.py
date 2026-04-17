@@ -233,10 +233,25 @@ class DCExtractor(Extractor):
         rf"(?P<sub>{_SUBSECTION_CHAIN})"
     )
 
+    # DC Code has 51 numbered titles; we pad to 60 to cover any future
+    # additions and alpha-suffix variants (24A, 29A, ...). Anything
+    # higher is almost certainly a range enumeration or a misread.
+    _MAX_TITLE = 60
+
     def to_ref(self, match: re.Match[str]) -> ExtractedRef | None:
         title = match.group("title")
         section = match.group("section")
         sub = match.group("sub") or ""
+
+        # Reject out-of-range titles: matches like "§§ 100-110" (a cross-
+        # reference range) would otherwise produce bogus us-dc/statute/100
+        # rows that never resolve. Parse the leading digits of whichever
+        # title form we matched (plain, alpha-suffix, or colon).
+        numeric_head = re.match(r"\d+", title)
+        if not numeric_head:  # pragma: no cover — regex forbids non-digit start
+            return None
+        if int(numeric_head.group(0)) > self._MAX_TITLE:
+            return None
 
         path_parts = [
             "us-dc",

@@ -196,6 +196,33 @@ class TestDCExtractor:
             "us-dc/statute/29A/29A-1001",
         ]
 
+    def test_out_of_range_title_rejected(self) -> None:
+        # DC Code runs 1-51 plus alpha variants; a "§ 100-110"-style
+        # range enumeration in text must not produce a bogus rule.
+        assert DCExtractor().extract("see §§ 100-110") == []
+
+    def test_boundary_titles_accepted(self) -> None:
+        # Title 51 is the largest real DC title today; the whitelist
+        # pads up to 60 to cover future adds.
+        refs = DCExtractor().extract("see § 51-1001 and § 60-101")
+        paths = {r.target_citation_path for r in refs}
+        assert "us-dc/statute/51/51-1001" in paths
+        assert "us-dc/statute/60/60-101" in paths
+
+    def test_title_61_rejected(self) -> None:
+        # Just above the cap — catches larger obvious non-cites.
+        assert DCExtractor().extract("see § 61-100") == []
+
+    def test_alpha_suffix_title_still_ranged(self) -> None:
+        # '29A' parses as numeric-head 29; within the cap.
+        refs = DCExtractor().extract("see § 29A-1001")
+        assert len(refs) == 1
+
+    def test_colon_form_title_ranged_on_numeric_head(self) -> None:
+        # '28:9' parses as numeric-head 28; within the cap.
+        refs = DCExtractor().extract("see § 28:9-316")
+        assert len(refs) == 1
+
 
 # --- Jurisdiction routing -------------------------------------------------
 
