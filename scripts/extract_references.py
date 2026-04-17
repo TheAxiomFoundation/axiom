@@ -88,8 +88,7 @@ def fetch_rules_page(
             "Accept-Profile": "akn",
         },
     )
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        return json.loads(resp.read())
+    return json.loads(_retrying_urlopen(req, timeout=60))
 
 
 def resolve_target_ids(service_key: str, citation_paths: set[str]) -> dict[str, str]:
@@ -121,11 +120,10 @@ def resolve_target_ids(service_key: str, citation_paths: set[str]) -> dict[str, 
             },
         )
         try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                data = json.loads(resp.read())
-        except urllib.error.HTTPError as exc:
+            data = json.loads(_retrying_urlopen(req, timeout=60))
+        except RuntimeError as exc:
             print(
-                f"  WARN: target resolution HTTP {exc.code}, batch skipped",
+                f"  WARN: target resolution failed, batch skipped: {exc}",
                 file=sys.stderr,
             )
             continue
