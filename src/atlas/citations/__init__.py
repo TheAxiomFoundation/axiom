@@ -17,6 +17,7 @@ new :class:`Extractor` subclass in :func:`all_extractors`.
 from __future__ import annotations
 
 from .extractor import (
+    CAExtractor,
     CFRExtractor,
     DCExtractor,
     ExtractedRef,
@@ -28,6 +29,7 @@ from .extractor import (
 )
 
 __all__ = [
+    "CAExtractor",
     "CFRExtractor",
     "DCExtractor",
     "ExtractedRef",

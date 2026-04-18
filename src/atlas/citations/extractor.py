@@ -369,6 +369,150 @@ class NYExtractor(Extractor):
         )
 
 
+# --- CA extractor ---------------------------------------------------------
+
+
+# CA statutory law is organized into ~30 named "Codes" (Revenue and
+# Taxation Code, Labor Code, ...) rather than numbered titles. Upstream
+# ``rules-us-ca`` stores each under a short directory code used as the
+# second path segment in ``us-ca/statute/{code}/...``. Map the prose
+# names that appear in citations back to those codes. Missing entries
+# cause the cross-code pattern to ignore a match rather than mis-resolve
+# it.
+_CA_LAW_CODES: dict[str, str] = {
+    "business and professions": "bpc",
+    "code of civil procedure": "ccp",
+    "civil procedure": "ccp",
+    "civil": "civ",
+    "commercial": "com",
+    "corporations": "corp",
+    "education": "edc",
+    "elections": "elec",
+    "evidence": "evid",
+    "food and agricultural": "fac",
+    "family": "fam",
+    "fish and game": "fgc",
+    "financial": "fin",
+    "government": "gov",
+    "harbors and navigation": "hnc",
+    "health and safety": "hsc",
+    "insurance": "ins",
+    "labor": "lab",
+    "military and veterans": "mvc",
+    "penal": "pen",
+    "probate": "prob",
+    "public contract": "pcc",
+    "public resources": "prc",
+    "public utilities": "puc",
+    "revenue and taxation": "rtc",
+    "streets and highways": "shc",
+    "unemployment insurance": "uic",
+    "vehicle": "veh",
+    "water": "wat",
+    "welfare and institutions": "wic",
+}
+
+
+class CAExtractor(Extractor):
+    """Matches California statute references.
+
+    Two forms, both resolving to ``us-ca/statute/{code}/{section}``:
+
+    1. **Cross-code**: ``Section N of the X Code``. The code name is
+       mapped via ``_CA_LAW_CODES``. Example::
+
+           Section 8571 of the Government Code
+           → us-ca/statute/gov/8571
+
+    2. **Intra-code**: bare ``section N`` inside a body whose source
+       rule is at ``us-ca/statute/{code}/...``. Enclosing code is the
+       default scope. Confidence 0.7 — bare refs are ambiguous.
+
+    False-positive guards:
+
+    * Intra-code form skips matches followed by ``of the ... Code``
+      (federal IRC or cross-code — the other pattern claims those).
+    * Cross-code requires the code name in the map; unknown names skip.
+    """
+
+    pattern_kind: ClassVar[str] = "ca"
+
+    _CROSS_LAW: ClassVar[re.Pattern[str]] = re.compile(
+        r"\bsection\s+"
+        r"(?P<section>\d+[A-Za-z]?(?:[-.][A-Za-z0-9]+)?(?:\.[A-Za-z0-9]+)?)"
+        rf"(?P<sub>{_SUBSECTION_CHAIN})"
+        r"\s+of\s+the\s+"
+        r"(?P<law>"
+        + "|".join(
+            re.escape(name) for name in sorted(_CA_LAW_CODES, key=len, reverse=True)
+        )
+        + r")"
+        r"\s+code\b",
+        re.IGNORECASE,
+    )
+
+    _INTRA: ClassVar[re.Pattern[str]] = re.compile(
+        r"\bsection\s+"
+        r"(?P<section>\d+[A-Za-z]?(?:[-.][A-Za-z0-9]+)?(?:\.[A-Za-z0-9]+)?)"
+        rf"(?P<sub>{_SUBSECTION_CHAIN})",
+        re.IGNORECASE,
+    )
+
+    _TAIL_NOT_INTRA: ClassVar[re.Pattern[str]] = re.compile(
+        r"^\s*(?:of\s+the\s+[A-Za-z, ']+?\s+(?:law|code|act)\b)",
+        re.IGNORECASE,
+    )
+
+    source_citation_path: str | None = None
+
+    def __init__(self, source_citation_path: str | None = None) -> None:
+        self.source_citation_path = source_citation_path
+
+    @staticmethod
+    def _enclosing_code(source_citation_path: str | None) -> str | None:
+        """Return the CA law code embedded in a source rule path, or None."""
+        if not source_citation_path:
+            return None
+        parts = source_citation_path.split("/")
+        if len(parts) >= 3 and parts[0] == "us-ca" and parts[1] == "statute":
+            return parts[2]
+        return None
+
+    def extract(self, body: str) -> list[ExtractedRef]:
+        refs: list[ExtractedRef] = []
+        for m in self._CROSS_LAW.finditer(body):
+            law = m.group("law").lower().strip()
+            code = _CA_LAW_CODES.get(law)
+            if code is None:  # pragma: no cover — regex alternation forbids
+                continue
+            refs.append(self._build_ref(m, code, confidence=1.0))
+
+        enclosing_code = self._enclosing_code(self.source_citation_path)
+        if enclosing_code is not None and enclosing_code in set(_CA_LAW_CODES.values()):
+            for m in self._INTRA.finditer(body):
+                tail = body[m.end() :]
+                if self._TAIL_NOT_INTRA.match(tail):
+                    continue
+                refs.append(self._build_ref(m, enclosing_code, confidence=0.7))
+        return refs
+
+    def _build_ref(
+        self, match: re.Match[str], code: str, confidence: float
+    ) -> ExtractedRef:
+        section = match.group("section")
+        sub = match.group("sub") or ""
+        path_parts = ["us-ca", "statute", code, section]
+        path_parts.extend(_subsection_segments(sub))
+        return ExtractedRef(
+            raw_text=match.group(0),
+            pattern_kind=self.pattern_kind,
+            target_citation_path="/".join(path_parts),
+            start_offset=match.start(),
+            end_offset=match.end(),
+            confidence=confidence,
+        )
+
+
 # --- DC extractor ---------------------------------------------------------
 
 
@@ -528,6 +672,8 @@ def all_extractors(
         extractors.append(DCExtractor())
     if jurisdiction == "us-ny":
         extractors.append(NYExtractor(source_citation_path=source_citation_path))
+    if jurisdiction == "us-ca":
+        extractors.append(CAExtractor(source_citation_path=source_citation_path))
     return extractors
 
 

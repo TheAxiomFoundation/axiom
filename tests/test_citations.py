@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from atlas.citations import (
+    CAExtractor,
     CFRExtractor,
     DCExtractor,
     ExtractedRef,
@@ -327,6 +328,107 @@ class TestNYExtractorIntraCode:
         }
 
 
+# --- CA -------------------------------------------------------------------
+
+
+class TestCAExtractorCrossCode:
+    """Cross-code references like 'Section N of the X Code'."""
+
+    def test_government_code(self) -> None:
+        refs = CAExtractor().extract("see Section 8571 of the Government Code")
+        assert len(refs) == 1
+        assert refs[0].target_citation_path == "us-ca/statute/gov/8571"
+        assert refs[0].pattern_kind == "ca"
+        assert refs[0].confidence == 1.0
+
+    def test_labor_code_with_dot_section(self) -> None:
+        refs = CAExtractor().extract(
+            "pursuant to Section 1182.12 of the Labor Code"
+        )
+        assert refs[0].target_citation_path == "us-ca/statute/lab/1182.12"
+
+    def test_revenue_and_taxation_code(self) -> None:
+        refs = CAExtractor().extract(
+            "under Section 10754 of the Revenue and Taxation Code"
+        )
+        assert refs[0].target_citation_path == "us-ca/statute/rtc/10754"
+
+    def test_family_code(self) -> None:
+        refs = CAExtractor().extract("in Section 8612 of the Family Code")
+        assert refs[0].target_citation_path == "us-ca/statute/fam/8612"
+
+    def test_with_subsection_chain(self) -> None:
+        refs = CAExtractor().extract(
+            "see Section 17041(a)(1) of the Revenue and Taxation Code"
+        )
+        assert refs[0].target_citation_path == "us-ca/statute/rtc/17041/a/1"
+
+    def test_case_insensitive(self) -> None:
+        refs = CAExtractor().extract(
+            "SECTION 8571 OF THE GOVERNMENT CODE applies"
+        )
+        assert refs[0].target_citation_path == "us-ca/statute/gov/8571"
+
+    def test_unknown_code_not_matched(self) -> None:
+        assert (
+            CAExtractor().extract("see Section 123 of the Made-up Code") == []
+        )
+
+    def test_internal_revenue_code_not_claimed_by_ca(self) -> None:
+        assert (
+            CAExtractor().extract("section 32 of the internal revenue code")
+            == []
+        )
+
+
+class TestCAExtractorIntraCode:
+    """Bare 'section N' inside a CA rule resolves to the enclosing code."""
+
+    def test_bare_section_resolves_against_source_path(self) -> None:
+        ext = CAExtractor(source_citation_path="us-ca/statute/rtc/17041")
+        refs = ext.extract("refer to section 17052 for the credit")
+        assert len(refs) == 1
+        assert refs[0].target_citation_path == "us-ca/statute/rtc/17052"
+        assert refs[0].confidence == 0.7
+
+    def test_bare_section_with_subsection_chain(self) -> None:
+        ext = CAExtractor(source_citation_path="us-ca/statute/rtc/17041/a")
+        refs = ext.extract("under section 17054(b)(2)")
+        assert refs[0].target_citation_path == "us-ca/statute/rtc/17054/b/2"
+
+    def test_no_intra_code_without_source_path(self) -> None:
+        assert CAExtractor().extract("under section 17052") == []
+
+    def test_no_intra_code_when_source_not_in_us_ca(self) -> None:
+        ext = CAExtractor(source_citation_path="us/statute/26/32")
+        assert ext.extract("under section 17052") == []
+
+    def test_bare_section_followed_by_cross_code_not_double_emitted(self) -> None:
+        ext = CAExtractor(source_citation_path="us-ca/statute/rtc/17041")
+        refs = ext.extract(
+            "see Section 8571 of the Government Code and related rules"
+        )
+        assert len(refs) == 1
+        assert refs[0].target_citation_path == "us-ca/statute/gov/8571"
+        assert refs[0].confidence == 1.0
+
+    def test_bare_section_followed_by_irc_not_claimed_as_intra(self) -> None:
+        ext = CAExtractor(source_citation_path="us-ca/statute/rtc/17041")
+        refs = ext.extract("section 32 of the internal revenue code")
+        assert refs == []
+
+    def test_mixed_cross_code_and_intra_code_in_same_body(self) -> None:
+        ext = CAExtractor(source_citation_path="us-ca/statute/rtc/17041")
+        refs = ext.extract(
+            "cross-refs section 17052 elsewhere and Section 8571 of the Government Code"
+        )
+        paths = {r.target_citation_path for r in refs}
+        assert paths == {
+            "us-ca/statute/rtc/17052",
+            "us-ca/statute/gov/8571",
+        }
+
+
 # --- Jurisdiction routing -------------------------------------------------
 
 
@@ -346,6 +448,36 @@ class TestAllExtractorsJurisdictionRouting:
     def test_us_ny_adds_ny_extractor(self) -> None:
         kinds = {type(e).__name__ for e in all_extractors("us-ny")}
         assert "NYExtractor" in kinds
+
+    def test_us_ca_adds_ca_extractor(self) -> None:
+        kinds = {type(e).__name__ for e in all_extractors("us-ca")}
+        assert "CAExtractor" in kinds
+
+    def test_ca_extractor_gets_source_path(self) -> None:
+        extractors = all_extractors(
+            "us-ca", source_citation_path="us-ca/statute/rtc/17041"
+        )
+        ca = [e for e in extractors if isinstance(e, CAExtractor)]
+        assert len(ca) == 1
+        assert ca[0].source_citation_path == "us-ca/statute/rtc/17041"
+
+    def test_extract_all_us_ca_cross_code(self) -> None:
+        refs = extract_all(
+            "under Section 8571 of the Government Code",
+            jurisdiction="us-ca",
+            source_citation_path="us-ca/statute/rtc/17041",
+        )
+        paths = {r.target_citation_path for r in refs}
+        assert "us-ca/statute/gov/8571" in paths
+
+    def test_extract_all_us_ca_intra_code(self) -> None:
+        refs = extract_all(
+            "see section 17052 for details",
+            jurisdiction="us-ca",
+            source_citation_path="us-ca/statute/rtc/17041",
+        )
+        assert len(refs) == 1
+        assert refs[0].target_citation_path == "us-ca/statute/rtc/17052"
 
     def test_ny_extractor_gets_source_path(self) -> None:
         extractors = all_extractors(
