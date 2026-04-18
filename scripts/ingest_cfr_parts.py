@@ -323,6 +323,39 @@ def get_service_key() -> str:
     raise SystemExit("service_role key not found")
 
 
+def refresh_jurisdiction_counts(service_key: str) -> None:
+    """Refresh the akn.jurisdiction_counts materialized view.
+
+    The MV backs the per-jurisdiction pills on the Atlas landing page.
+    Ingest drivers call this at end-of-run so the stat block picks up
+    newly-added rows without a manual ``REFRESH MATERIALIZED VIEW``.
+    CONCURRENTLY refresh — readers on the landing page don't block.
+
+    Failures are logged but non-fatal: a successful ingest shouldn't
+    be undone just because the cosmetic stats refresh hiccuped.
+    """
+    req = urllib.request.Request(
+        f"{REST_URL}/rpc/refresh_jurisdiction_counts",
+        data=b"{}",
+        headers={
+            "apikey": service_key,
+            "Authorization": f"Bearer {service_key}",
+            "Content-Type": "application/json",
+            "Content-Profile": "akn",
+            "User-Agent": USER_AGENT,
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            resp.read()
+    except (urllib.error.HTTPError, urllib.error.URLError) as exc:
+        print(
+            f"  WARN: jurisdiction_counts refresh failed (non-fatal): {exc}",
+            file=sys.stderr,
+        )
+
+
 # --- Entry point -----------------------------------------------------------
 
 
@@ -404,6 +437,9 @@ def main(argv: Iterable[str] | None = None) -> int:
             upsert_rows(batch, service_key)
         total += len(rows)
 
+    if not args.dry_run and total > 0:
+        assert service_key is not None
+        refresh_jurisdiction_counts(service_key)
     verb = "would upsert" if args.dry_run else "upserted"
     print(f"\n{verb} {total} rows total")
     return 0

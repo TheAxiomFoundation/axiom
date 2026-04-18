@@ -54,6 +54,7 @@ from ingest_cfr_parts import (  # noqa: E402 — sys.path munge above
     chunked,
     fetch_part_xml,
     get_service_key,
+    refresh_jurisdiction_counts,
     upsert_rows,
 )
 
@@ -248,6 +249,9 @@ def main(argv: list[str] | None = None) -> int:
             flush=True,
         )
 
+    if not args.dry_run and total_rows > 0:
+        assert service_key is not None
+        refresh_jurisdiction_counts(service_key)
     print(
         f"\nDONE — {total_succeeded}/{total_parts} parts, {total_rows} rows, "
         f"{(time.time() - started) / 60:.1f} min",

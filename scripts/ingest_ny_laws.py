@@ -47,7 +47,11 @@ from uuid import NAMESPACE_URL, uuid5
 from xml.etree import ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ingest_cfr_parts import chunked, get_service_key  # noqa: E402
+from ingest_cfr_parts import (  # noqa: E402
+    chunked,
+    get_service_key,
+    refresh_jurisdiction_counts,
+)
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
 from atlas.ingest.rule_uploader import RuleUploader  # noqa: E402
@@ -205,6 +209,8 @@ def main(argv: list[str] | None = None) -> int:
             )
 
     flush()
+    if not args.dry_run and uploaded > 0:
+        refresh_jurisdiction_counts(get_service_key())
     elapsed = time.time() - started
     verb = "would upload" if args.dry_run else "uploaded"
     print(
