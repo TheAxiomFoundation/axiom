@@ -199,6 +199,124 @@ class USCExtractor(Extractor):
         )
 
 
+# --- State-section extractor base ----------------------------------------
+
+
+class _StateSectionExtractor(Extractor):
+    """Shared base for US state statute extractors.
+
+    State citations fall into two common shapes that differ only in
+    (a) the jurisdiction slug, (b) the name → short-code map, and
+    (c) the suffix keyword ("Law" in NY, "Code" in CA, "Act" in some
+    others). The algorithm is identical:
+
+    1. **Cross-reference**: ``section N of the X {suffix_term}`` — the
+       name is looked up in ``law_codes``; misses emit no ref so we
+       don't mis-resolve an unknown name.
+    2. **Intra-code**: bare ``section N`` within a body whose source
+       rule is in this jurisdiction. The enclosing code from the path
+       is the default scope. Emitted at confidence 0.7 since bare refs
+       are ambiguous. Skipped if the tail looks like a cross-law to
+       another act / code / law.
+
+    Subclasses set class attributes (``pattern_kind``, ``jurisdiction``,
+    ``law_codes``, ``suffix_term``); the base compiles the cross
+    pattern per-subclass via ``__init_subclass__``.
+    """
+
+    jurisdiction: ClassVar[str] = ""
+    law_codes: ClassVar[dict[str, str]] = {}
+    suffix_term: ClassVar[str] = "law"
+
+    _CROSS: ClassVar[re.Pattern[str]]
+
+    # Intra and tail patterns are universal across the states we cover
+    # today — both use the same section-number shape and skip the same
+    # tails. Kept on the base class so subclasses inherit the compiled
+    # regex directly.
+    _INTRA: ClassVar[re.Pattern[str]] = re.compile(
+        r"\bsection\s+"
+        r"(?P<section>\d+[A-Za-z]?(?:[-.][A-Za-z0-9]+)?(?:\.[A-Za-z0-9]+)?)"
+        rf"(?P<sub>{_SUBSECTION_CHAIN})",
+        re.IGNORECASE,
+    )
+
+    _TAIL_NOT_INTRA: ClassVar[re.Pattern[str]] = re.compile(
+        r"^\s*(?:of\s+the\s+[A-Za-z, ']+?\s+(?:law|code|act)\b)",
+        re.IGNORECASE,
+    )
+
+    def __init_subclass__(cls, **kwargs: object) -> None:
+        super().__init_subclass__(**kwargs)
+        if cls.law_codes:
+            cls._CROSS = re.compile(
+                r"\bsection\s+"
+                r"(?P<section>\d+[A-Za-z]?(?:[-.][A-Za-z0-9]+)?(?:\.[A-Za-z0-9]+)?)"
+                rf"(?P<sub>{_SUBSECTION_CHAIN})"
+                r"\s+of\s+the\s+"
+                r"(?P<law>"
+                + "|".join(
+                    re.escape(name)
+                    for name in sorted(cls.law_codes, key=len, reverse=True)
+                )
+                + r")"
+                rf"\s+{re.escape(cls.suffix_term)}\b",
+                re.IGNORECASE,
+            )
+
+    source_citation_path: str | None = None
+
+    def __init__(self, source_citation_path: str | None = None) -> None:
+        self.source_citation_path = source_citation_path
+
+    def _enclosing_code(self, source_citation_path: str | None) -> str | None:
+        """Return the state law code embedded in a source rule path."""
+        if not source_citation_path:
+            return None
+        parts = source_citation_path.split("/")
+        if (
+            len(parts) >= 3
+            and parts[0] == self.jurisdiction
+            and parts[1] == "statute"
+        ):
+            return parts[2]
+        return None
+
+    def extract(self, body: str) -> list[ExtractedRef]:
+        refs: list[ExtractedRef] = []
+        for m in self._CROSS.finditer(body):
+            law = m.group("law").lower().strip()
+            code = self.law_codes.get(law)
+            if code is None:  # pragma: no cover — regex alternation forbids
+                continue
+            refs.append(self._build_ref(m, code, confidence=1.0))
+
+        enclosing = self._enclosing_code(self.source_citation_path)
+        if enclosing is not None and enclosing in set(self.law_codes.values()):
+            for m in self._INTRA.finditer(body):
+                tail = body[m.end() :]
+                if self._TAIL_NOT_INTRA.match(tail):
+                    continue
+                refs.append(self._build_ref(m, enclosing, confidence=0.7))
+        return refs
+
+    def _build_ref(
+        self, match: re.Match[str], code: str, confidence: float
+    ) -> ExtractedRef:
+        section = match.group("section")
+        sub = match.group("sub") or ""
+        path_parts = [self.jurisdiction, "statute", code, section]
+        path_parts.extend(_subsection_segments(sub))
+        return ExtractedRef(
+            raw_text=match.group(0),
+            pattern_kind=self.pattern_kind,
+            target_citation_path="/".join(path_parts),
+            start_offset=match.start(),
+            end_offset=match.end(),
+            confidence=confidence,
+        )
+
+
 # --- NY extractor ---------------------------------------------------------
 
 
@@ -246,127 +364,24 @@ _NY_LAW_CODES: dict[str, str] = {
 }
 
 
-class NYExtractor(Extractor):
+class NYExtractor(_StateSectionExtractor):
     """Matches New York statute references.
 
-    Two forms, both resolving to ``us-ny/statute/{code}/{section}``:
+    Two shapes resolving to ``us-ny/statute/{code}/{section}``:
 
-    1. **Cross-law**: ``section N of the {LAW_NAME} law``. The law
-       name is mapped to a code via ``_NY_LAW_CODES``. Example::
+    * Cross-law — ``section N of the X Law`` (e.g. "section 19-0309 of
+      the environmental conservation law" → ``us-ny/statute/env/19-0309``)
+    * Intra-code — bare ``section N`` inside a ``us-ny/...`` source
+      rule resolves against the enclosing law code.
 
-           section 19-0309 of the environmental conservation law
-           → us-ny/statute/env/19-0309
-
-    2. **Intra-code**: bare ``section N`` inside a body whose source
-       rule is at ``us-ny/statute/{code}/...``. The enclosing code
-       is the default scope. Example (source rule ``us-ny/statute/tax/606``)::
-
-           section 32              → us-ny/statute/tax/32
-
-       Intra-code matches are emitted at confidence 0.7 (down from 1.0)
-       because bare ``section N`` is inherently ambiguous — the caller
-       may choose to threshold on confidence downstream.
-
-    False-positive guards:
-
-    * Intra-code form skips matches followed by ``of the ... Code``
-      (federal IRC) or ``of the ... Law`` (cross-law — let the cross-law
-      pattern claim those).
-    * Cross-law form requires the law name to be in the map; unknown
-      names produce no ref.
+    Behavior inherited from :class:`_StateSectionExtractor`; see that
+    docstring for the false-positive guards.
     """
 
     pattern_kind: ClassVar[str] = "ny"
-
-    # Cross-law form: "section N[sub] of the {LAW_NAME} law". Built
-    # dynamically below from the law-name map so adding a law is a
-    # one-line edit to the dict.
-    _CROSS_LAW: ClassVar[re.Pattern[str]] = re.compile(
-        r"\bsection\s+"
-        r"(?P<section>\d+[A-Za-z]?(?:-[A-Za-z0-9]+)?(?:\.[A-Za-z0-9]+)?)"
-        rf"(?P<sub>{_SUBSECTION_CHAIN})"
-        r"\s+of\s+the\s+"
-        r"(?P<law>"
-        + "|".join(
-            re.escape(name) for name in sorted(_NY_LAW_CODES, key=len, reverse=True)
-        )
-        + r")"
-        r"\s+law\b",
-        re.IGNORECASE,
-    )
-
-    # Bare intra-code form. Followed-by guards are applied in code,
-    # not in the regex, to keep the pattern readable.
-    _INTRA: ClassVar[re.Pattern[str]] = re.compile(
-        r"\bsection\s+"
-        r"(?P<section>\d+[A-Za-z]?(?:-[A-Za-z0-9]+)?(?:\.[A-Za-z0-9]+)?)"
-        rf"(?P<sub>{_SUBSECTION_CHAIN})",
-        re.IGNORECASE,
-    )
-
-    # Tail text patterns that indicate the match is NOT an intra-code
-    # NY reference — another extractor (or nothing) will claim it.
-    _TAIL_NOT_INTRA: ClassVar[re.Pattern[str]] = re.compile(
-        r"^\s*(?:of\s+the\s+[A-Za-z, ']+?\s+(?:law|code|act)\b)",
-        re.IGNORECASE,
-    )
-
-    source_citation_path: str | None = None
-
-    def __init__(self, source_citation_path: str | None = None) -> None:
-        self.source_citation_path = source_citation_path
-
-    @staticmethod
-    def _enclosing_code(source_citation_path: str | None) -> str | None:
-        """Return the NY law code embedded in a source rule path, or None.
-
-        ``us-ny/statute/tax/606/a`` → ``tax``
-        ``us-ny/statute/env/19-0309`` → ``env``
-        """
-        if not source_citation_path:
-            return None
-        parts = source_citation_path.split("/")
-        if len(parts) >= 3 and parts[0] == "us-ny" and parts[1] == "statute":
-            return parts[2]
-        return None
-
-    def extract(self, body: str) -> list[ExtractedRef]:
-        refs: list[ExtractedRef] = []
-        for m in self._CROSS_LAW.finditer(body):
-            law = m.group("law").lower().strip()
-            code = _NY_LAW_CODES.get(law)
-            if code is None:  # pragma: no cover — regex alternation forbids
-                continue
-            refs.append(self._build_ref(m, code, confidence=1.0))
-
-        enclosing_code = self._enclosing_code(self.source_citation_path)
-        if enclosing_code is not None and enclosing_code in set(_NY_LAW_CODES.values()):
-            # Intra-code bare "section N" — only when we know the scope
-            # and the enclosing code is a known NY law.
-            for m in self._INTRA.finditer(body):
-                # Skip if this span was already consumed by the cross-law
-                # match above — the tail would start with "of the X law".
-                tail = body[m.end() :]
-                if self._TAIL_NOT_INTRA.match(tail):
-                    continue
-                refs.append(self._build_ref(m, enclosing_code, confidence=0.7))
-        return refs
-
-    def _build_ref(
-        self, match: re.Match[str], code: str, confidence: float
-    ) -> ExtractedRef:
-        section = match.group("section")
-        sub = match.group("sub") or ""
-        path_parts = ["us-ny", "statute", code, section]
-        path_parts.extend(_subsection_segments(sub))
-        return ExtractedRef(
-            raw_text=match.group(0),
-            pattern_kind=self.pattern_kind,
-            target_citation_path="/".join(path_parts),
-            start_offset=match.start(),
-            end_offset=match.end(),
-            confidence=confidence,
-        )
+    jurisdiction: ClassVar[str] = "us-ny"
+    law_codes: ClassVar[dict[str, str]] = _NY_LAW_CODES
+    suffix_term: ClassVar[str] = "law"
 
 
 # --- CA extractor ---------------------------------------------------------
@@ -413,104 +428,23 @@ _CA_LAW_CODES: dict[str, str] = {
 }
 
 
-class CAExtractor(Extractor):
+class CAExtractor(_StateSectionExtractor):
     """Matches California statute references.
 
-    Two forms, both resolving to ``us-ca/statute/{code}/{section}``:
+    Two shapes resolving to ``us-ca/statute/{code}/{section}``:
 
-    1. **Cross-code**: ``Section N of the X Code``. The code name is
-       mapped via ``_CA_LAW_CODES``. Example::
+    * Cross-code — ``Section N of the X Code`` (e.g. "Section 8571 of
+      the Government Code" → ``us-ca/statute/gov/8571``)
+    * Intra-code — bare ``section N`` inside a ``us-ca/...`` source
+      rule resolves against the enclosing law code.
 
-           Section 8571 of the Government Code
-           → us-ca/statute/gov/8571
-
-    2. **Intra-code**: bare ``section N`` inside a body whose source
-       rule is at ``us-ca/statute/{code}/...``. Enclosing code is the
-       default scope. Confidence 0.7 — bare refs are ambiguous.
-
-    False-positive guards:
-
-    * Intra-code form skips matches followed by ``of the ... Code``
-      (federal IRC or cross-code — the other pattern claims those).
-    * Cross-code requires the code name in the map; unknown names skip.
+    Behavior inherited from :class:`_StateSectionExtractor`.
     """
 
     pattern_kind: ClassVar[str] = "ca"
-
-    _CROSS_LAW: ClassVar[re.Pattern[str]] = re.compile(
-        r"\bsection\s+"
-        r"(?P<section>\d+[A-Za-z]?(?:[-.][A-Za-z0-9]+)?(?:\.[A-Za-z0-9]+)?)"
-        rf"(?P<sub>{_SUBSECTION_CHAIN})"
-        r"\s+of\s+the\s+"
-        r"(?P<law>"
-        + "|".join(
-            re.escape(name) for name in sorted(_CA_LAW_CODES, key=len, reverse=True)
-        )
-        + r")"
-        r"\s+code\b",
-        re.IGNORECASE,
-    )
-
-    _INTRA: ClassVar[re.Pattern[str]] = re.compile(
-        r"\bsection\s+"
-        r"(?P<section>\d+[A-Za-z]?(?:[-.][A-Za-z0-9]+)?(?:\.[A-Za-z0-9]+)?)"
-        rf"(?P<sub>{_SUBSECTION_CHAIN})",
-        re.IGNORECASE,
-    )
-
-    _TAIL_NOT_INTRA: ClassVar[re.Pattern[str]] = re.compile(
-        r"^\s*(?:of\s+the\s+[A-Za-z, ']+?\s+(?:law|code|act)\b)",
-        re.IGNORECASE,
-    )
-
-    source_citation_path: str | None = None
-
-    def __init__(self, source_citation_path: str | None = None) -> None:
-        self.source_citation_path = source_citation_path
-
-    @staticmethod
-    def _enclosing_code(source_citation_path: str | None) -> str | None:
-        """Return the CA law code embedded in a source rule path, or None."""
-        if not source_citation_path:
-            return None
-        parts = source_citation_path.split("/")
-        if len(parts) >= 3 and parts[0] == "us-ca" and parts[1] == "statute":
-            return parts[2]
-        return None
-
-    def extract(self, body: str) -> list[ExtractedRef]:
-        refs: list[ExtractedRef] = []
-        for m in self._CROSS_LAW.finditer(body):
-            law = m.group("law").lower().strip()
-            code = _CA_LAW_CODES.get(law)
-            if code is None:  # pragma: no cover — regex alternation forbids
-                continue
-            refs.append(self._build_ref(m, code, confidence=1.0))
-
-        enclosing_code = self._enclosing_code(self.source_citation_path)
-        if enclosing_code is not None and enclosing_code in set(_CA_LAW_CODES.values()):
-            for m in self._INTRA.finditer(body):
-                tail = body[m.end() :]
-                if self._TAIL_NOT_INTRA.match(tail):
-                    continue
-                refs.append(self._build_ref(m, enclosing_code, confidence=0.7))
-        return refs
-
-    def _build_ref(
-        self, match: re.Match[str], code: str, confidence: float
-    ) -> ExtractedRef:
-        section = match.group("section")
-        sub = match.group("sub") or ""
-        path_parts = ["us-ca", "statute", code, section]
-        path_parts.extend(_subsection_segments(sub))
-        return ExtractedRef(
-            raw_text=match.group(0),
-            pattern_kind=self.pattern_kind,
-            target_citation_path="/".join(path_parts),
-            start_offset=match.start(),
-            end_offset=match.end(),
-            confidence=confidence,
-        )
+    jurisdiction: ClassVar[str] = "us-ca"
+    law_codes: ClassVar[dict[str, str]] = _CA_LAW_CODES
+    suffix_term: ClassVar[str] = "code"
 
 
 # --- DC extractor ---------------------------------------------------------
