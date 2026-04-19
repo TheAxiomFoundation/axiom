@@ -41,8 +41,15 @@ UA = "Mozilla/5.0 (compatible; axiom-scraper/0.1; +https://axiom-foundation.org)
 AKN_NS = "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"
 
 
-def _http_get(url: str, retries: int = 3) -> str | None:
-    """GET a URL; returns None on 404 so missing titles/sections skip."""
+def _http_get(url: str, retries: int = 5) -> str | None:
+    """GET a URL; returns None on missing/redirect-to-gone so callers skip.
+
+    AZ's site emits HTTP 307 for sections that have been repealed or moved —
+    the redirect target is an error page, not usable content. And the
+    site throws 429 Too Many Requests when we fetch too fast from one IP;
+    back off aggressively in that case because the ban otherwise persists
+    for the whole run.
+    """
     last_exc: Exception | None = None
     for attempt in range(1, retries + 1):
         try:
@@ -50,14 +57,23 @@ def _http_get(url: str, retries: int = 3) -> str | None:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 return resp.read().decode("utf-8", errors="replace")
         except urllib.error.HTTPError as exc:
-            if exc.code == 404:
+            if exc.code in (404, 307, 410):
                 return None
+            if exc.code == 429:
+                # Longer backoff: AZ 429 persists and retrying too soon
+                # just deepens the block.
+                if attempt < retries:
+                    time.sleep(min(60.0, 10.0 * attempt))
+                    continue
             last_exc = exc
         except (urllib.error.URLError, TimeoutError) as exc:
             last_exc = exc
         if attempt < retries:
             time.sleep(min(8.0, 2.0**attempt))
-    raise RuntimeError(f"failed to fetch {url}: {last_exc}")
+    print(
+        f"  WARN skip {url}: {last_exc}", file=sys.stderr, flush=True
+    )
+    return None
 
 
 def list_section_urls_for_title(title: int) -> list[str]:
