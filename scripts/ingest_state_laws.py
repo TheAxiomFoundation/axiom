@@ -56,11 +56,22 @@ def deterministic_id(citation_path: str) -> str:
     return str(uuid5(NAMESPACE_URL, f"atlas:{citation_path}"))
 
 
-def ensure_repo(state: str, target: Path, update: bool) -> Path:
-    """Clone ``rules-us-{state}`` into ``target`` if missing; pull if present + update."""
+def ensure_repo(
+    state: str, target: Path, update: bool, explicit: bool = False
+) -> Path:
+    """Clone ``rules-us-{state}`` into ``target`` if missing; pull if present + update.
+
+    When ``explicit=True`` (user passed ``--repo-dir``), trust the caller:
+    don't try to clone a non-git directory, and don't pull. This lets a
+    locally-scraped tree be ingested in place.
+    """
     if target.exists() and (target / ".git").exists():
         if update:
             subprocess.run(["git", "-C", str(target), "pull", "--ff-only"], check=False)
+        return target
+    if explicit:
+        if not target.exists():
+            raise SystemExit(f"--repo-dir {target} does not exist")
         return target
     target.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(
@@ -181,8 +192,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     state = args.state.lower()
+    explicit = args.repo_dir is not None
     repo_dir = args.repo_dir or Path(f"/tmp/rules-us-{state}-ingest")
-    repo_dir = ensure_repo(state, repo_dir, args.update)
+    repo_dir = ensure_repo(state, repo_dir, args.update, explicit=explicit)
     uploader = None if args.dry_run else RuleUploader()
 
     started = time.time()
