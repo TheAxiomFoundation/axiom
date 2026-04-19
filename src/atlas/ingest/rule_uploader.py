@@ -1,5 +1,6 @@
 """Batched Supabase upsert for rules."""
 import os
+import sys
 import time
 from typing import Iterable
 import httpx
@@ -45,8 +46,25 @@ class RuleUploader:
         if not rules:
             return 0
 
+        # Postgres's tsvector column (FTS index on body) caps at 1MB of
+        # post-tokenization storage. A handful of state statutes contain
+        # giant parameter tables that blow this; truncate them to fit
+        # rather than failing the whole batch. The tsvector byte count
+        # roughly tracks the input length, so a conservative 900KB cap
+        # leaves headroom. Truncated rows keep the prefix (the header
+        # and definitions are usually at the top) and get a visible
+        # marker so downstream consumers know.
+        _TSVECTOR_CAP = 900_000
         for rule in rules:
             body = rule.get("body") or ""
+            if len(body.encode("utf-8")) > _TSVECTOR_CAP:
+                # Truncate by byte; decode errors are possible mid-
+                # codepoint so use the 'ignore' error handler.
+                truncated = body.encode("utf-8")[:_TSVECTOR_CAP].decode(
+                    "utf-8", errors="ignore"
+                )
+                body = truncated + "\n\n[… truncated by Atlas ingest: body exceeded FTS length cap]"
+                rule["body"] = body
             rule["line_count"] = len(body.split("\n"))
 
         def _do_post(c: httpx.Client) -> int:
@@ -75,6 +93,15 @@ class RuleUploader:
                     if (is_server_error or is_timeout) and attempt < max_retries - 1:
                         time.sleep(2**attempt)
                         continue
+                    # Surface the response body so triage doesn't need a
+                    # repro. Supabase returns JSON with code/message.
+                    if isinstance(e, httpx.HTTPStatusError):
+                        body = e.response.text[:500]
+                        print(
+                            f"  upsert failed {e.response.status_code}: {body}",
+                            file=sys.stderr,
+                            flush=True,
+                        )
                     raise
             return len(rules)
 
