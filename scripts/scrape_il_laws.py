@@ -155,7 +155,6 @@ def build_akn_xml(
         <FRBRWork>
           <FRBRthis value="/akn/us-il/act/ilcs/{chapter}-{act}-{section}"/>
           <FRBRuri value="/akn/us-il/act/ilcs/{chapter}-{act}-{section}"/>
-          <FRBRdate date="2026-01-01" name="enacted"/>
           <FRBRauthor href="#il-legislature"/>
           <FRBRcountry value="us-il"/>
           <FRBRnumber value="{chapter}-{act}-{section}"/>

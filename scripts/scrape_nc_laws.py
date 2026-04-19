@@ -138,7 +138,6 @@ def build_akn_xml(
         <FRBRWork>
           <FRBRthis value="/akn/us-nc/act/gs/{section}"/>
           <FRBRuri value="/akn/us-nc/act/gs/{section}"/>
-          <FRBRdate date="2026-01-01" name="enacted"/>
           <FRBRauthor href="#nc-legislature"/>
           <FRBRcountry value="us-nc"/>
           <FRBRnumber value="{section}"/>

@@ -248,21 +248,27 @@ class _StateSectionExtractor(Extractor):
 
     def __init_subclass__(cls, **kwargs: object) -> None:
         super().__init_subclass__(**kwargs)
-        if cls.law_codes:
-            cls._CROSS = re.compile(
-                r"\bsection\s+"
-                r"(?P<section>\d+[A-Za-z]?(?:[-.][A-Za-z0-9]+)?(?:\.[A-Za-z0-9]+)?)"
-                rf"(?P<sub>{_SUBSECTION_CHAIN})"
-                r"\s+of\s+the\s+"
-                r"(?P<law>"
-                + "|".join(
-                    re.escape(name)
-                    for name in sorted(cls.law_codes, key=len, reverse=True)
-                )
-                + r")"
-                rf"\s+{re.escape(cls.suffix_term)}\b",
-                re.IGNORECASE,
+        if not cls.law_codes:
+            raise TypeError(
+                f"{cls.__name__} must define a non-empty ``law_codes`` "
+                "mapping — the base extractor needs one name → code entry "
+                "to build its cross-law regex"
             )
+        cls._CROSS = re.compile(
+            r"\bsection\s+"
+            r"(?P<section>\d+[A-Za-z]?(?:[-.][A-Za-z0-9]+)?(?:\.[A-Za-z0-9]+)?)"
+            rf"(?P<sub>{_SUBSECTION_CHAIN})"
+            r"\s+of\s+the\s+"
+            r"(?P<law>"
+            + "|".join(
+                re.escape(name)
+                for name in sorted(cls.law_codes, key=len, reverse=True)
+            )
+            + r")"
+            rf"\s+{re.escape(cls.suffix_term)}\b",
+            re.IGNORECASE,
+        )
+        cls._valid_codes = frozenset(cls.law_codes.values())
 
     source_citation_path: str | None = None
 
@@ -292,7 +298,7 @@ class _StateSectionExtractor(Extractor):
             refs.append(self._build_ref(m, code, confidence=1.0))
 
         enclosing = self._enclosing_code(self.source_citation_path)
-        if enclosing is not None and enclosing in set(self.law_codes.values()):
+        if enclosing is not None and enclosing in self._valid_codes:
             for m in self._INTRA.finditer(body):
                 tail = body[m.end() :]
                 if self._TAIL_NOT_INTRA.match(tail):

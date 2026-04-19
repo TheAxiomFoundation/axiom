@@ -161,14 +161,31 @@ def iter_sections(repo_dir: Path):
     Regulations (``regulations/`` at repo root) are intentionally
     skipped — they have a different schema story and we haven't
     picked a path layout for them yet.
+
+    Hidden directories (``.git``, ``.idea``, etc.) and conventional
+    non-data trees (``node_modules``) are pruned during the walk so
+    the recursive rglob doesn't accidentally pick up stray XML that
+    lives in tool caches inside a statute tree.
     """
     statutes = repo_dir / "statutes"
     if not statutes.is_dir():
         return
+
+    skip_names = {"node_modules", "__pycache__"}
+
+    def _walk(d: Path):
+        for entry in sorted(d.iterdir()):
+            if entry.name.startswith(".") or entry.name in skip_names:
+                continue
+            if entry.is_dir():
+                yield from _walk(entry)
+            elif entry.is_file() and entry.suffix == ".xml":
+                yield entry
+
     for law_dir in sorted(p for p in statutes.iterdir() if p.is_dir()):
-        if law_dir.name.startswith("."):
+        if law_dir.name.startswith(".") or law_dir.name in skip_names:
             continue
-        for xml_path in sorted(law_dir.rglob("*.xml")):
+        for xml_path in _walk(law_dir):
             yield law_dir.name, xml_path
 
 

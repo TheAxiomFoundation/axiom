@@ -164,7 +164,6 @@ def build_akn_xml(
         <FRBRWork>
           <FRBRthis value="/akn/us-nv/act/nrs/{section}"/>
           <FRBRuri value="/akn/us-nv/act/nrs/{section}"/>
-          <FRBRdate date="2026-01-01" name="enacted"/>
           <FRBRauthor href="#nv-legislature"/>
           <FRBRcountry value="us-nv"/>
           <FRBRnumber value="{section}"/>
