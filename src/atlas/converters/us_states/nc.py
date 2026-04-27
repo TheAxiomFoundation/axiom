@@ -121,7 +121,7 @@ class NCConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 

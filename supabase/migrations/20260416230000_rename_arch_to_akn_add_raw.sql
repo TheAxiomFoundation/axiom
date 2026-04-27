@@ -1,9 +1,9 @@
--- Rename 'arch' to 'akn'.
+-- Rename 'arch' to 'arch'.
 --
 -- Reason: 'arch' is being repurposed as Cosilico's namespace for raw
 -- source-data files (microdata, aggregates). In Atlas, the data in
 -- this schema is structured, normalized, citation-addressable — more
--- Akoma Ntoso-inspired than archival-raw. 'akn' names the layer; a
+-- Akoma Ntoso-inspired than archival-raw. 'arch' names the layer; a
 -- future 'raw' schema will hold upstream-fetch provenance.
 --
 -- ALTER SCHEMA RENAME is atomic and preserves all grants, RLS policies,
@@ -11,7 +11,7 @@
 -- immediately; clients still sending the old 'Accept-Profile: arch'
 -- header will fail until their code is updated.
 
-ALTER SCHEMA arch RENAME TO akn;
+ALTER SCHEMA arch RENAME TO arch;
 
 -- Forward-looking scaffold for raw-fetch provenance. The table starts
 -- empty; future ingest pipelines will write one row per upstream fetch
@@ -39,7 +39,7 @@ CREATE INDEX IF NOT EXISTS idx_raw_fetched_documents_upstream
 CREATE INDEX IF NOT EXISTS idx_raw_fetched_documents_sha
   ON raw.fetched_documents (content_sha256);
 
--- Symmetric to the akn schema: service_role writes, public reads,
+-- Symmetric to the arch schema: service_role writes, public reads,
 -- RLS on for defense-in-depth.
 GRANT USAGE ON SCHEMA raw TO postgres, service_role, anon, authenticated;
 GRANT ALL ON TABLE raw.fetched_documents TO postgres, service_role;
@@ -51,12 +51,12 @@ CREATE POLICY anon_read ON raw.fetched_documents
 CREATE POLICY authenticated_read ON raw.fetched_documents
   FOR SELECT TO authenticated USING (true);
 
--- Eventually akn.rules.source_document_id FK here. Adding the column
+-- Eventually arch.rules.source_document_id FK here. Adding the column
 -- today (nullable) so the backfill path is a pure UPDATE, not a
 -- schema migration + backfill.
-ALTER TABLE akn.rules
+ALTER TABLE arch.rules
   ADD COLUMN IF NOT EXISTS source_document_id UUID
     REFERENCES raw.fetched_documents(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_rules_source_document
-  ON akn.rules (source_document_id)
+  ON arch.rules (source_document_id)
   WHERE source_document_id IS NOT NULL;

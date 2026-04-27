@@ -11,13 +11,13 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================================================
 -- SOURCES: Document identifiers and metadata
 -- ============================================================================
--- Path structure mirrors cosilico-us: us/guidance/irs/rp-23-34
+-- Path structure mirrors rules-us: us/guidance/irs/rp-23-34
 -- This is the stable identifier for a document across all versions
 
 CREATE TABLE IF NOT EXISTS sources (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
-    -- Path is the stable identifier, matches cosilico-us structure
+    -- Path is the stable identifier, matches rules-us structure
     -- e.g., "us/guidance/irs/rp-23-34", "us/statute/26/32"
     path TEXT NOT NULL UNIQUE,
 
@@ -87,12 +87,12 @@ CREATE INDEX idx_versions_retrieved ON versions(retrieved_at);
 -- ============================================================================
 -- REFS: References from encoded law to source documents
 -- ============================================================================
--- Links cosilico-us variables to their authoritative sources
+-- Links rules-us variables to their authoritative sources
 
 CREATE TABLE IF NOT EXISTS refs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
-    -- What's referencing (cosilico-us path)
+    -- What's referencing (rules-us path)
     variable_path TEXT NOT NULL,  -- e.g., "us/26/32/eitc"
 
     -- What's being referenced

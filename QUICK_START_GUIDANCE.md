@@ -109,7 +109,7 @@ python scripts/query_guidance.py
 
 ## For AI Agents
 
-When encoding EITC parameters in rac-us:
+When encoding EITC parameters in rules-us:
 
 ```python
 # 1. Find source document
@@ -121,7 +121,7 @@ doc = [d for d in eitc_docs if 2024 in d.tax_years][0]
 pdf_url = doc.pdf_url  # Download and parse tables
 
 # 3. Cite in encoding
-# rac-us/26/32/eitc.rac
+# rules-us/26/32/eitc.yaml
 #   max_credit: 7830  # Rev. Proc. 2023-34, Table 1
 ```
 
@@ -131,6 +131,6 @@ See `GUIDANCE_DOCS.md` for complete API reference and `SUMMARY.md` for implement
 
 ## Database Location
 
-`/Users/maxghenis/RulesFoundation/atlas/atlas.db`
+`/Users/maxghenis/TheAxiomFoundation/atlas/atlas.db`
 
 Schema: `schema/002_guidance_documents.sql`

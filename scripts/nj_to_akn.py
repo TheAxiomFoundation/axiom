@@ -65,7 +65,7 @@ def fetch_title_toc(title: str) -> list[dict]:
     client = httpx.Client(
         timeout=60.0,
         headers={
-            "User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)",
+            "User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)",
             "Accept": "text/html,application/xhtml+xml",
         },
         follow_redirects=True,
@@ -123,14 +123,16 @@ def _parse_section_links(soup: BeautifulSoup, title: str) -> list[dict]:
         if match:
             section_num = match.group(1)
             # Extract title from text after section number
-            title_text = text[match.end():].strip()
+            title_text = text[match.end() :].strip()
             title_text = title_text.lstrip(".").strip()
 
-            sections.append({
-                "section_number": section_num,
-                "title": title_text or f"Section {section_num}",
-                "url": href if href.startswith("http") else f"{BASE_URL}/{href}",
-            })
+            sections.append(
+                {
+                    "section_number": section_num,
+                    "title": title_text or f"Section {section_num}",
+                    "url": href if href.startswith("http") else f"{BASE_URL}/{href}",
+                }
+            )
 
     return sections
 
@@ -148,7 +150,7 @@ def fetch_section_content(url: str, section_number: str) -> dict:
     client = httpx.Client(
         timeout=60.0,
         headers={
-            "User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)",
+            "User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)",
             "Accept": "text/html,application/xhtml+xml",
         },
         follow_redirects=True,
@@ -213,10 +215,12 @@ def _parse_subsections(text: str) -> list[dict]:
     for part in parts[1:]:  # Skip content before first subsection
         match = re.match(r"\((\d+)\)\s*", part)
         if match:
-            subsections.append({
-                "id": match.group(1),
-                "text": part[match.end():].strip()[:2000],  # Limit size
-            })
+            subsections.append(
+                {
+                    "id": match.group(1),
+                    "text": part[match.end() :].strip()[:2000],  # Limit size
+                }
+            )
 
     return subsections
 
@@ -324,8 +328,8 @@ def create_akn_xml(section: dict, title_num: str, title_name: str) -> str:
 
     tlc_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     tlc_rf.set("eId", "rules-foundation")
-    tlc_rf.set("href", "https://rules.foundation")
-    tlc_rf.set("showAs", "Rules Foundation")
+    tlc_rf.set("href", "https://axiom-foundation.org")
+    tlc_rf.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -475,8 +479,8 @@ def create_title_index_xml(title_num: str, title_name: str, sections: list[dict]
 
     tlc_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     tlc_rf.set("eId", "rules-foundation")
-    tlc_rf.set("href", "https://rules.foundation")
-    tlc_rf.set("showAs", "Rules Foundation")
+    tlc_rf.set("href", "https://axiom-foundation.org")
+    tlc_rf.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -495,7 +499,10 @@ def create_title_index_xml(title_num: str, title_name: str, sections: list[dict]
     # Section references
     for sec in sections:
         sec_ref = ET.SubElement(title_elem, f"{{{AKN_NS}}}tocItem")
-        sec_ref.set("href", f"#sec_{sec['section_number'].replace(':', '_').replace('-', '_').replace('.', '_')}")
+        sec_ref.set(
+            "href",
+            f"#sec_{sec['section_number'].replace(':', '_').replace('-', '_').replace('.', '_')}",
+        )
         sec_ref.set("level", "1")
         sec_ref.text = f"{sec['section_number']} - {sec['title']}"
 
@@ -558,7 +565,7 @@ def convert_title(title_num: str, output_dir: Path) -> dict:
         # Convert each section
         for i, sec_info in enumerate(sections):
             section_num = sec_info["section_number"]
-            print(f"  [{i+1}/{len(sections)}] Converting {section_num}...")
+            print(f"  [{i + 1}/{len(sections)}] Converting {section_num}...")
 
             try:
                 # Fetch section content
@@ -673,7 +680,9 @@ def main():
         total_errors = sum(len(s["errors"]) for s in all_stats)
 
         for stats in all_stats:
-            print(f"  Title {stats['title']}: {stats['sections_converted']}/{stats['sections_found']} sections")
+            print(
+                f"  Title {stats['title']}: {stats['sections_converted']}/{stats['sections_found']} sections"
+            )
 
         print()
         print(f"Total sections found:     {total_found}")

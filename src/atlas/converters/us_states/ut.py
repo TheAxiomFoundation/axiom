@@ -164,7 +164,7 @@ class UTConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -209,9 +209,7 @@ class UTConverter:
         title, chapter, section = self._parse_section_number(section_number)
         return f"{BASE_URL}/Title{title}/Chapter{chapter}/{title}-{chapter}-S{section}.html"
 
-    def _build_section_content_url(
-        self, section_number: str, version: str | None = None
-    ) -> str:
+    def _build_section_content_url(self, section_number: str, version: str | None = None) -> str:
         """Build the URL for actual section content.
 
         Args:
@@ -245,7 +243,9 @@ class UTConverter:
         if match:
             return match.group(1)
         # Fallback: try to find in versionArr
-        match = re.search(r"\['C[^_]+_(\d+)\.html',\s*'Current Version'", wrapper_html)  # pragma: no cover
+        match = re.search(
+            r"\['C[^_]+_(\d+)\.html',\s*'Current Version'", wrapper_html
+        )  # pragma: no cover
         if match:  # pragma: no cover
             return match.group(1)  # pragma: no cover
         return None  # pragma: no cover
@@ -318,7 +318,9 @@ class UTConverter:
         if not section_title:
             text_content = soup.get_text()  # pragma: no cover
             # Pattern: 59-10-104. Title text here.
-            pattern = rf"{re.escape(section_number)}\.\s*([^.]+(?:\s+--\s+[^.]+)*)"  # pragma: no cover
+            pattern = (
+                rf"{re.escape(section_number)}\.\s*([^.]+(?:\s+--\s+[^.]+)*)"  # pragma: no cover
+            )
             match = re.search(pattern, text_content)  # pragma: no cover
             if match:  # pragma: no cover
                 section_title = match.group(1).strip()  # pragma: no cover
@@ -335,7 +337,7 @@ class UTConverter:
                         int(eff_match.group(1).split("/")[0]),
                         int(eff_match.group(1).split("/")[1]),
                     )
-                except (ValueError, IndexError):  # pragma: no cover
+                except ValueError, IndexError:  # pragma: no cover
                     pass
 
         # Get content
@@ -459,9 +461,7 @@ class UTConverter:
             text = self._get_direct_text(content_cell)
 
             # Parse grandchild subsections (i), (ii), etc.
-            grandchildren = self._parse_grandchild_subsections(
-                content_cell, anchor_id
-            )
+            grandchildren = self._parse_grandchild_subsections(content_cell, anchor_id)
 
             children.append(
                 ParsedUTSubsection(
@@ -480,9 +480,7 @@ class UTConverter:
         grandchildren = []
 
         # Look for anchors like 59-10-104(1)(a)(i)
-        grandchild_pattern = re.compile(
-            rf"^{re.escape(parent_anchor_base)}\(([ivxlcdm]+)\)$"
-        )
+        grandchild_pattern = re.compile(rf"^{re.escape(parent_anchor_base)}\(([ivxlcdm]+)\)$")
 
         for anchor in parent_cell.find_all("a", id=grandchild_pattern):  # pragma: no cover
             anchor_id = anchor.get("id", "")
@@ -585,9 +583,7 @@ class UTConverter:
         try:
             wrapper_html = self._get(wrapper_url)
         except httpx.HTTPStatusError as e:
-            raise UTConverterError(
-                f"Section {section_number} not found: {e}", wrapper_url
-            )
+            raise UTConverterError(f"Section {section_number} not found: {e}", wrapper_url)
 
         version = self._get_current_version(wrapper_html)
 
@@ -600,14 +596,10 @@ class UTConverter:
             content_url = self._build_section_content_url(section_number, None)  # pragma: no cover
             content_html = self._get(content_url)  # pragma: no cover
 
-        parsed = self._parse_section_html(
-            content_html, section_number, content_url, version
-        )
+        parsed = self._parse_section_html(content_html, section_number, content_url, version)
         return self._to_section(parsed)
 
-    def get_part_section_numbers(
-        self, title: str, chapter: str, part: str
-    ) -> list[str]:
+    def get_part_section_numbers(self, title: str, chapter: str, part: str) -> list[str]:
         """Get list of section numbers in a part.
 
         Args:
@@ -627,9 +619,7 @@ class UTConverter:
 
         if child_table:
             # Pattern: href=".../{title}-{chapter}-S{section}.html..."
-            pattern = re.compile(
-                rf"{re.escape(title)}-{re.escape(chapter)}-S([\d.]+)\.html"
-            )
+            pattern = re.compile(rf"{re.escape(title)}-{re.escape(chapter)}-S([\d.]+)\.html")
             for link in child_table.find_all("a", href=pattern):
                 href = link.get("href", "")
                 match = pattern.search(href)
@@ -659,9 +649,7 @@ class UTConverter:
 
         if child_table:
             # Pattern: href=".../{title}-{chapter}-P{part}.html..."
-            pattern = re.compile(
-                rf"{re.escape(title)}-{re.escape(chapter)}-P(\d+)\.html"
-            )
+            pattern = re.compile(rf"{re.escape(title)}-{re.escape(chapter)}-P(\d+)\.html")
             for link in child_table.find_all("a", href=pattern):
                 href = link.get("href", "")
                 match = pattern.search(href)

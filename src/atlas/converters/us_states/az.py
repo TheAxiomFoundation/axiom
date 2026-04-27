@@ -186,7 +186,7 @@ class AZConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -538,9 +538,7 @@ class AZConverter:
 
         return section_numbers
 
-    def iter_title(
-        self, title: int, chapter: int | None = None
-    ) -> Iterator[Section]:
+    def iter_title(self, title: int, chapter: int | None = None) -> Iterator[Section]:
         """Iterate over all sections in a title.
 
         Args:

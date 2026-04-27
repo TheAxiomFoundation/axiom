@@ -30,6 +30,7 @@ AKN_NS = "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"
 @dataclass
 class MNSubsection:
     """A parsed subdivision/subsection from MN HTML."""
+
     identifier: str  # e.g., "1", "1a", "2"
     headnote: str  # The subdivision heading
     paragraphs: list[str] = field(default_factory=list)  # Text paragraphs
@@ -39,6 +40,7 @@ class MNSubsection:
 @dataclass
 class MNSection:
     """A parsed section from MN statute HTML."""
+
     citation: str  # e.g., "105.63", "609.75"
     chapter: str  # e.g., "105", "609"
     title: str  # Section heading, e.g., "GAMBLING; DEFINITIONS."
@@ -436,7 +438,7 @@ if __name__ == "__main__":
     import sys
 
     # Default paths
-    input_dir = Path("/Users/maxghenis/RulesFoundation/atlas/data/statutes/us-mn")
+    input_dir = Path("/Users/maxghenis/TheAxiomFoundation/atlas/data/statutes/us-mn")
     output_dir = Path("/tmp/rules-us-mn-akn")
 
     converter = MNStatutesToAKN()

@@ -159,16 +159,16 @@ IL_CHAPTER_IDS: dict[int, int] = {
 # These IDs are from ilga.gov website
 IL_ACT_IDS: dict[tuple[int, int], int] = {
     # Chapter 35 - Revenue
-    (35, 5): 577,     # Illinois Income Tax Act
-    (35, 10): 578,    # Economic Development Tax Credit Act
-    (35, 105): 594,   # Property Tax Code
-    (35, 115): 598,   # Motor Fuel Tax Law
-    (35, 120): 599,   # Retailers' Occupation Tax Act
-    (35, 130): 603,   # Use Tax Act
-    (35, 135): 604,   # Service Use Tax Act
-    (35, 140): 605,   # Service Occupation Tax Act
+    (35, 5): 577,  # Illinois Income Tax Act
+    (35, 10): 578,  # Economic Development Tax Credit Act
+    (35, 105): 594,  # Property Tax Code
+    (35, 115): 598,  # Motor Fuel Tax Law
+    (35, 120): 599,  # Retailers' Occupation Tax Act
+    (35, 130): 603,  # Use Tax Act
+    (35, 135): 604,  # Service Use Tax Act
+    (35, 140): 605,  # Service Occupation Tax Act
     # Chapter 305 - Public Aid
-    (305, 5): 2265,   # Illinois Public Aid Code
+    (305, 5): 2265,  # Illinois Public Aid Code
 }
 
 
@@ -242,7 +242,7 @@ class ILConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
                 follow_redirects=True,
             )
         return self._client
@@ -407,7 +407,7 @@ class ILConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse second-level children (1), (2), etc.
             children = self._parse_level2(content)
@@ -449,7 +449,7 @@ class ILConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse third-level children (A), (B), etc.
             children = self._parse_level3(content)
@@ -496,7 +496,7 @@ class ILConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Limit content and stop at next subsection markers
             next_num = re.search(r"\(\d+\)", content)
@@ -620,10 +620,7 @@ class ILConverter:
         chapter_id = IL_CHAPTER_IDS.get(chapter, chapter)
 
         # Try the details URL pattern
-        url = (
-            f"{BASE_URL}/legislation/ILCS/ilcs5.asp?"
-            f"ActID={act}&ChapterID={chapter_id}"
-        )
+        url = f"{BASE_URL}/legislation/ILCS/ilcs5.asp?ActID={act}&ChapterID={chapter_id}"
 
         try:
             html = self._get(url)
@@ -663,7 +660,9 @@ class ILConverter:
                 yield self.fetch_section_by_parts(chapter, act, section_num)
             except ILConverterError as e:  # pragma: no cover
                 # Log but continue with other sections
-                print(f"Warning: Could not fetch {chapter} ILCS {act}/{section_num}: {e}")  # pragma: no cover
+                print(
+                    f"Warning: Could not fetch {chapter} ILCS {act}/{section_num}: {e}"
+                )  # pragma: no cover
                 continue  # pragma: no cover
 
     def iter_revenue_acts(self) -> Iterator[Section]:

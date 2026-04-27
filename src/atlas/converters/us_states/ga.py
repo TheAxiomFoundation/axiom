@@ -203,7 +203,7 @@ class GAConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -268,7 +268,9 @@ class GAConverter:
         """
         parts = section_number.split("-")
         if len(parts) < 3:
-            raise GAConverterError(f"Invalid section number format: {section_number}")  # pragma: no cover
+            raise GAConverterError(
+                f"Invalid section number format: {section_number}"
+            )  # pragma: no cover
 
         title_num = int(parts[0])
         chapter = parts[1]
@@ -290,7 +292,9 @@ class GAConverter:
             # Check if it's an actual error page
             title_elem = soup.find("title")  # pragma: no cover
             if title_elem and "error" in title_elem.get_text().lower():  # pragma: no cover
-                raise GAConverterError(f"Section {section_number} not found", url)  # pragma: no cover
+                raise GAConverterError(
+                    f"Section {section_number} not found", url
+                )  # pragma: no cover
 
         title_num, chapter, _ = self._parse_section_number_parts(section_number)
 
@@ -343,7 +347,9 @@ class GAConverter:
                 title_text = title_tag.get_text(strip=True)
                 if section_number in title_text:
                     # Extract after section number
-                    match = re.search(rf"{re.escape(section_number)}[.\s]+(.+)", title_text)  # pragma: no cover
+                    match = re.search(
+                        rf"{re.escape(section_number)}[.\s]+(.+)", title_text
+                    )  # pragma: no cover
                     if match:  # pragma: no cover
                         section_title = match.group(1).strip()  # pragma: no cover
 
@@ -360,7 +366,9 @@ class GAConverter:
 
         if content_elem:
             # Remove navigation and scripts
-            for elem in content_elem.find_all(["nav", "script", "style", "header", "footer"]):  # pragma: no cover
+            for elem in content_elem.find_all(
+                ["nav", "script", "style", "header", "footer"]
+            ):  # pragma: no cover
                 elem.decompose()
             text = content_elem.get_text(separator="\n", strip=True)
             html_content = str(content_elem)
@@ -383,9 +391,7 @@ class GAConverter:
         # Try to detect article from breadcrumb or content
         article = None
         article_title = None
-        article_match = re.search(
-            r"Article\s+(\d+)[.\s]+([^\n]+)", text, re.IGNORECASE
-        )
+        article_match = re.search(r"Article\s+(\d+)[.\s]+([^\n]+)", text, re.IGNORECASE)
         if article_match:  # pragma: no cover
             article = article_match.group(1)
             article_title = article_match.group(2).strip()
@@ -430,7 +436,7 @@ class GAConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse second-level children (1), (2), etc.
             children = self._parse_numeric_subsections(content)
@@ -476,7 +482,7 @@ class GAConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse uppercase letter children (A), (B), etc.
             children = self._parse_uppercase_subsections(content)
@@ -518,7 +524,7 @@ class GAConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Limit to reasonable size
             next_marker = re.search(r"\([A-Z]\)|\(\d+\)", content)
@@ -717,7 +723,9 @@ class GAConverter:
         elif title == 49:  # pragma: no cover
             chapters = list(GA_SOCIAL_SERVICES_CHAPTERS.keys())  # pragma: no cover
         else:
-            raise GAConverterError(f"Title {title} not configured for iteration")  # pragma: no cover
+            raise GAConverterError(
+                f"Title {title} not configured for iteration"
+            )  # pragma: no cover
 
         for chapter in chapters:  # pragma: no cover
             try:  # pragma: no cover

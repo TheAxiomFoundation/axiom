@@ -117,11 +117,11 @@ def create_references() -> ET.Element:
     org_nmcc.set("href", "https://www.nmcompcomm.us")
     org_nmcc.set("showAs", "New Mexico Compilation Commission")
 
-    # Rules Foundation
+    # The Axiom Foundation
     org_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     org_rf.set("eId", "rules-foundation")
-    org_rf.set("href", "https://rules.foundation")
-    org_rf.set("showAs", "Rules Foundation")
+    org_rf.set("href", "https://axiom-foundation.org")
+    org_rf.set("showAs", "The Axiom Foundation")
 
     return references
 
@@ -247,15 +247,15 @@ def generate_chapter(chapter_num: int | str, output_dir: Path) -> bool:
     output_file.write_text(xml_content, encoding="utf-8")
 
     article_count = len(articles) if articles else 0
-    print(f"  Chapter {chapter_num}: {chapter_name} ({article_count} articles) -> {output_file.name}")
+    print(
+        f"  Chapter {chapter_num}: {chapter_name} ({article_count} articles) -> {output_file.name}"
+    )
 
     return True
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Convert New Mexico Statutes to Akoma Ntoso XML"
-    )
+    parser = argparse.ArgumentParser(description="Convert New Mexico Statutes to Akoma Ntoso XML")
     parser.add_argument(
         "--chapters",
         action="store_true",

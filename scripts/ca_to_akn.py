@@ -47,20 +47,31 @@ OUTPUT_DIR = Path("/tmp/rules-us-ca-akn")
 KEY_SECTIONS = {
     "RTC": [
         # Personal income tax
-        "17041", "17041.5", "17043", "17044",
+        "17041",
+        "17041.5",
+        "17043",
+        "17044",
         # California EITC (CalEITC)
         "17052",
         # Young child tax credit
         "17052.1",
         # Exemptions and deductions
-        "17054", "17054.5", "17054.6", "17054.7",
+        "17054",
+        "17054.5",
+        "17054.6",
+        "17054.7",
         # Standard deduction
         "17073.5",
         # Credits
-        "17052", "17052.5", "17052.6", "17052.10", "17052.12",
+        "17052",
+        "17052.5",
+        "17052.6",
+        "17052.10",
+        "17052.12",
         "17052.25",
         # Child care credit
-        "17052.17", "17052.18",
+        "17052.17",
+        "17052.18",
         # Renter's credit
         "17053.5",
         # Senior head of household credit
@@ -68,22 +79,41 @@ KEY_SECTIONS = {
     ],
     "WIC": [
         # CalWORKs
-        "11320", "11320.1", "11320.3", "11322", "11322.8",
-        "11450", "11450.5", "11451", "11453",
+        "11320",
+        "11320.1",
+        "11320.3",
+        "11322",
+        "11322.8",
+        "11450",
+        "11450.5",
+        "11451",
+        "11453",
         # CalFresh/SNAP
-        "18900", "18901", "18904",
+        "18900",
+        "18901",
+        "18904",
         # Child care
-        "10207", "10209", "10210", "10211",
+        "10207",
+        "10209",
+        "10210",
+        "10211",
         # Medi-Cal
-        "14005", "14005.7", "14007",
+        "14005",
+        "14005.7",
+        "14007",
     ],
     "UIC": [
         # State Disability Insurance
-        "2655", "2656", "2656.1",
+        "2655",
+        "2656",
+        "2656.1",
         # Paid Family Leave
-        "3301", "3302",
+        "3301",
+        "3302",
         # Unemployment Insurance
-        "1252", "1253", "1253.5",
+        "1252",
+        "1253",
+        "1253.5",
     ],
 }
 
@@ -171,7 +201,7 @@ def statute_to_akn_xml(statute: Statute) -> str:
     # TLC references
     arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://rules.foundation")
+    arch_ref.set("href", "https://axiom-foundation.org")
     arch_ref.set("showAs", "Atlas")
 
     ca_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
@@ -259,7 +289,9 @@ def statute_to_akn_xml(statute: Statute) -> str:
         return '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_str
 
 
-def add_subsection_to_xml(parent: ET.Element, sub: StatuteSubsection, parent_id: str, level: int) -> None:
+def add_subsection_to_xml(
+    parent: ET.Element, sub: StatuteSubsection, parent_id: str, level: int
+) -> None:
     """Add a subsection element to the XML tree.
 
     Args:
@@ -347,9 +379,7 @@ def fetch_and_convert(converter: CAStateConverter, ref: str, output_dir: Path) -
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Convert California statutes to Akoma Ntoso XML"
-    )
+    parser = argparse.ArgumentParser(description="Convert California statutes to Akoma Ntoso XML")
     parser.add_argument(
         "--sections",
         type=str,

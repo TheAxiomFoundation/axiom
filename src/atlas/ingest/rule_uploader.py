@@ -1,4 +1,5 @@
 """Batched Supabase upsert for rules."""
+
 import os
 import sys
 import time
@@ -11,7 +12,7 @@ _TIMEOUT = httpx.Timeout(180.0, connect=30.0, read=180.0, write=180.0)
 class RuleUploader:
     def __init__(self, url: str | None = None, key: str | None = None):
         self.url = url or os.environ.get(
-            "COSILICO_SUPABASE_URL",
+            "AXIOM_SUPABASE_URL",
             "https://nsupqhfchdtqclomlrgs.supabase.co",
         )
         self.key = key or self._get_service_key()
@@ -21,9 +22,7 @@ class RuleUploader:
         """Get service role key from Supabase Management API."""
         access_token = os.environ.get("SUPABASE_ACCESS_TOKEN")
         if not access_token:
-            raise ValueError(
-                "SUPABASE_ACCESS_TOKEN env var required to get service key"
-            )
+            raise ValueError("SUPABASE_ACCESS_TOKEN env var required to get service key")
         project_ref = self.url.split("//")[1].split(".")[0]
         with httpx.Client() as client:
             response = client.get(
@@ -60,9 +59,7 @@ class RuleUploader:
             if len(body.encode("utf-8")) > _TSVECTOR_CAP:
                 # Truncate by byte; decode errors are possible mid-
                 # codepoint so use the 'ignore' error handler.
-                truncated = body.encode("utf-8")[:_TSVECTOR_CAP].decode(
-                    "utf-8", errors="ignore"
-                )
+                truncated = body.encode("utf-8")[:_TSVECTOR_CAP].decode("utf-8", errors="ignore")
                 body = truncated + "\n\n[… truncated by Atlas ingest: body exceeded FTS length cap]"
                 rule["body"] = body
             rule["line_count"] = len(body.split("\n"))
@@ -76,7 +73,7 @@ class RuleUploader:
                             "apikey": self.key,
                             "Authorization": f"Bearer {self.key}",
                             "Content-Type": "application/json",
-                            "Content-Profile": "akn",
+                            "Content-Profile": "arch",
                             "Prefer": "resolution=ignore-duplicates,return=minimal",
                         },
                         json=rules,
@@ -85,8 +82,7 @@ class RuleUploader:
                     return len(rules)
                 except (httpx.ReadTimeout, httpx.HTTPStatusError) as e:
                     is_server_error = (
-                        isinstance(e, httpx.HTTPStatusError)
-                        and e.response.status_code >= 500
+                        isinstance(e, httpx.HTTPStatusError) and e.response.status_code >= 500
                     )
                     is_timeout = isinstance(e, httpx.ReadTimeout)
 
@@ -110,9 +106,7 @@ class RuleUploader:
         with httpx.Client(timeout=_TIMEOUT) as c:
             return _do_post(c)
 
-    def upsert_all(
-        self, rules: list[dict] | Iterable[dict], batch_size: int = 50
-    ) -> int:
+    def upsert_all(self, rules: list[dict] | Iterable[dict], batch_size: int = 50) -> int:
         """Deduplicate by citation_path then batch upsert."""
         # Deduplicate in single pass: last wins
         seen: dict[str, dict] = {}

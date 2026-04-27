@@ -47,7 +47,9 @@ def make_element(tag: str, attrib: dict = None, text: str = None) -> ET.Element:
     return elem
 
 
-def make_subelement(parent: ET.Element, tag: str, attrib: dict = None, text: str = None) -> ET.Element:
+def make_subelement(
+    parent: ET.Element, tag: str, attrib: dict = None, text: str = None
+) -> ET.Element:
     """Create a subelement in the AKN namespace."""
     elem = ET.SubElement(parent, f"{{{AKN_NS}}}{tag}", attrib or {})
     if text:
@@ -57,9 +59,9 @@ def make_subelement(parent: ET.Element, tag: str, attrib: dict = None, text: str
 
 def sanitize_id(text: str) -> str:
     """Convert text to a valid XML ID."""
-    text = re.sub(r'[^\w\s-]', '', str(text))
-    text = re.sub(r'\s+', '_', text)
-    text = re.sub(r'-+', '-', text)
+    text = re.sub(r"[^\w\s-]", "", str(text))
+    text = re.sub(r"\s+", "_", text)
+    text = re.sub(r"-+", "-", text)
     return text.lower()[:50]
 
 
@@ -109,16 +111,24 @@ def create_akn_chapter_document(chapter_num: str, chapter_name: str, sections: l
 
     # References
     references = make_subelement(meta, "references", {"source": "#rules-foundation"})
-    make_subelement(references, "TLCOrganization", {
-        "eId": "massachusetts-legislature",
-        "href": "https://malegislature.gov",
-        "showAs": "Massachusetts Legislature"
-    })
-    make_subelement(references, "TLCOrganization", {
-        "eId": "rules-foundation",
-        "href": "https://rules.foundation",
-        "showAs": "Rules Foundation"
-    })
+    make_subelement(
+        references,
+        "TLCOrganization",
+        {
+            "eId": "massachusetts-legislature",
+            "href": "https://malegislature.gov",
+            "showAs": "Massachusetts Legislature",
+        },
+    )
+    make_subelement(
+        references,
+        "TLCOrganization",
+        {
+            "eId": "rules-foundation",
+            "href": "https://axiom-foundation.org",
+            "showAs": "The Axiom Foundation",
+        },
+    )
 
     # Body
     body = make_subelement(act, "body")
@@ -212,8 +222,8 @@ def write_akn_file(root: ET.Element, output_path: Path):
     indent_xml(root)
     tree = ET.ElementTree(root)
 
-    with open(output_path, 'wb') as f:
-        tree.write(f, encoding='UTF-8', xml_declaration=True)
+    with open(output_path, "wb") as f:
+        tree.write(f, encoding="UTF-8", xml_declaration=True)
 
 
 def main():
@@ -228,11 +238,11 @@ def main():
 
     # Track statistics
     stats = {
-        'total_chapters': len(all_chapters),
-        'converted': 0,
-        'sections': 0,
-        'errors': 0,
-        'chapters_with_errors': []
+        "total_chapters": len(all_chapters),
+        "converted": 0,
+        "sections": 0,
+        "errors": 0,
+        "chapters_with_errors": [],
     }
 
     print(f"Converting {len(all_chapters)} Massachusetts General Laws chapters to Akoma Ntoso XML")
@@ -249,7 +259,7 @@ def main():
 
                 if not sections:
                     print(f"  Warning: No sections found for Chapter {chapter_num}")
-                    stats['chapters_with_errors'].append(chapter_num)
+                    stats["chapters_with_errors"].append(chapter_num)
                     continue
 
                 print(f"  Fetched {len(sections)} sections")
@@ -263,15 +273,15 @@ def main():
                 write_akn_file(akn_root, output_path)
 
                 # Update stats
-                stats['converted'] += 1
-                stats['sections'] += len(sections)
+                stats["converted"] += 1
+                stats["sections"] += len(sections)
 
                 print(f"  -> {output_filename} ({len(sections)} sections)")
 
             except Exception as e:
                 print(f"  Error processing Chapter {chapter_num}: {e}")
-                stats['errors'] += 1
-                stats['chapters_with_errors'].append(chapter_num)
+                stats["errors"] += 1
+                stats["chapters_with_errors"].append(chapter_num)
 
     # Print summary
     print("\n" + "=" * 60)
@@ -283,7 +293,7 @@ def main():
     print(f"Total sections:           {stats['sections']}")
     print(f"Output directory:         {OUTPUT_DIR}")
 
-    if stats['chapters_with_errors']:
+    if stats["chapters_with_errors"]:
         print(f"\nChapters with errors: {', '.join(stats['chapters_with_errors'])}")
 
     print("=" * 60)

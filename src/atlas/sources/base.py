@@ -82,7 +82,7 @@ class StatuteSource(ABC):
                 timeout=30,
                 follow_redirects=True,
                 headers={
-                    "User-Agent": "Atlas/1.0 (Legal Archive; contact@rules.foundation) https://github.com/RulesFoundation/atlas"
+                    "User-Agent": "Atlas/1.0 (Legal Archive; contact@axiom-foundation.org) https://github.com/TheAxiomFoundation/atlas"
                 },
             )
         return self._client

@@ -94,7 +94,7 @@ class AKFetcher:
         self.last_request = 0.0
         self.client = httpx.Client(
             timeout=60.0,
-            headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+            headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             follow_redirects=True,
         )
 
@@ -116,18 +116,18 @@ class AKFetcher:
 
         chapters = []
         # Parse: loadTOC("43.05"); href=javascript:void(0) ><b>Chapter 05. Administration of Revenue Laws
-        pattern = re.compile(
-            r'loadTOC\("(\d+\.\d+)"\).*?Chapter\s+(\d+[A-Za-z]?)\.\s*([^<]+)<'
-        )
+        pattern = re.compile(r'loadTOC\("(\d+\.\d+)"\).*?Chapter\s+(\d+[A-Za-z]?)\.\s*([^<]+)<')
         for match in pattern.finditer(response.text):
             chapter_id = match.group(1)  # e.g., "43.05"
             chapter_num = match.group(2)  # e.g., "05"
             chapter_title = match.group(3).strip().rstrip(".")
-            chapters.append({
-                "chapter_id": chapter_id,
-                "chapter_num": chapter_num,
-                "chapter_title": chapter_title,
-            })
+            chapters.append(
+                {
+                    "chapter_id": chapter_id,
+                    "chapter_num": chapter_num,
+                    "chapter_title": chapter_title,
+                }
+            )
 
         return chapters
 
@@ -146,9 +146,7 @@ class AKFetcher:
 
         sections = []
         # Parse: Sec. 43.23.005.   Eligibility.
-        pattern = re.compile(
-            r'#(\d+\.\d+\.\d+[A-Za-z]?)\s*>Sec\.\s+[\d.]+[A-Za-z]?\.\s+([^<]+)<'
-        )
+        pattern = re.compile(r"#(\d+\.\d+\.\d+[A-Za-z]?)\s*>Sec\.\s+[\d.]+[A-Za-z]?\.\s+([^<]+)<")
         for match in pattern.finditer(response.text):
             section_num = match.group(1)  # e.g., "43.23.005"
             section_title = match.group(2).strip().rstrip(".")
@@ -157,10 +155,12 @@ class AKFetcher:
             if "[Repealed" in section_title or "[Renumbered" in section_title:
                 continue
 
-            sections.append({
-                "section_num": section_num,
-                "section_title": section_title,
-            })
+            sections.append(
+                {
+                    "section_num": section_num,
+                    "section_title": section_title,
+                }
+            )
 
         return sections
 
@@ -248,13 +248,13 @@ def parse_subsections(text: str) -> list[dict]:
             continue
 
         identifier = match.group(1)
-        content = part[match.end():]
+        content = part[match.end() :]
 
         # Get text before first child
         first_num = re.search(r"\n\s*\(\d+\)", content)
         if first_num:
-            direct_text = content[:first_num.start()].strip()
-            rest = content[first_num.start():]
+            direct_text = content[: first_num.start()].strip()
+            rest = content[first_num.start() :]
         else:
             direct_text = content.strip()
             rest = ""
@@ -267,24 +267,28 @@ def parse_subsections(text: str) -> list[dict]:
                 l2_match = re.match(r"\s*\((\d+)\)\s*", l2_part)
                 if l2_match:
                     l2_id = l2_match.group(1)
-                    l2_content = l2_part[l2_match.end():].strip()
+                    l2_content = l2_part[l2_match.end() :].strip()
 
                     # Stop at next alpha subsection
                     next_alpha = re.search(r"\n\s*\([a-z]\)", l2_content)
                     if next_alpha:
-                        l2_content = l2_content[:next_alpha.start()]
+                        l2_content = l2_content[: next_alpha.start()]
 
-                    children.append({
-                        "identifier": l2_id,
-                        "text": l2_content[:2000],
-                        "children": [],
-                    })
+                    children.append(
+                        {
+                            "identifier": l2_id,
+                            "text": l2_content[:2000],
+                            "children": [],
+                        }
+                    )
 
-        subsections.append({
-            "identifier": identifier,
-            "text": direct_text[:2000],
-            "children": children,
-        })
+        subsections.append(
+            {
+                "identifier": identifier,
+                "text": direct_text[:2000],
+                "children": children,
+            }
+        )
 
     return subsections
 
@@ -378,7 +382,7 @@ def create_akn_xml(
     # TLC references
     arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://rules.foundation")
+    arch_ref.set("href", "https://axiom-foundation.org")
     arch_ref.set("showAs", "Atlas")
 
     ak_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
@@ -430,9 +434,7 @@ def create_akn_xml(
         return '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_str
 
 
-def add_section_to_xml(
-    parent: ET.Element, section: dict, title_num: int, chapter_num: str
-) -> None:
+def add_section_to_xml(parent: ET.Element, section: dict, title_num: int, chapter_num: str) -> None:
     """Add a section element to the parent XML element."""
     sec_id = section["section_num"].replace(".", "-")
 
@@ -459,9 +461,7 @@ def add_section_to_xml(
         p.text = section["text"][:10000] if section["text"] else ""
 
 
-def add_subsection_to_xml(
-    parent: ET.Element, subsection: dict, parent_id: str, level: int
-) -> None:
+def add_subsection_to_xml(parent: ET.Element, subsection: dict, parent_id: str, level: int) -> None:
     """Add a subsection element to the parent XML element."""
     identifier = subsection["identifier"]
     sub_id = f"{parent_id}__subsec_{identifier}"
@@ -539,14 +539,10 @@ def convert_chapter(
         title_name = AK_TITLES.get(title_num, f"Title {title_num}")
 
         # Create AKN XML
-        xml_content = create_akn_xml(
-            title_num, title_name, chapter_num, chapter_title, sections
-        )
+        xml_content = create_akn_xml(title_num, title_name, chapter_num, chapter_title, sections)
 
         # Write output
-        output_path = (
-            output_dir / f"as-title-{title_num:02d}-chapter-{chapter_num}.xml"
-        )
+        output_path = output_dir / f"as-title-{title_num:02d}-chapter-{chapter_num}.xml"
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(xml_content)
 
@@ -612,9 +608,7 @@ def main(start_title: int = 1):
                     if result["sections"] > 0:
                         successful_chapters += 1
                         total_sections += result["sections"]
-                        print(
-                            f"  [OK] Chapter {result['chapter']}: {result['sections']} sections"
-                        )
+                        print(f"  [OK] Chapter {result['chapter']}: {result['sections']} sections")
                     else:
                         empty_chapters += 1
                         print(f"  [--] Chapter {result['chapter']}: no sections found")
@@ -640,5 +634,6 @@ def main(start_title: int = 1):
 
 if __name__ == "__main__":
     import sys
+
     start = int(sys.argv[1]) if len(sys.argv) > 1 else 1
     main(start)

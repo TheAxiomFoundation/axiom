@@ -2,9 +2,11 @@
 """Ingest US Code Titles 27-40 into Supabase."""
 
 import sys
-sys.path.insert(0, '/Users/maxghenis/RulesFoundation/atlas/src')
+
+sys.path.insert(0, "/Users/maxghenis/TheAxiomFoundation/atlas/src")
 
 from atlas.ingest.supabase import SupabaseIngestor
+
 
 def main():
     ingestor = SupabaseIngestor()
@@ -19,10 +21,11 @@ def main():
         except Exception as e:
             print(f"Title {t} error: {e}")
 
-    print(f"\n{'='*50}")
+    print(f"\n{'=' * 50}")
     print(f"Total rules inserted: {total}")
-    print(f"{'='*50}")
+    print(f"{'=' * 50}")
     return total
+
 
 if __name__ == "__main__":
     main()

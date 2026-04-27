@@ -24,8 +24,8 @@ def _make_rule(**kwargs):
         "repeal_date": None,
         "source_url": "https://uscode.house.gov",
         "source_path": "26/32",
-        "rac_path": "rac-us/statute/26/32.rac",
-        "has_rac": True,
+        "rulespec_path": "rules-us/statute/26/32.yaml",
+        "has_rulespec": True,
         "citation_path": "26/32",
     }
     defaults.update(kwargs)
@@ -37,7 +37,7 @@ class TestRule:
         rule = _make_rule()
         assert rule.id == "us/statute/26/32"
         assert rule.jurisdiction == "us"
-        assert rule.has_rac is True
+        assert rule.has_rulespec is True
 
     def test_optional_fields(self):
         rule = _make_rule(
@@ -47,7 +47,7 @@ class TestRule:
             repeal_date=None,
             source_url=None,
             source_path=None,
-            rac_path=None,
+            rulespec_path=None,
             citation_path=None,
             ordinal=None,
         )
@@ -121,6 +121,6 @@ class TestSupabaseQuery:
         assert query.headers["apikey"] == "test-key"
 
     def test_init_from_env(self):
-        with patch.dict(os.environ, {"COSILICO_SUPABASE_URL": "https://env.supabase.co"}):
+        with patch.dict(os.environ, {"AXIOM_SUPABASE_URL": "https://env.supabase.co"}):
             query = SupabaseQuery()
             assert query.url == "https://env.supabase.co"

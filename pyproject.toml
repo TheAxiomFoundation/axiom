@@ -9,7 +9,7 @@ description = "Foundational archive for all raw government source files - statut
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "Rules Foundation", email = "hello@rules.foundation"}
+    {name = "The Axiom Foundation", email = "hello@axiom-foundation.org"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -68,9 +68,9 @@ atlas-build = "atlas.scripts.build_archive:main"
 atlas-pipeline = "atlas.pipeline.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/RulesFoundation/atlas"
-Documentation = "https://github.com/RulesFoundation/atlas"
-Repository = "https://github.com/RulesFoundation/atlas"
+Homepage = "https://github.com/TheAxiomFoundation/atlas"
+Documentation = "https://github.com/TheAxiomFoundation/atlas"
+Repository = "https://github.com/TheAxiomFoundation/atlas"
 
 [tool.setuptools.packages.find]
 where = ["src"]

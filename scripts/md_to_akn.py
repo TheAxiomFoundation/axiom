@@ -137,8 +137,8 @@ def create_akn_xml(section: Section, article_code: str, article_name: str) -> st
 
     org_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     org_rf.set("eId", "rules-foundation")
-    org_rf.set("href", "https://rules.foundation")
-    org_rf.set("showAs", "Rules Foundation")
+    org_rf.set("href", "https://axiom-foundation.org")
+    org_rf.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -192,7 +192,7 @@ def create_akn_xml(section: Section, article_code: str, article_name: str) -> st
             child_elem = ET.SubElement(subsection, f"{{{AKN_NS}}}paragraph")
             child_elem.set(
                 "eId",
-                f"sec_{sanitize_id(section_num)}__subsec_{subsec.identifier}__para_{child.identifier}"
+                f"sec_{sanitize_id(section_num)}__subsec_{subsec.identifier}__para_{child.identifier}",
             )
 
             child_num = ET.SubElement(child_elem, f"{{{AKN_NS}}}num")
@@ -207,7 +207,7 @@ def create_akn_xml(section: Section, article_code: str, article_name: str) -> st
                 gc_elem = ET.SubElement(child_elem, f"{{{AKN_NS}}}subparagraph")
                 gc_elem.set(
                     "eId",
-                    f"sec_{sanitize_id(section_num)}__subsec_{subsec.identifier}__para_{child.identifier}__subpara_{grandchild.identifier}"
+                    f"sec_{sanitize_id(section_num)}__subsec_{subsec.identifier}__para_{child.identifier}__subpara_{grandchild.identifier}",
                 )
 
                 gc_num = ET.SubElement(gc_elem, f"{{{AKN_NS}}}num")
@@ -305,7 +305,7 @@ def main():
             total_fetched += fetched
             total_converted += converted
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Conversion Summary")
     print("=" * 60)
     print(f"Articles processed:    {len(articles_to_convert)}")

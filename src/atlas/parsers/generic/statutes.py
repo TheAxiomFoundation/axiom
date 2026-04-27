@@ -203,7 +203,7 @@ class GenericStateParser:
             timeout=30,
             follow_redirects=True,
             headers={
-                "User-Agent": "Atlas/1.0 (Legal Archive; contact@rules.foundation) https://github.com/RulesFoundation/atlas"
+                "User-Agent": "Atlas/1.0 (Legal Archive; contact@axiom-foundation.org) https://github.com/TheAxiomFoundation/atlas"
             },
         )
         self._last_request = 0.0
@@ -372,10 +372,12 @@ class GenericStateParser:
             marker = match.group(1)
             content = match.group(2).strip()
             if content:
-                subsections.append(StateSubsection(
-                    identifier=marker,
-                    text=content[:1000] if len(content) > 1000 else content,
-                ))
+                subsections.append(
+                    StateSubsection(
+                        identifier=marker,
+                        text=content[:1000] if len(content) > 1000 else content,
+                    )
+                )
 
         return subsections
 
@@ -500,10 +502,7 @@ def get_parser_for_state(state_code: str) -> GenericStateParser | None:
 
 def list_supported_states() -> list[dict[str, str]]:
     """List all states with configured parsers."""
-    return [
-        {"code": code, "name": config.state_name}
-        for code, config in STATE_PARSERS.items()
-    ]
+    return [{"code": code, "name": config.state_name} for code, config in STATE_PARSERS.items()]
 
 
 if __name__ == "__main__":

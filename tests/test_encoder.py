@@ -59,10 +59,10 @@ class TestEncoding:
 
 
 class TestExtractCodeBlock:
-    def test_extract_rac(self):
+    def test_extract_rulespec(self):
         text = """Here is the code:
 
-```rac
+```rulespec
 variable eitc {
   entity TaxUnit
 }
@@ -70,7 +70,7 @@ variable eitc {
 
 And some more text.
 """
-        result = _extract_code_block(text, "rac")
+        result = _extract_code_block(text, "rulespec")
         assert "variable eitc" in result
         assert "entity TaxUnit" in result
 
@@ -88,7 +88,7 @@ And some more text.
 
     def test_no_match(self):
         text = "No code blocks here"
-        result = _extract_code_block(text, "rac")
+        result = _extract_code_block(text, "rulespec")
         assert result == ""
 
 
@@ -103,7 +103,7 @@ class TestEncodeSection:
             MagicMock(
                 text="""Here is the encoding:
 
-```rac
+```rulespec
 variable earned_income_credit {
   entity TaxUnit
   period Year
@@ -140,9 +140,7 @@ variable earned_income_credit {
         mock_anthropic_cls.return_value = mock_client
 
         mock_response = MagicMock()
-        mock_response.content = [
-            MagicMock(text="```rac\nvariable eitc {}\n```\n\nNo tests.")
-        ]
+        mock_response.content = [MagicMock(text="```rulespec\nvariable eitc {}\n```\n\nNo tests.")]
         mock_response.usage.input_tokens = 100
         mock_response.usage.output_tokens = 50
         mock_client.messages.create.return_value = mock_response
@@ -175,7 +173,7 @@ class TestEncodeAndSave:
         # Check files were created
         section_dir = tmp_path / "federal" / "statute" / "26" / "32"
         assert (section_dir / "statute.md").exists()
-        assert (section_dir / "rules.rac").exists()
+        assert (section_dir / "rules.yaml").exists()
         assert (section_dir / "tests.yaml").exists()
         assert (section_dir / "metadata.json").exists()
 
@@ -211,5 +209,5 @@ class TestSystemPrompt:
     def test_prompt_exists(self):
         assert len(SYSTEM_PROMPT) > 100
 
-    def test_prompt_mentions_rac(self):
-        assert "RAC" in SYSTEM_PROMPT or "rac" in SYSTEM_PROMPT.lower()
+    def test_prompt_mentions_rulespec(self):
+        assert "RuleSpec" in SYSTEM_PROMPT or "rulespec" in SYSTEM_PROMPT.lower()

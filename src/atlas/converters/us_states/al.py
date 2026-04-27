@@ -197,7 +197,7 @@ class ALConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -238,7 +238,9 @@ class ALConverter:
         """
         parts = section_number.split("-")
         if len(parts) < 3:
-            raise ALConverterError(f"Invalid section number format: {section_number}")  # pragma: no cover
+            raise ALConverterError(
+                f"Invalid section number format: {section_number}"
+            )  # pragma: no cover
 
         title_num = int(parts[0])
         chapter_num = int(parts[1])
@@ -261,7 +263,9 @@ class ALConverter:
 
         # Check for empty page
         if len(html.strip()) < 100:
-            raise ALConverterError(f"Section {section_number} returned empty page", url)  # pragma: no cover
+            raise ALConverterError(
+                f"Section {section_number} returned empty page", url
+            )  # pragma: no cover
 
         title_num, chapter_num, _ = self._parse_section_number(section_number)
 
@@ -280,9 +284,7 @@ class ALConverter:
         section_title = ""
         title_patterns = [
             # Pattern: "Section 40-18-1 Title here."
-            re.compile(
-                rf"Section\s+{re.escape(section_number)}\s+(.+?)(?:\.|$)", re.IGNORECASE
-            ),
+            re.compile(rf"Section\s+{re.escape(section_number)}\s+(.+?)(?:\.|$)", re.IGNORECASE),
             # Pattern: just the title after section number
             re.compile(rf"{re.escape(section_number)}\s*[-.:]\s*(.+?)(?:\.|$)"),
         ]
@@ -601,9 +603,7 @@ class ALConverter:
             section_numbers.append(f"{title}-{chapter}-{i}")  # pragma: no cover
         return section_numbers  # pragma: no cover
 
-    def iter_chapter(
-        self, title: int, chapter: int, max_sections: int = 200
-    ) -> Iterator[Section]:
+    def iter_chapter(self, title: int, chapter: int, max_sections: int = 200) -> Iterator[Section]:
         """Iterate over sections in a chapter.
 
         Tries section numbers sequentially until hitting consistent failures.
@@ -649,7 +649,9 @@ class ALConverter:
             elif title == 38:  # pragma: no cover
                 chapters = list(AL_WELFARE_CHAPTERS.keys())  # pragma: no cover
             else:
-                raise ALConverterError(f"No default chapters defined for title {title}")  # pragma: no cover
+                raise ALConverterError(
+                    f"No default chapters defined for title {title}"
+                )  # pragma: no cover
 
         for chapter in chapters:  # pragma: no cover
             yield from self.iter_chapter(title, chapter)  # pragma: no cover

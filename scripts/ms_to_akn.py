@@ -108,8 +108,8 @@ def create_akn_xml(section: Section) -> str:
 
     org_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     org_rf.set("eId", "rules-foundation")
-    org_rf.set("href", "https://rules.foundation")
-    org_rf.set("showAs", "Rules Foundation")
+    org_rf.set("href", "https://axiom-foundation.org")
+    org_rf.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -140,9 +140,7 @@ def create_akn_xml(section: Section) -> str:
     # Subsections
     for subsec in section.subsections:
         subsection = ET.SubElement(article, f"{{{AKN_NS}}}subsection")
-        subsection.set(
-            "eId", f"sec_{section_id.replace('-', '_')}__subsec_{subsec.identifier}"
-        )
+        subsection.set("eId", f"sec_{section_id.replace('-', '_')}__subsec_{subsec.identifier}")
 
         subsec_num = ET.SubElement(subsection, f"{{{AKN_NS}}}num")
         subsec_num.text = f"({subsec.identifier})"
@@ -214,9 +212,7 @@ def convert_title(converter: MSConverter, title: int, output_dir: Path) -> int:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Convert Mississippi Code to Akoma Ntoso XML"
-    )
+    parser = argparse.ArgumentParser(description="Convert Mississippi Code to Akoma Ntoso XML")
     parser.add_argument(
         "--title",
         type=int,
@@ -252,7 +248,7 @@ def main():
             total_sections += count
 
     print()
-    print(f"{'='*50}")
+    print(f"{'=' * 50}")
     print(f"Total: {len(titles)} titles, {total_sections} sections converted")
     print(f"Output: {output_dir}")
 

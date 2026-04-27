@@ -145,24 +145,28 @@ def parse_sections_from_html(soup: BeautifulSoup, config: dict) -> list[dict]:
                 subsec_match = re.match(r"^\(([a-z0-9]+)\)\s*", text)
                 if subsec_match:
                     subsec_id = subsec_match.group(1)
-                    subsec_text = text[subsec_match.end():]
-                    subsections.append({
-                        "id": subsec_id,
-                        "text": subsec_text,
-                    })
+                    subsec_text = text[subsec_match.end() :]
+                    subsections.append(
+                        {
+                            "id": subsec_id,
+                            "text": subsec_text,
+                        }
+                    )
                 else:
                     body_parts.append(text)
 
             current = current.find_next_sibling()
 
-        sections.append({
-            "section_id": section_num,
-            "title_num": title_num,
-            "chapter": chapter,
-            "title": title_text,
-            "text": "\n\n".join(body_parts),
-            "subsections": subsections,
-        })
+        sections.append(
+            {
+                "section_id": section_num,
+                "title_num": title_num,
+                "chapter": chapter,
+                "title": title_text,
+                "text": "\n\n".join(body_parts),
+                "subsections": subsections,
+            }
+        )
 
     return sections
 
@@ -203,7 +207,9 @@ def create_akn_xml(section: dict, state: str, config: dict) -> str:
     # FRBRExpression
     expr = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRExpression")
     expr_this = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRthis")
-    expr_this.set("value", f"/us-{state}/act/{config['abbrev'].lower()}/{section['section_id']}/eng")
+    expr_this.set(
+        "value", f"/us-{state}/act/{config['abbrev'].lower()}/{section['section_id']}/eng"
+    )
     expr_uri = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRuri")
     expr_uri.set("value", f"/us-{state}/act/{config['abbrev'].lower()}/{section['section_id']}/eng")
     expr_date = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRdate")
@@ -217,9 +223,13 @@ def create_akn_xml(section: dict, state: str, config: dict) -> str:
     # FRBRManifestation
     manif = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRManifestation")
     manif_this = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRthis")
-    manif_this.set("value", f"/us-{state}/act/{config['abbrev'].lower()}/{section['section_id']}/eng/akn")
+    manif_this.set(
+        "value", f"/us-{state}/act/{config['abbrev'].lower()}/{section['section_id']}/eng/akn"
+    )
     manif_uri = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRuri")
-    manif_uri.set("value", f"/us-{state}/act/{config['abbrev'].lower()}/{section['section_id']}/eng/akn")
+    manif_uri.set(
+        "value", f"/us-{state}/act/{config['abbrev'].lower()}/{section['section_id']}/eng/akn"
+    )
     manif_date = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRdate")
     manif_date.set("date", str(date.today()))
     manif_date.set("name", "generation")
@@ -242,8 +252,8 @@ def create_akn_xml(section: dict, state: str, config: dict) -> str:
 
     org_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     org_rf.set("eId", "rules-foundation")
-    org_rf.set("href", "https://rules.foundation")
-    org_rf.set("showAs", "Rules Foundation")
+    org_rf.set("href", "https://axiom-foundation.org")
+    org_rf.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -274,7 +284,10 @@ def create_akn_xml(section: dict, state: str, config: dict) -> str:
     # Subsections
     for subsec in section["subsections"]:
         subsection = ET.SubElement(article, f"{{{AKN_NS}}}subsection")
-        subsection.set("eId", f"sec_{section['section_id'].replace('-', '_').replace('.', '_')}__subsec_{subsec['id']}")
+        subsection.set(
+            "eId",
+            f"sec_{section['section_id'].replace('-', '_').replace('.', '_')}__subsec_{subsec['id']}",
+        )
 
         subsec_num = ET.SubElement(subsection, f"{{{AKN_NS}}}num")
         subsec_num.text = f"({subsec['id']})"
@@ -309,10 +322,7 @@ def convert_state(state: str) -> tuple[int, int]:
 
     # Find HTML files matching pattern
     title_pattern = re.compile(config["title_file_pattern"])
-    html_files = sorted([
-        f for f in data_dir.glob("*.html")
-        if title_pattern.match(f.name)
-    ])
+    html_files = sorted([f for f in data_dir.glob("*.html") if title_pattern.match(f.name)])
 
     if not html_files:
         print(f"  No matching HTML files found!")
@@ -377,7 +387,7 @@ def main():
         total_files += files
         total_sections += sections
 
-    print(f"\n{'='*50}")
+    print(f"\n{'=' * 50}")
     print(f"Total: {total_files} files, {total_sections} sections converted")
 
 

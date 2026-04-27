@@ -229,7 +229,7 @@ class HIConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -275,7 +275,9 @@ class HIConverter:
         # Parse chapter and section parts
         parts = section_number.split("-", 1)
         if len(parts) != 2:
-            raise HIConverterError(f"Invalid section number format: {section_number}")  # pragma: no cover
+            raise HIConverterError(
+                f"Invalid section number format: {section_number}"
+            )  # pragma: no cover
 
         chapter_str = parts[0]
         section_part = parts[1]
@@ -283,7 +285,9 @@ class HIConverter:
         # Handle chapter suffixes (e.g., "244D")
         chapter_match = re.match(r"(\d+)([A-Z]*)", chapter_str)
         if not chapter_match:
-            raise HIConverterError(f"Cannot parse chapter from: {section_number}")  # pragma: no cover
+            raise HIConverterError(
+                f"Cannot parse chapter from: {section_number}"
+            )  # pragma: no cover
 
         chapter_num = int(chapter_match.group(1))
         chapter_suffix = chapter_match.group(2)
@@ -302,13 +306,11 @@ class HIConverter:
             # Try the exact decimal format first
             decimal_part = section_part.replace(".", "_")  # pragma: no cover
             return (  # pragma: no cover
-                f"{BASE_URL}/{volume}/HRS{padded_chapter}/"
-                f"HRS_{padded_chapter}-{section_padded}.htm"
+                f"{BASE_URL}/{volume}/HRS{padded_chapter}/HRS_{padded_chapter}-{section_padded}.htm"
             )
         else:
             return (
-                f"{BASE_URL}/{volume}/HRS{padded_chapter}/"
-                f"HRS_{padded_chapter}-{section_padded}.htm"
+                f"{BASE_URL}/{volume}/HRS{padded_chapter}/HRS_{padded_chapter}-{section_padded}.htm"
             )
 
     def _build_chapter_contents_url(self, chapter: int | str) -> str:
@@ -365,24 +367,20 @@ class HIConverter:
         soup = BeautifulSoup(html, "html.parser")
 
         # Check for "not found" error
-        if (
-            "cannot be found" in html.lower()
-            or "not found" in html.lower()
-            or "404" in html
-        ):
+        if "cannot be found" in html.lower() or "not found" in html.lower() or "404" in html:
             raise HIConverterError(f"Section {section_number} not found", url)
 
         # Parse chapter number from section_number (e.g., "235-51" -> 235)
         parts = section_number.split("-", 1)
         chapter_match = re.match(r"(\d+)", parts[0])
         if not chapter_match:
-            raise HIConverterError(f"Cannot parse chapter from {section_number}")  # pragma: no cover
+            raise HIConverterError(
+                f"Cannot parse chapter from {section_number}"
+            )  # pragma: no cover
 
         chapter = int(chapter_match.group(1))
         chapter_title = (
-            HI_TAX_CHAPTERS.get(chapter)
-            or HI_WELFARE_CHAPTERS.get(chapter)
-            or f"Chapter {chapter}"
+            HI_TAX_CHAPTERS.get(chapter) or HI_WELFARE_CHAPTERS.get(chapter) or f"Chapter {chapter}"
         )
 
         title_number, title_name = self._get_title_for_chapter(chapter)
@@ -427,9 +425,7 @@ class HIConverter:
 
         if content_elem:
             # Remove navigation and scripts
-            for elem in content_elem.find_all(
-                ["nav", "script", "style", "header", "footer"]
-            ):
+            for elem in content_elem.find_all(["nav", "script", "style", "header", "footer"]):
                 elem.decompose()  # pragma: no cover
             text = content_elem.get_text(separator="\n", strip=True)
             html_content = str(content_elem)
@@ -694,9 +690,7 @@ class HIConverter:
 
         # Also look for section references in the text
         text = soup.get_text()
-        section_ref_pattern = re.compile(
-            rf"\[?{re.escape(chapter_pattern)}-(\d+(?:\.\d+)?)\]?"
-        )
+        section_ref_pattern = re.compile(rf"\[?{re.escape(chapter_pattern)}-(\d+(?:\.\d+)?)\]?")
         for match in section_ref_pattern.finditer(text):
             section_num = f"{chapter_pattern}-{match.group(1)}"
             if section_num not in section_numbers:

@@ -120,8 +120,8 @@ def section_to_akn_xml(section: Section) -> str:
 
     org_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     org_rf.set("eId", "rules-foundation")
-    org_rf.set("href", "https://rules.foundation")
-    org_rf.set("showAs", "Rules Foundation")
+    org_rf.set("href", "https://axiom-foundation.org")
+    org_rf.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -233,7 +233,11 @@ def convert_article(converter: WVConverter, chapter: int, article: str, output_d
         xml_content = section_to_akn_xml(section)
         filepath.write_text(xml_content, encoding="utf-8")
         count += 1
-        title_display = section.section_title[:50] + "..." if len(section.section_title) > 50 else section.section_title
+        title_display = (
+            section.section_title[:50] + "..."
+            if len(section.section_title) > 50
+            else section.section_title
+        )
         print(f"    {section_num}: {title_display}")
 
     return count
@@ -255,7 +259,9 @@ def convert_chapter(converter: WVConverter, chapter: int, output_dir: Path) -> t
 
     total_sections = 0
     for article in articles:
-        article_name = WV_TAX_ARTICLES.get(f"{chapter}-{article}") or WV_WELFARE_ARTICLES.get(f"{chapter}-{article}", "")
+        article_name = WV_TAX_ARTICLES.get(f"{chapter}-{article}") or WV_WELFARE_ARTICLES.get(
+            f"{chapter}-{article}", ""
+        )
         print(f"  Article {chapter}-{article}: {article_name}")
         try:
             count = convert_article(converter, chapter, article, output_dir)

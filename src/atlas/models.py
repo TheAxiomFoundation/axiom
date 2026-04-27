@@ -25,7 +25,7 @@ class Citation(BaseModel):
 
     @property
     def path(self) -> str:
-        """Return filesystem-style path for RAC DSL."""
+        """Return filesystem-style path for RuleSpec YAML."""
         if self.subsection:
             return f"statute/{self.title}/{self.section}/{self.subsection}"
         return f"statute/{self.title}/{self.section}"

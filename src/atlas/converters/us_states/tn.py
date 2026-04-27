@@ -147,7 +147,7 @@ class TNConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=120.0,  # Longer timeout for large title files
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -205,7 +205,9 @@ class TNConverter:
         try:
             return int(parts[0]), int(parts[1]), int(parts[2])
         except ValueError:  # pragma: no cover
-            raise TNConverterError(f"Invalid section number format: {section_number}")  # pragma: no cover
+            raise TNConverterError(
+                f"Invalid section number format: {section_number}"
+            )  # pragma: no cover
 
     def _build_section_id(self, section_number: str) -> str:
         """Build the HTML ID for a section.
@@ -221,9 +223,7 @@ class TNConverter:
         title, chapter, _ = self._parse_section_number(section_number)
         return f"t{title}c{chapter:02d}s{section_number}"
 
-    def _extract_section_from_html(
-        self, soup: BeautifulSoup, section_number: str
-    ) -> Tag | None:
+    def _extract_section_from_html(self, soup: BeautifulSoup, section_number: str) -> Tag | None:
         """Find the section element in the parsed HTML.
 
         Args:
@@ -364,7 +364,9 @@ class TNConverter:
         for cite in section_elem.find_all_next("cite", class_="octn", limit=20):
             # Stop at next section
             parent_h3 = cite.find_parent("div")
-            if parent_h3 and parent_h3.find("h3") and parent_h3.find("h3") != section_elem:  # pragma: no cover
+            if (
+                parent_h3 and parent_h3.find("h3") and parent_h3.find("h3") != section_elem
+            ):  # pragma: no cover
                 break
             link = cite.find("a")
             if link:

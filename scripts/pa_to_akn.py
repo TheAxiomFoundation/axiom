@@ -124,7 +124,7 @@ def fetch_title_html(title: int) -> str:
 
     client = httpx.Client(
         timeout=60.0,
-        headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+        headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
     )
 
     try:
@@ -159,13 +159,15 @@ def extract_sections_from_html(html: str, title: int) -> list[dict]:
     current_chapter_title = None
 
     # Track chapter context
-    for chapter_match in re.finditer(r"CHAPTER\s+(\d+[A-Z]?)\s*\n\s*([^\n]+)", full_text, re.IGNORECASE):
+    for chapter_match in re.finditer(
+        r"CHAPTER\s+(\d+[A-Z]?)\s*\n\s*([^\n]+)", full_text, re.IGNORECASE
+    ):
         ch_num = chapter_match.group(1)
         ch_title = chapter_match.group(2).strip()
         ch_pos = chapter_match.start()
 
         # Find sections after this chapter
-        next_chapter = re.search(r"CHAPTER\s+\d+", full_text[chapter_match.end():], re.IGNORECASE)
+        next_chapter = re.search(r"CHAPTER\s+\d+", full_text[chapter_match.end() :], re.IGNORECASE)
         end_pos = chapter_match.end() + next_chapter.start() if next_chapter else len(full_text)
 
         chapter_text = full_text[ch_pos:end_pos]
@@ -184,14 +186,16 @@ def extract_sections_from_html(html: str, title: int) -> list[dict]:
             # Parse subsections
             subsections = parse_subsections(section_text)
 
-            sections.append({
-                "section_number": section_num,
-                "title": section_title,
-                "text": section_text[:50000],
-                "chapter_number": ch_num,
-                "chapter_title": ch_title,
-                "subsections": subsections,
-            })
+            sections.append(
+                {
+                    "section_number": section_num,
+                    "title": section_title,
+                    "text": section_text[:50000],
+                    "chapter_number": ch_num,
+                    "chapter_title": ch_title,
+                    "subsections": subsections,
+                }
+            )
 
     # If no chapters found, try to parse sections directly
     if not sections:
@@ -206,14 +210,16 @@ def extract_sections_from_html(html: str, title: int) -> list[dict]:
             section_text = full_text[sec_start:sec_end].strip()
             subsections = parse_subsections(section_text)
 
-            sections.append({
-                "section_number": section_num,
-                "title": section_title,
-                "text": section_text[:50000],
-                "chapter_number": None,
-                "chapter_title": None,
-                "subsections": subsections,
-            })
+            sections.append(
+                {
+                    "section_number": section_num,
+                    "title": section_title,
+                    "text": section_text[:50000],
+                    "chapter_number": None,
+                    "chapter_title": None,
+                    "subsections": subsections,
+                }
+            )
 
     return sections
 
@@ -237,14 +243,14 @@ def parse_subsections(text: str) -> list[dict]:
             continue
 
         identifier = match.group(1)
-        content = part[match.end():]
+        content = part[match.end() :]
 
         # Check for heading pattern: (a) Heading.--
         heading = None
         heading_match = re.match(r"([A-Z][^.]+?)\.\s*[-—]+\s*", content)
         if heading_match:
             heading = heading_match.group(1).strip()
-            content = content[heading_match.end():]
+            content = content[heading_match.end() :]
 
         # Parse second-level children (1), (2), etc.
         children = parse_level2(content)
@@ -253,7 +259,7 @@ def parse_subsections(text: str) -> list[dict]:
         if children:
             first_child_match = re.search(r"\(\d+\)", content)
             direct_text = (
-                content[:first_child_match.start()].strip()
+                content[: first_child_match.start()].strip()
                 if first_child_match
                 else content.strip()
             )
@@ -263,14 +269,16 @@ def parse_subsections(text: str) -> list[dict]:
         # Clean up text - remove trailing subsections
         next_subsection = re.search(r"\([a-z]\)", direct_text)
         if next_subsection:
-            direct_text = direct_text[:next_subsection.start()].strip()
+            direct_text = direct_text[: next_subsection.start()].strip()
 
-        subsections.append({
-            "identifier": identifier,
-            "heading": heading,
-            "text": direct_text[:5000],
-            "children": children,
-        })
+        subsections.append(
+            {
+                "identifier": identifier,
+                "heading": heading,
+                "text": direct_text[:5000],
+                "children": children,
+            }
+        )
 
     return subsections
 
@@ -286,7 +294,7 @@ def parse_level2(text: str) -> list[dict]:
             continue
 
         identifier = match.group(1)
-        content = part[match.end():]
+        content = part[match.end() :]
 
         # Parse level 3 children (i), (ii), etc.
         children = parse_level3(content)
@@ -294,25 +302,27 @@ def parse_level2(text: str) -> list[dict]:
         # Limit to reasonable size and stop at next letter subsection
         next_letter = re.search(r"\([a-z]\)", content)
         if next_letter:
-            content = content[:next_letter.start()]
+            content = content[: next_letter.start()]
 
         # Get text before first child
         if children:
             first_child_match = re.search(r"\([ivxlc]+\)", content, re.IGNORECASE)
             direct_text = (
-                content[:first_child_match.start()].strip()
+                content[: first_child_match.start()].strip()
                 if first_child_match
                 else content.strip()
             )
         else:
             direct_text = content.strip()
 
-        subsections.append({
-            "identifier": identifier,
-            "heading": None,
-            "text": direct_text[:5000],
-            "children": children,
-        })
+        subsections.append(
+            {
+                "identifier": identifier,
+                "heading": None,
+                "text": direct_text[:5000],
+                "children": children,
+            }
+        )
 
     return subsections
 
@@ -329,23 +339,25 @@ def parse_level3(text: str) -> list[dict]:
             continue
 
         identifier = match.group(1).lower()
-        content = part[match.end():]
+        content = part[match.end() :]
 
         # Limit size and stop at next subsection
         next_num = re.search(r"\(\d+\)", content)
         if next_num:
-            content = content[:next_num.start()]
+            content = content[: next_num.start()]
 
         next_letter = re.search(r"\([a-z]\)", content)
         if next_letter:
-            content = content[:next_letter.start()]
+            content = content[: next_letter.start()]
 
-        subsections.append({
-            "identifier": identifier,
-            "heading": None,
-            "text": content.strip()[:5000],
-            "children": [],
-        })
+        subsections.append(
+            {
+                "identifier": identifier,
+                "heading": None,
+                "text": content.strip()[:5000],
+                "children": [],
+            }
+        )
 
     return subsections
 
@@ -414,9 +426,13 @@ def create_akn_xml(title_num: int, title_name: str, sections: list[dict]) -> str
     # FRBRManifestation
     manif = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRManifestation")
     manif_this = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRthis")
-    manif_this.set("value", f"/akn/us-pa/act/pacs/title-{title_num}/eng@{date.today().isoformat()}/main.xml")
+    manif_this.set(
+        "value", f"/akn/us-pa/act/pacs/title-{title_num}/eng@{date.today().isoformat()}/main.xml"
+    )
     manif_uri = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRuri")
-    manif_uri.set("value", f"/akn/us-pa/act/pacs/title-{title_num}/eng@{date.today().isoformat()}/main.xml")
+    manif_uri.set(
+        "value", f"/akn/us-pa/act/pacs/title-{title_num}/eng@{date.today().isoformat()}/main.xml"
+    )
     manif_date = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRdate")
     manif_date.set("date", date.today().isoformat())
     manif_date.set("name", "generation")
@@ -430,7 +446,7 @@ def create_akn_xml(title_num: int, title_name: str, sections: list[dict]) -> str
     # TLC references
     arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://rules.foundation")
+    arch_ref.set("href", "https://axiom-foundation.org")
     arch_ref.set("showAs", "Atlas")
 
     pa_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")

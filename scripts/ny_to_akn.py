@@ -34,9 +34,9 @@ try:
 except ImportError:
     # Try direct import for standalone use
     import importlib.util
+
     spec = importlib.util.spec_from_file_location(
-        "ny",
-        Path(__file__).parent.parent / "src" / "arch" / "converters" / "us_states" / "ny.py"
+        "ny", Path(__file__).parent.parent / "src" / "arch" / "converters" / "us_states" / "ny.py"
     )
     ny_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ny_module)
@@ -66,7 +66,9 @@ def section_to_akn(result: NYFetchResult, converter: NYStateConverter) -> str:
     law_info = result.law_info
 
     # Get law name
-    law_name = law_info.name if law_info else NY_LAW_CODES.get(section.law_id, f"{section.law_id} Law")
+    law_name = (
+        law_info.name if law_info else NY_LAW_CODES.get(section.law_id, f"{section.law_id} Law")
+    )
 
     # Extract section number
     section_num = converter._extract_section_number(section.location_id)
@@ -143,7 +145,7 @@ def section_to_akn(result: NYFetchResult, converter: NYStateConverter) -> str:
     # TLC references
     arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://rules.foundation")
+    arch_ref.set("href", "https://axiom-foundation.org")
     arch_ref.set("showAs", "Atlas")
 
     ny_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
@@ -199,7 +201,9 @@ def section_to_akn(result: NYFetchResult, converter: NYStateConverter) -> str:
         return '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_str
 
 
-def add_subsections_to_xml(parent: ET.Element, subsections: list, parent_id: str, level: int = 0) -> None:
+def add_subsections_to_xml(
+    parent: ET.Element, subsections: list, parent_id: str, level: int = 0
+) -> None:
     """Add subsections recursively to XML element.
 
     Args:

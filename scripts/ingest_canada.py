@@ -39,7 +39,7 @@ def get_service_key():
                     if k.get("name") == "service_role" and k.get("api_key"):
                         return k["api_key"]
         except Exception as e:
-            print(f"Retry {attempt+1}/3 getting key: {e}", flush=True)
+            print(f"Retry {attempt + 1}/3 getting key: {e}", flush=True)
             time.sleep(2)
 
     raise ValueError("Could not get service_role key")
@@ -53,7 +53,7 @@ def section_to_rules(section: CanadaSection, parent_id=None):
     try:
         if section.section_number and section.section_number.replace(".", "").isdigit():
             ordinal = int(section.section_number.split(".")[0])
-    except (ValueError, AttributeError):
+    except ValueError, AttributeError:
         pass
 
     yield {
@@ -68,8 +68,8 @@ def section_to_rules(section: CanadaSection, parent_id=None):
         "effective_date": section.in_force_date.isoformat() if section.in_force_date else None,
         "source_url": section.source_url,
         "source_path": section.source_path,
-        "rac_path": None,
-        "has_rac": False,
+        "rulespec_path": None,
+        "has_rulespec": False,
     }
 
     yield from subsections_to_rules(section.subsections, section_id, 1)
@@ -92,8 +92,8 @@ def subsections_to_rules(subsections, parent_id, level):
             "effective_date": None,
             "source_url": None,
             "source_path": None,
-            "rac_path": None,
-            "has_rac": False,
+            "rulespec_path": None,
+            "has_rulespec": False,
         }
 
         if sub.children:
@@ -121,12 +121,12 @@ def insert_rules(rules, client, key, rest_url):
             return len(rules)
         except httpx.HTTPStatusError as e:
             if e.response.status_code >= 500 and attempt < MAX_RETRIES - 1:
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
             else:
                 raise
-        except (httpx.ReadTimeout, httpx.ConnectTimeout):
+        except httpx.ReadTimeout, httpx.ConnectTimeout:
             if attempt < MAX_RETRIES - 1:
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
             else:
                 raise
     return 0
@@ -186,10 +186,13 @@ def main():
             try:
                 count = ingest_act(cons_num, client, key, rest_url)
                 total_rules += count
-                print(f"[{i+1}/{total_files}] {cons_num}: {count} rules (total: {total_rules})", flush=True)
+                print(
+                    f"[{i + 1}/{total_files}] {cons_num}: {count} rules (total: {total_rules})",
+                    flush=True,
+                )
             except Exception as e:
                 errors += 1
-                print(f"[{i+1}/{total_files}] {cons_num}: ERROR - {e}", flush=True)
+                print(f"[{i + 1}/{total_files}] {cons_num}: ERROR - {e}", flush=True)
 
     print("", flush=True)
     print("=" * 60, flush=True)

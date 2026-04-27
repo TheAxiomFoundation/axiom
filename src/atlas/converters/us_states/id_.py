@@ -222,7 +222,7 @@ class IDConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
                 follow_redirects=True,
             )
         return self._client
@@ -283,9 +283,7 @@ class IDConverter:
         title, chapter, _ = self._parse_section_number(section_number)
 
         # URL format: /statutesrules/idstat/Title63/T63CH30/SECT63-3002/
-        return (
-            f"{BASE_URL}/Title{title}/T{title}CH{chapter}/SECT{section_number}/"
-        )
+        return f"{BASE_URL}/Title{title}/T{title}CH{chapter}/SECT{section_number}/"
 
     def _build_chapter_url(self, title: int, chapter: int) -> str:
         """Build the URL for a chapter's contents index."""
@@ -344,7 +342,9 @@ class IDConverter:
             # The title is usually in UPPERCASE in a span
             if section_number in div_text and not section_title:
                 # Try to find the uppercase title span
-                title_span = div.find("span", style=lambda s: s and "text-transform: uppercase" in str(s))
+                title_span = div.find(
+                    "span", style=lambda s: s and "text-transform: uppercase" in str(s)
+                )
                 if title_span:
                     section_title = title_span.get_text(strip=True).rstrip(".")
                 else:
@@ -433,7 +433,7 @@ class IDConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse nested children
             children = self._parse_nested_subsections(content)

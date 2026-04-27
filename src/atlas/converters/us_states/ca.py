@@ -16,7 +16,7 @@ Example usage:
     # Fetch a section
     statute = converter.fetch("rtc/17052")  # CA EITC section
     print(statute.citation)  # "CA RTC 17052"
-    print(statute.rac_path)  # "rac-us-ca/statute/RTC/17052.rac"
+    print(statute.rulespec_path)  # "rules-us-ca/statute/RTC/17052.yaml"
 
     # Fetch with caching
     statute = converter.fetch("wic/11320.3", cache=True)
@@ -144,13 +144,17 @@ class CAStateConverter:
         match = re.match(pattern, ref)
 
         if not match:
-            raise ValueError(f"Invalid CA reference: {ref}. Expected format: CODE/SECTION (e.g., rtc/17052)")  # pragma: no cover
+            raise ValueError(
+                f"Invalid CA reference: {ref}. Expected format: CODE/SECTION (e.g., rtc/17052)"
+            )  # pragma: no cover
 
         code = match.group(1).upper()
         section = match.group(2)
 
         if code not in CA_CODES:
-            raise ValueError(f"Unknown CA code: {code}. Valid codes: {list(CA_CODES.keys())}")  # pragma: no cover
+            raise ValueError(
+                f"Unknown CA code: {code}. Valid codes: {list(CA_CODES.keys())}"
+            )  # pragma: no cover
 
         return code, section
 
@@ -194,7 +198,7 @@ class CAStateConverter:
             timeout=30,
             follow_redirects=True,
             headers={
-                "User-Agent": "Atlas/1.0 (https://github.com/RulesFoundation/atlas; contact@rules.foundation)"
+                "User-Agent": "Atlas/1.0 (https://github.com/TheAxiomFoundation/atlas; contact@axiom-foundation.org)"
             },
         ) as client:
             response = client.get(url)
@@ -346,7 +350,7 @@ class CAStateConverter:
         # Find top-level subsections (a), (b), etc.
         # Pattern matches (letter) anywhere in text, not just at newlines
         # Split text by top-level subsection markers
-        parts = re.split(r'\(([a-z])\)\s*', text)
+        parts = re.split(r"\(([a-z])\)\s*", text)
 
         # parts[0] is text before first (a), then alternating identifier, content
         for i in range(1, len(parts) - 1, 2):
@@ -355,24 +359,26 @@ class CAStateConverter:
 
             # Stop if we hit another top-level marker in the content
             # (this happens when content contains (1), (2), etc.)
-            next_marker = re.search(r'\([a-z]\)\s', content)
+            next_marker = re.search(r"\([a-z]\)\s", content)
             if next_marker:
-                content = content[:next_marker.start()].strip()  # pragma: no cover
+                content = content[: next_marker.start()].strip()  # pragma: no cover
 
             # Parse nested subsections
             children = self._parse_nested_subsections(content)
 
             # Clean content - remove nested subsection text
             if children:
-                first_marker = re.search(r'\(\d+\)', content)
+                first_marker = re.search(r"\(\d+\)", content)
                 if first_marker:
-                    content = content[:first_marker.start()].strip()
+                    content = content[: first_marker.start()].strip()
 
-            subsections.append(StatuteSubsection(
-                identifier=identifier,
-                text=content[:2000] if len(content) > 2000 else content,
-                children=children,
-            ))
+            subsections.append(
+                StatuteSubsection(
+                    identifier=identifier,
+                    text=content[:2000] if len(content) > 2000 else content,
+                    children=children,
+                )
+            )
 
         return subsections
 
@@ -388,17 +394,19 @@ class CAStateConverter:
         children = []
 
         # Pattern for numbered subsections
-        pattern = r'\((\d+)\)\s*([^(]*?)(?=\(\d+\)|$)'
+        pattern = r"\((\d+)\)\s*([^(]*?)(?=\(\d+\)|$)"
 
         for match in re.finditer(pattern, text, re.DOTALL):
             identifier = match.group(1)
             content = match.group(2).strip()
 
-            children.append(StatuteSubsection(
-                identifier=identifier,
-                text=content[:1000] if len(content) > 1000 else content,
-                children=[],  # Could add (A), (B) parsing here
-            ))
+            children.append(
+                StatuteSubsection(
+                    identifier=identifier,
+                    text=content[:1000] if len(content) > 1000 else content,
+                    children=[],  # Could add (A), (B) parsing here
+                )
+            )
 
         return children
 
@@ -498,8 +506,7 @@ class CAStateConverter:
             # Would need to implement TOC crawling here
             # For now, raise not implemented
             raise NotImplementedError(
-                "TOC crawling not yet implemented. "
-                "Please provide specific section numbers."
+                "TOC crawling not yet implemented. Please provide specific section numbers."
             )
 
 
@@ -529,7 +536,7 @@ if __name__ == "__main__":
     try:
         statute = converter.fetch("rtc/17052")
         print(f"Citation: {statute.citation}")
-        print(f"RAC Path: {statute.rac_path}")
+        print(f"RuleSpec Path: {statute.rulespec_path}")
         print(f"Title: {statute.title}")
         print(f"Division: {statute.division}")
         print(f"Part: {statute.part}")

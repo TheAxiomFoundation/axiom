@@ -246,7 +246,7 @@ class DCConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -336,7 +336,9 @@ class DCConverter:
         try:
             root = ET.fromstring(xml_content)
         except ET.ParseError as e:  # pragma: no cover
-            raise DCConverterError(f"Failed to parse XML for {section_number}: {e}", url)  # pragma: no cover
+            raise DCConverterError(
+                f"Failed to parse XML for {section_number}: {e}", url
+            )  # pragma: no cover
 
         title_num, _ = self._parse_section_number(section_number)
         title_name = DC_TITLES.get(title_num, f"Title {title_num}")
@@ -520,7 +522,9 @@ class DCConverter:
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 raise DCConverterError(f"Section {section_number} not found", url)
-            raise DCConverterError(f"HTTP error fetching {section_number}: {e}", url)  # pragma: no cover
+            raise DCConverterError(
+                f"HTTP error fetching {section_number}: {e}", url
+            )  # pragma: no cover
 
         parsed = self._parse_xml(xml_content, section_number, url)
         return self._to_section(parsed)
@@ -540,7 +544,9 @@ class DCConverter:
         except httpx.HTTPStatusError as e:  # pragma: no cover
             if e.response.status_code == 404:  # pragma: no cover
                 return []  # pragma: no cover
-            raise DCConverterError(f"Failed to fetch title {title} index: {e}", url)  # pragma: no cover
+            raise DCConverterError(
+                f"Failed to fetch title {title} index: {e}", url
+            )  # pragma: no cover
 
         # Parse index.xml to find section includes
         section_numbers = []

@@ -148,7 +148,7 @@ class NJConverter:
             self._client = httpx.Client(
                 timeout=60.0,
                 headers={
-                    "User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)",
+                    "User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)",
                     "Accept": "text/html,application/xhtml+xml",
                 },
                 follow_redirects=True,
@@ -272,9 +272,7 @@ class NJConverter:
 
         # Try to find the section heading
         # Look for patterns like "54:4-1 Title text" or "54:4-1. Title text"
-        title_pattern = re.compile(
-            rf"{re.escape(section_number)}\.?\s+([^.]+(?:\.[^.]+)?)\."
-        )
+        title_pattern = re.compile(rf"{re.escape(section_number)}\.?\s+([^.]+(?:\.[^.]+)?)\.")
 
         # Search in text content
         for text_node in soup.stripped_strings:
@@ -319,9 +317,7 @@ class NJConverter:
 
         # Extract history note - NJ uses "Amended YYYY, c.XXX, s.X"
         history = None
-        history_match = re.search(
-            r"(Amended\s+\d{4}[^.]*(?:\.\s*)?)+", text, re.IGNORECASE
-        )
+        history_match = re.search(r"(Amended\s+\d{4}[^.]*(?:\.\s*)?)+", text, re.IGNORECASE)
         if history_match:
             history = history_match.group(0).strip()[:1000]  # Limit length
         else:

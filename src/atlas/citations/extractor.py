@@ -2,7 +2,7 @@
 
 The goal is recall with high-precision scoring rather than perfect parsing:
 every extracted ref carries a ``confidence`` so downstream consumers can
-choose the threshold that suits them (the viewer wants recall; RAC
+choose the threshold that suits them (the viewer wants recall; RuleSpec
 tooling probably wants precision).
 
 Patterns covered today:
@@ -36,7 +36,7 @@ from typing import ClassVar
 class ExtractedRef:
     """A single citation found in source text.
 
-    Attributes mirror the columns of ``akn.rule_references`` — a caller
+    Attributes mirror the columns of ``arch.rule_references`` — a caller
     can append ``source_rule_id`` and insert directly.
     """
 
@@ -260,10 +260,7 @@ class _StateSectionExtractor(Extractor):
             rf"(?P<sub>{_SUBSECTION_CHAIN})"
             r"\s+of\s+the\s+"
             r"(?P<law>"
-            + "|".join(
-                re.escape(name)
-                for name in sorted(cls.law_codes, key=len, reverse=True)
-            )
+            + "|".join(re.escape(name) for name in sorted(cls.law_codes, key=len, reverse=True))
             + r")"
             rf"\s+{re.escape(cls.suffix_term)}\b",
             re.IGNORECASE,
@@ -280,11 +277,7 @@ class _StateSectionExtractor(Extractor):
         if not source_citation_path:
             return None
         parts = source_citation_path.split("/")
-        if (
-            len(parts) >= 3
-            and parts[0] == self.jurisdiction
-            and parts[1] == "statute"
-        ):
+        if len(parts) >= 3 and parts[0] == self.jurisdiction and parts[1] == "statute":
             return parts[2]
         return None
 
@@ -306,9 +299,7 @@ class _StateSectionExtractor(Extractor):
                 refs.append(self._build_ref(m, enclosing, confidence=0.7))
         return refs
 
-    def _build_ref(
-        self, match: re.Match[str], code: str, confidence: float
-    ) -> ExtractedRef:
+    def _build_ref(self, match: re.Match[str], code: str, confidence: float) -> ExtractedRef:
         section = match.group("section")
         sub = match.group("sub") or ""
         path_parts = [self.jurisdiction, "statute", code, section]

@@ -22,9 +22,7 @@ def section_to_akn_xml(section: Section, state: str) -> str:
     ET.register_namespace("", AKN_NS)
 
     section_id = (
-        section.citation.section
-        if hasattr(section.citation, "section")
-        else str(section.citation)
+        section.citation.section if hasattr(section.citation, "section") else str(section.citation)
     )
 
     # Create root
@@ -92,8 +90,8 @@ def section_to_akn_xml(section: Section, state: str) -> str:
     references.set("source", "#rules-foundation")
     org = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     org.set("eId", "rules-foundation")
-    org.set("href", "https://rules.foundation")
-    org.set("showAs", "Rules Foundation")
+    org.set("href", "https://axiom-foundation.org")
+    org.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")

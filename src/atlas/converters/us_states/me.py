@@ -249,7 +249,7 @@ class MEConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -305,9 +305,7 @@ class MEConverter:
         # Check if section is repealed
         if "(repealed)" in body_text and len(body_text.strip()) < 500:
             # Very short page with just "(REPEALED)" indicator
-            raise MEConverterError(
-                f"Section {title} MRS {section_number} has been repealed", url
-            )
+            raise MEConverterError(f"Section {title} MRS {section_number} has been repealed", url)
 
         # Extract section title from heading - usually in h3 or similar
         section_title = ""
@@ -362,7 +360,9 @@ class MEConverter:
         content_elem = soup.find("body")
         if content_elem:
             # Remove navigation and scripts
-            for elem in content_elem.find_all(["nav", "script", "style", "header", "footer"]):  # pragma: no cover
+            for elem in content_elem.find_all(
+                ["nav", "script", "style", "header", "footer"]
+            ):  # pragma: no cover
                 elem.decompose()
 
             # Get text content
@@ -500,9 +500,7 @@ class MEConverter:
                 if children:
                     first_child = re.search(r"\(\d+\)", content)
                     direct_text = (
-                        content[: first_child.start()].strip()
-                        if first_child
-                        else content.strip()
+                        content[: first_child.start()].strip() if first_child else content.strip()
                     )
                 else:
                     direct_text = content.strip()
@@ -602,7 +600,9 @@ class MEConverter:
             html = self._get(url)
         except httpx.HTTPStatusError as e:  # pragma: no cover
             if e.response.status_code == 404:  # pragma: no cover
-                raise MEConverterError(f"Section {title} MRS {section_number} not found", url)  # pragma: no cover
+                raise MEConverterError(
+                    f"Section {title} MRS {section_number} not found", url
+                )  # pragma: no cover
             raise  # pragma: no cover
         parsed = self._parse_section_html(html, title, section_number, url)
         return self._to_section(parsed)
@@ -735,7 +735,9 @@ def download_me_tax_chapters() -> Iterator[Section]:
         Section objects
     """
     with MEConverter() as converter:  # pragma: no cover
-        yield from converter.iter_title_chapters(36, list(ME_TAX_CHAPTERS.keys()))  # pragma: no cover
+        yield from converter.iter_title_chapters(
+            36, list(ME_TAX_CHAPTERS.keys())
+        )  # pragma: no cover
 
 
 def download_me_welfare_chapters() -> Iterator[Section]:
@@ -745,4 +747,6 @@ def download_me_welfare_chapters() -> Iterator[Section]:
         Section objects
     """
     with MEConverter() as converter:  # pragma: no cover
-        yield from converter.iter_title_chapters(22, list(ME_WELFARE_CHAPTERS.keys()))  # pragma: no cover
+        yield from converter.iter_title_chapters(
+            22, list(ME_WELFARE_CHAPTERS.keys())
+        )  # pragma: no cover

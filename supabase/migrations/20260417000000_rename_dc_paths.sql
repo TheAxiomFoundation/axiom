@@ -26,8 +26,8 @@
 -- -----
 -- citation_path only. Row ``id`` stays the same (deterministic UUID
 -- seeded on the old path, but the id is an opaque identifier — nothing
--- outside ``akn.rules.id`` looks at how it was constructed). No
--- references in ``akn.rule_references.target_citation_path`` point at
+-- outside ``arch.rules.id`` looks at how it was constructed). No
+-- references in ``arch.rule_references.target_citation_path`` point at
 -- DC paths today, since the USC/CFR/IRC extractors don't emit
 -- ``us-dc/...`` targets; no refs-table fixups needed.
 --
@@ -41,7 +41,7 @@
 
 BEGIN;
 
-UPDATE akn.rules
+UPDATE arch.rules
 SET citation_path = regexp_replace(
     citation_path,
     '^us-dc/statute/0/DC-([^-]+)-',
@@ -56,7 +56,7 @@ DECLARE
   stragglers integer;
 BEGIN
   SELECT COUNT(*) INTO stragglers
-  FROM akn.rules
+  FROM arch.rules
   WHERE jurisdiction = 'us-dc'
     AND citation_path LIKE 'us-dc/statute/0/DC-%';
   IF stragglers > 0 THEN

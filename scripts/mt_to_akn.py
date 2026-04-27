@@ -40,16 +40,20 @@ def section_to_xml_dict(section: Section) -> dict:
     for sub in section.subsections:
         children = []
         for child in sub.children:
-            children.append({
-                "identifier": child.identifier,
-                "text": child.text or "",
-                "children": [],
-            })
-        subsections.append({
-            "identifier": sub.identifier,
-            "text": sub.text or "",
-            "children": children,
-        })
+            children.append(
+                {
+                    "identifier": child.identifier,
+                    "text": child.text or "",
+                    "children": [],
+                }
+            )
+        subsections.append(
+            {
+                "identifier": sub.identifier,
+                "text": sub.text or "",
+                "children": children,
+            }
+        )
 
     # Extract section number from citation (e.g., "MT-15-30-2101" -> "15-30-2101")
     section_num = section.citation.section
@@ -116,9 +120,15 @@ def create_akn_xml(title: int, chapter: int, chapter_name: str, sections: list[d
     # FRBRExpression
     expr = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRExpression")
     expr_this = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRthis")
-    expr_this.set("value", f"/akn/us-mt/act/mca/title-{title}/chapter-{chapter}/eng@{date.today().isoformat()}")
+    expr_this.set(
+        "value",
+        f"/akn/us-mt/act/mca/title-{title}/chapter-{chapter}/eng@{date.today().isoformat()}",
+    )
     expr_uri = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRuri")
-    expr_uri.set("value", f"/akn/us-mt/act/mca/title-{title}/chapter-{chapter}/eng@{date.today().isoformat()}")
+    expr_uri.set(
+        "value",
+        f"/akn/us-mt/act/mca/title-{title}/chapter-{chapter}/eng@{date.today().isoformat()}",
+    )
     expr_date = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRdate")
     expr_date.set("date", date.today().isoformat())
     expr_date.set("name", "publication")
@@ -130,9 +140,15 @@ def create_akn_xml(title: int, chapter: int, chapter_name: str, sections: list[d
     # FRBRManifestation
     manif = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRManifestation")
     manif_this = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRthis")
-    manif_this.set("value", f"/akn/us-mt/act/mca/title-{title}/chapter-{chapter}/eng@{date.today().isoformat()}/main.xml")
+    manif_this.set(
+        "value",
+        f"/akn/us-mt/act/mca/title-{title}/chapter-{chapter}/eng@{date.today().isoformat()}/main.xml",
+    )
     manif_uri = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRuri")
-    manif_uri.set("value", f"/akn/us-mt/act/mca/title-{title}/chapter-{chapter}/eng@{date.today().isoformat()}/main.xml")
+    manif_uri.set(
+        "value",
+        f"/akn/us-mt/act/mca/title-{title}/chapter-{chapter}/eng@{date.today().isoformat()}/main.xml",
+    )
     manif_date = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRdate")
     manif_date.set("date", date.today().isoformat())
     manif_date.set("name", "generation")
@@ -146,7 +162,7 @@ def create_akn_xml(title: int, chapter: int, chapter_name: str, sections: list[d
     # TLC references
     arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://rules.foundation")
+    arch_ref.set("href", "https://axiom-foundation.org")
     arch_ref.set("showAs", "Atlas")
 
     mt_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
@@ -262,7 +278,9 @@ def add_subsection_to_xml(parent: ET.Element, subsection: dict, parent_id: str, 
         add_subsection_to_xml(elem, child, sub_id, level + 1)
 
 
-def convert_chapter(converter: MTConverter, title: int, chapter: int, chapter_name: str, output_dir: Path) -> dict:
+def convert_chapter(
+    converter: MTConverter, title: int, chapter: int, chapter_name: str, output_dir: Path
+) -> dict:
     """Convert a single chapter to Akoma Ntoso XML.
 
     Returns:

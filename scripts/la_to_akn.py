@@ -78,11 +78,13 @@ def parse_toc_for_doc_ids(html_path: Path) -> list[dict]:
                 if title_link:
                     title = title_link.get_text(strip=True)
 
-        sections.append({
-            "doc_id": doc_id,
-            "citation": link_text,
-            "title": title,
-        })
+        sections.append(
+            {
+                "doc_id": doc_id,
+                "citation": link_text,
+                "title": title,
+            }
+        )
 
     return sections
 
@@ -133,7 +135,9 @@ def discover_all_sections(input_dir: Path, title_filter: int | None = None) -> l
     return all_sections
 
 
-def section_to_akn_xml(section, converter: LAConverter, original_citation: str = "") -> tuple[str | None, str, str]:
+def section_to_akn_xml(
+    section, converter: LAConverter, original_citation: str = ""
+) -> tuple[str | None, str, str]:
     """Convert a Section model to Akoma Ntoso XML.
 
     Args:
@@ -203,9 +207,15 @@ def section_to_akn_xml(section, converter: LAConverter, original_citation: str =
         # FRBRExpression
         expr = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRExpression")
         expr_this = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRthis")
-        expr_this.set("value", f"/akn/us-la/act/lrs/title-{title_num}/sec-{safe_id}/eng@{date.today().isoformat()}")
+        expr_this.set(
+            "value",
+            f"/akn/us-la/act/lrs/title-{title_num}/sec-{safe_id}/eng@{date.today().isoformat()}",
+        )
         expr_uri = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRuri")
-        expr_uri.set("value", f"/akn/us-la/act/lrs/title-{title_num}/sec-{safe_id}/eng@{date.today().isoformat()}")
+        expr_uri.set(
+            "value",
+            f"/akn/us-la/act/lrs/title-{title_num}/sec-{safe_id}/eng@{date.today().isoformat()}",
+        )
         expr_date = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRdate")
         expr_date.set("date", date.today().isoformat())
         expr_date.set("name", "publication")
@@ -217,9 +227,15 @@ def section_to_akn_xml(section, converter: LAConverter, original_citation: str =
         # FRBRManifestation
         manif = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRManifestation")
         manif_this = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRthis")
-        manif_this.set("value", f"/akn/us-la/act/lrs/title-{title_num}/sec-{safe_id}/eng@{date.today().isoformat()}/main.xml")
+        manif_this.set(
+            "value",
+            f"/akn/us-la/act/lrs/title-{title_num}/sec-{safe_id}/eng@{date.today().isoformat()}/main.xml",
+        )
         manif_uri = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRuri")
-        manif_uri.set("value", f"/akn/us-la/act/lrs/title-{title_num}/sec-{safe_id}/eng@{date.today().isoformat()}/main.xml")
+        manif_uri.set(
+            "value",
+            f"/akn/us-la/act/lrs/title-{title_num}/sec-{safe_id}/eng@{date.today().isoformat()}/main.xml",
+        )
         manif_date = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRdate")
         manif_date.set("date", date.today().isoformat())
         manif_date.set("name", "generation")
@@ -232,7 +248,7 @@ def section_to_akn_xml(section, converter: LAConverter, original_citation: str =
 
         arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
         arch_ref.set("eId", "arch")
-        arch_ref.set("href", "https://rules.foundation")
+        arch_ref.set("href", "https://axiom-foundation.org")
         arch_ref.set("showAs", "Atlas")
 
         la_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
@@ -386,14 +402,14 @@ def convert_sections(sections: list[dict], output_dir: Path, limit: int | None =
                         f.write(xml_content)
 
                     stats["success"] += 1
-                    print(f"  [{i+1}/{len(sections)}] OK: {citation} -> {output_path.name}")
+                    print(f"  [{i + 1}/{len(sections)}] OK: {citation} -> {output_path.name}")
                 else:
                     stats["failed"] += 1
-                    print(f"  [{i+1}/{len(sections)}] FAIL: {citation} - No XML generated")
+                    print(f"  [{i + 1}/{len(sections)}] FAIL: {citation} - No XML generated")
 
             except Exception as e:
                 stats["failed"] += 1
-                print(f"  [{i+1}/{len(sections)}] FAIL: {citation} - {e}")
+                print(f"  [{i + 1}/{len(sections)}] FAIL: {citation} - {e}")
 
     return stats
 

@@ -137,12 +137,14 @@ class CACodeParser:
 
     def __post_init__(self):
         if self.code not in CA_CODES:  # pragma: no cover
-            raise ValueError(f"Unknown CA code: {self.code}. Valid codes: {list(CA_CODES.keys())}")  # pragma: no cover
+            raise ValueError(
+                f"Unknown CA code: {self.code}. Valid codes: {list(CA_CODES.keys())}"
+            )  # pragma: no cover
         self._client = httpx.Client(
             timeout=30,
             follow_redirects=True,
             headers={
-                "User-Agent": "Atlas/1.0 (Legal Archive; contact@rules.foundation) https://github.com/RulesFoundation/atlas"
+                "User-Agent": "Atlas/1.0 (Legal Archive; contact@axiom-foundation.org) https://github.com/TheAxiomFoundation/atlas"
             },
         )
 
@@ -172,7 +174,9 @@ class CACodeParser:
         divisions = []  # pragma: no cover
 
         # Find the TOC tree - California uses a nested list structure
-        toc_div = soup.find("div", {"id": "codesToc"}) or soup.find("div", class_="codeBody")  # pragma: no cover
+        toc_div = soup.find("div", {"id": "codesToc"}) or soup.find(
+            "div", class_="codeBody"
+        )  # pragma: no cover
         if not toc_div:  # pragma: no cover
             return divisions  # pragma: no cover
 
@@ -183,11 +187,13 @@ class CACodeParser:
 
             # Filter to structural links (divisions, parts, chapters)
             if "codes_displayText" in href or "expandedbranch" in href:  # pragma: no cover
-                divisions.append({  # pragma: no cover
-                    "name": text,
-                    "url": f"{BASE_URL}/{href}" if not href.startswith("http") else href,
-                    "level": self._infer_level(text),
-                })
+                divisions.append(
+                    {  # pragma: no cover
+                        "name": text,
+                        "url": f"{BASE_URL}/{href}" if not href.startswith("http") else href,
+                        "level": self._infer_level(text),
+                    }
+                )
 
         return divisions  # pragma: no cover
 
@@ -277,11 +283,15 @@ class CACodeParser:
 
         # Extract heading if present
         heading_tag = content_div.find(["h1", "h2", "h3", "h4"])  # pragma: no cover
-        heading = heading_tag.get_text(strip=True) if heading_tag else f"{self.code} § {section_num}"  # pragma: no cover
+        heading = (
+            heading_tag.get_text(strip=True) if heading_tag else f"{self.code} § {section_num}"
+        )  # pragma: no cover
 
         # Try to get history note
         history_note = ""  # pragma: no cover
-        history_match = re.search(r"(\(Added by Stats\.|Amended by Stats\.)[^)]+\)", text)  # pragma: no cover
+        history_match = re.search(
+            r"(\(Added by Stats\.|Amended by Stats\.)[^)]+\)", text
+        )  # pragma: no cover
         if history_match:  # pragma: no cover
             history_note = history_match.group(0)  # pragma: no cover
 
@@ -318,10 +328,12 @@ class CACodeParser:
             content = match.group(2).strip()  # pragma: no cover
 
             if content:  # Only add if there's actual content  # pragma: no cover
-                subsections.append(CASubsection(  # pragma: no cover
-                    identifier=marker,
-                    text=content[:1000] if len(content) > 1000 else content,
-                ))
+                subsections.append(
+                    CASubsection(  # pragma: no cover
+                        identifier=marker,
+                        text=content[:1000] if len(content) > 1000 else content,
+                    )
+                )
 
         return subsections  # pragma: no cover
 

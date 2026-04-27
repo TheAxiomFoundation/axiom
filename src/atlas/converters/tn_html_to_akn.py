@@ -37,6 +37,7 @@ AKN_NS = "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"
 @dataclass
 class ParsedSubsection:
     """A parsed subsection from HTML."""
+
     identifier: str  # e.g., "a", "1", "A"
     eId: str  # Full eId path
     text: str
@@ -46,6 +47,7 @@ class ParsedSubsection:
 @dataclass
 class ParsedSection:
     """A parsed section from HTML."""
+
     section_num: str  # e.g., "67-1-101"
     heading: str  # e.g., "Liberal construction of title..."
     eId: str  # e.g., "sec_67-1-101"
@@ -57,6 +59,7 @@ class ParsedSection:
 @dataclass
 class ParsedPart:
     """A parsed part from HTML."""
+
     part_num: str  # e.g., "1"
     heading: str  # e.g., "Miscellaneous Provisions"
     eId: str  # e.g., "chp_1__part_1"
@@ -66,6 +69,7 @@ class ParsedPart:
 @dataclass
 class ParsedChapter:
     """A parsed chapter from HTML."""
+
     chapter_num: str  # e.g., "1"
     heading: str  # e.g., "General Provisions"
     eId: str  # e.g., "chp_1"
@@ -76,6 +80,7 @@ class ParsedChapter:
 @dataclass
 class ParsedTitle:
     """A parsed title from HTML."""
+
     title_num: str  # e.g., "67"
     heading: str  # e.g., "Taxes And Licenses"
     chapters: list[ParsedChapter] = field(default_factory=list)
@@ -134,19 +139,23 @@ class TennesseeToAKN:
                 output_file.write_text(xml_str, encoding="utf-8")
 
                 results["success"] += 1
-                results["titles"].append({
-                    "title": title_num,
-                    "heading": parsed.heading,
-                    "chapters": len(parsed.chapters),
-                    "output": str(output_file),
-                })
+                results["titles"].append(
+                    {
+                        "title": title_num,
+                        "heading": parsed.heading,
+                        "chapters": len(parsed.chapters),
+                        "output": str(output_file),
+                    }
+                )
 
             except Exception as e:  # pragma: no cover
                 results["failed"] += 1  # pragma: no cover
-                results["errors"].append({  # pragma: no cover
-                    "file": str(title_file),
-                    "error": str(e),
-                })
+                results["errors"].append(
+                    {  # pragma: no cover
+                        "file": str(title_file),
+                        "error": str(e),
+                    }
+                )
 
         return results
 
@@ -234,7 +243,9 @@ class TennesseeToAKN:
 
                     # Get the containing div to extract content
                     parent_div = elem.find_parent("div")
-                    section_text, subsections, history = self._parse_section_content(parent_div, elem)
+                    section_text, subsections, history = self._parse_section_content(
+                        parent_div, elem
+                    )
 
                     section = ParsedSection(
                         section_num=section_num,
@@ -254,9 +265,7 @@ class TennesseeToAKN:
         return parsed_title
 
     def _parse_section_content(
-        self,
-        div: Tag | None,
-        h3: Tag
+        self, div: Tag | None, h3: Tag
     ) -> tuple[str, list[ParsedSubsection], str]:
         """Parse section content from containing div.
 
@@ -299,10 +308,7 @@ class TennesseeToAKN:
         return "\n".join(text_parts), subsections, history
 
     def _parse_subsection_list(
-        self,
-        ol: Tag,
-        parent_eId: str,
-        level: int
+        self, ol: Tag, parent_eId: str, level: int
     ) -> list[ParsedSubsection]:
         """Recursively parse subsection lists."""
         subsections = []
@@ -338,12 +344,14 @@ class TennesseeToAKN:
                         if text:  # pragma: no cover
                             text_parts.append(text)  # pragma: no cover
 
-            subsections.append(ParsedSubsection(
-                identifier=identifier,
-                eId=eId,
-                text=" ".join(text_parts),
-                children=children,
-            ))
+            subsections.append(
+                ParsedSubsection(
+                    identifier=identifier,
+                    eId=eId,
+                    text=" ".join(text_parts),
+                    children=children,
+                )
+            )
 
         return subsections
 
@@ -456,8 +464,8 @@ class TennesseeToAKN:
 
         org3 = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
         org3.set("eId", "rules-foundation")
-        org3.set("href", "https://rules.foundation")
-        org3.set("showAs", "Rules Foundation")
+        org3.set("href", "https://axiom-foundation.org")
+        org3.set("showAs", "The Axiom Foundation")
 
         # Body
         body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -577,7 +585,9 @@ def main():
 
     if len(sys.argv) < 3:  # pragma: no cover
         print("Usage: python tn_html_to_akn.py <input_dir> <output_dir>")  # pragma: no cover
-        print("Example: python tn_html_to_akn.py data/statutes/us-tn/release76.2021.05.21 /tmp/rules-us-tn-akn")  # pragma: no cover
+        print(
+            "Example: python tn_html_to_akn.py data/statutes/us-tn/release76.2021.05.21 /tmp/rules-us-tn-akn"
+        )  # pragma: no cover
         sys.exit(1)  # pragma: no cover
 
     input_dir = sys.argv[1]  # pragma: no cover
@@ -590,14 +600,16 @@ def main():
     print(f"  Success: {results['success']}")  # pragma: no cover
     print(f"  Failed: {results['failed']}")  # pragma: no cover
 
-    if results['titles']:  # pragma: no cover
+    if results["titles"]:  # pragma: no cover
         print(f"\nConverted titles:")  # pragma: no cover
-        for title in results['titles']:  # pragma: no cover
-            print(f"  Title {title['title']}: {title['heading']} ({title['chapters']} chapters)")  # pragma: no cover
+        for title in results["titles"]:  # pragma: no cover
+            print(
+                f"  Title {title['title']}: {title['heading']} ({title['chapters']} chapters)"
+            )  # pragma: no cover
 
-    if results['errors']:  # pragma: no cover
+    if results["errors"]:  # pragma: no cover
         print(f"\nErrors:")  # pragma: no cover
-        for error in results['errors']:  # pragma: no cover
+        for error in results["errors"]:  # pragma: no cover
             print(f"  {error['file']}: {error['error']}")  # pragma: no cover
 
 

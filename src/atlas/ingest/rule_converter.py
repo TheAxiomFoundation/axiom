@@ -50,14 +50,12 @@ def section_to_rules(
         "ordinal": ordinal,
         "heading": section.section_title,
         "body": section.text,
-        "effective_date": (
-            section.effective_date.isoformat() if section.effective_date else None
-        ),
+        "effective_date": (section.effective_date.isoformat() if section.effective_date else None),
         "source_url": section.source_url,
         "source_path": None,
         "citation_path": citation_path,
-        "rac_path": None,
-        "has_rac": False,
+        "rulespec_path": None,
+        "has_rulespec": False,
     }
 
     yield from _subsections_to_rules(
@@ -97,8 +95,8 @@ def _subsections_to_rules(
             "source_url": None,
             "source_path": None,
             "citation_path": citation_path,
-            "rac_path": None,
-            "has_rac": False,
+            "rulespec_path": None,
+            "has_rulespec": False,
         }
 
         if sub.children:

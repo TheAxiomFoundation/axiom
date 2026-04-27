@@ -150,7 +150,7 @@ class MDConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -216,7 +216,9 @@ class MDConverter:
         # Find the StatuteText div which contains the actual statute content
         statute_div = soup.find("div", id="StatuteText")
         if not statute_div:
-            raise MDConverterError(f"Could not find StatuteText div for {section_number}", url)  # pragma: no cover
+            raise MDConverterError(
+                f"Could not find StatuteText div for {section_number}", url
+            )  # pragma: no cover
 
         # Get the raw HTML content
         statute_html = str(statute_div)
@@ -277,7 +279,7 @@ class MDConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse second-level children (1), (2), etc.
             children = self._parse_level2(content)
@@ -323,7 +325,7 @@ class MDConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse third-level children (i), (ii), etc.
             children = self._parse_level3(content)
@@ -366,7 +368,7 @@ class MDConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1).lower()
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Limit size and stop at next subsection
             next_sub = re.search(r"\([ivxlcdm]+\)", content, re.IGNORECASE)
@@ -468,7 +470,9 @@ class MDConverter:
         try:
             sections_data = self._get_json(url)
         except Exception as e:  # pragma: no cover
-            raise MDConverterError(f"Failed to fetch sections for {article_code}: {e}", url)  # pragma: no cover
+            raise MDConverterError(
+                f"Failed to fetch sections for {article_code}: {e}", url
+            )  # pragma: no cover
 
         return [item["DisplayText"] for item in sections_data]
 
@@ -497,7 +501,9 @@ class MDConverter:
                 yield self.fetch_section(article_code, section_num)
             except MDConverterError as e:  # pragma: no cover
                 # Log but continue with other sections
-                print(f"Warning: Could not fetch {article_code} {section_num}: {e}")  # pragma: no cover
+                print(
+                    f"Warning: Could not fetch {article_code} {section_num}: {e}"
+                )  # pragma: no cover
                 continue  # pragma: no cover
 
     def iter_articles(

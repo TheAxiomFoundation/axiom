@@ -159,7 +159,7 @@ class MTConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -192,7 +192,9 @@ class MTConverter:
         """
         parts = citation.split("-")
         if len(parts) != 3:
-            raise MTConverterError(f"Invalid Montana citation format: {citation}")  # pragma: no cover
+            raise MTConverterError(
+                f"Invalid Montana citation format: {citation}"
+            )  # pragma: no cover
 
         title = int(parts[0])
         chapter = int(parts[1])
@@ -364,7 +366,7 @@ class MTConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse second-level children (a), (b), etc.
             children = self._parse_level2(content)
@@ -406,7 +408,7 @@ class MTConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Limit to reasonable size and stop at next numbered subsection
             next_num = re.search(r"\(\d+\)", content)

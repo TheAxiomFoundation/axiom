@@ -104,7 +104,7 @@ def parse_sections(soup: BeautifulSoup, chapter_num: str) -> list[dict]:
         if leadline and section_title:
             idx = first_text.find(section_title)
             if idx >= 0:
-                content_after = first_text[idx + len(section_title):].strip()
+                content_after = first_text[idx + len(section_title) :].strip()
                 if content_after:
                     content_parts.append(content_after)
 
@@ -134,13 +134,15 @@ def parse_sections(soup: BeautifulSoup, chapter_num: str) -> list[dict]:
         # Parse subsections
         subsections = parse_subsections(full_text)
 
-        sections.append({
-            "section_number": section_number,
-            "title": section_title or f"Section {section_number}",
-            "text": full_text,
-            "history": history,
-            "subsections": subsections,
-        })
+        sections.append(
+            {
+                "section_number": section_number,
+                "title": section_title or f"Section {section_number}",
+                "text": full_text,
+                "history": history,
+                "subsections": subsections,
+            }
+        )
 
     return sections
 
@@ -175,20 +177,24 @@ def parse_subsections(text: str) -> list[dict]:
         # Get direct text before children
         if children:
             first_child_match = re.search(r"\([a-z]\)", content)
-            direct_text = content[:first_child_match.start()].strip() if first_child_match else content
+            direct_text = (
+                content[: first_child_match.start()].strip() if first_child_match else content
+            )
         else:
             direct_text = content
 
         # Clean up - remove next numbered subsection
         next_sub = re.search(r"\s+\d+\.\s{2,}", direct_text)
         if next_sub:
-            direct_text = direct_text[:next_sub.start()]
+            direct_text = direct_text[: next_sub.start()]
 
-        subsections.append({
-            "identifier": identifier,
-            "text": direct_text[:5000],
-            "children": children,
-        })
+        subsections.append(
+            {
+                "identifier": identifier,
+                "text": direct_text[:5000],
+                "children": children,
+            }
+        )
 
     return subsections
 
@@ -212,22 +218,24 @@ def parse_subsection_level2(text: str) -> list[dict]:
         # Limit to reasonable size
         next_num = re.search(r"\s+\d+\.\s{2,}", content)
         if next_num:
-            content = content[:next_num.start()]
+            content = content[: next_num.start()]
 
         # Parse level 3
         children = parse_subsection_level3(content)
 
         if children:
             first_match = re.search(r"\(\d+\)", content)
-            direct_text = content[:first_match.start()].strip() if first_match else content
+            direct_text = content[: first_match.start()].strip() if first_match else content
         else:
             direct_text = content
 
-        subsections.append({
-            "identifier": identifier,
-            "text": direct_text[:5000],
-            "children": children,
-        })
+        subsections.append(
+            {
+                "identifier": identifier,
+                "text": direct_text[:5000],
+                "children": children,
+            }
+        )
 
     return subsections
 
@@ -251,13 +259,15 @@ def parse_subsection_level3(text: str) -> list[dict]:
         # Stop at next alphabetic
         next_alpha = re.search(r"\([a-z]\)", content)
         if next_alpha:
-            content = content[:next_alpha.start()]
+            content = content[: next_alpha.start()]
 
-        subsections.append({
-            "identifier": identifier,
-            "text": content[:5000],
-            "children": [],
-        })
+        subsections.append(
+            {
+                "identifier": identifier,
+                "text": content[:5000],
+                "children": [],
+            }
+        )
 
     return subsections
 
@@ -312,9 +322,13 @@ def create_akn_xml(chapter_num: str, chapter_title: str, sections: list[dict]) -
     # FRBRExpression
     expr = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRExpression")
     expr_this = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRthis")
-    expr_this.set("value", f"/akn/us-nv/act/nrs/chapter-{chapter_num}/eng@{date.today().isoformat()}")
+    expr_this.set(
+        "value", f"/akn/us-nv/act/nrs/chapter-{chapter_num}/eng@{date.today().isoformat()}"
+    )
     expr_uri = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRuri")
-    expr_uri.set("value", f"/akn/us-nv/act/nrs/chapter-{chapter_num}/eng@{date.today().isoformat()}")
+    expr_uri.set(
+        "value", f"/akn/us-nv/act/nrs/chapter-{chapter_num}/eng@{date.today().isoformat()}"
+    )
     expr_date = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRdate")
     expr_date.set("date", date.today().isoformat())
     expr_date.set("name", "publication")
@@ -326,9 +340,13 @@ def create_akn_xml(chapter_num: str, chapter_title: str, sections: list[dict]) -
     # FRBRManifestation
     manif = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRManifestation")
     manif_this = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRthis")
-    manif_this.set("value", f"/akn/us-nv/act/nrs/chapter-{chapter_num}/eng@{date.today().isoformat()}/main.xml")
+    manif_this.set(
+        "value", f"/akn/us-nv/act/nrs/chapter-{chapter_num}/eng@{date.today().isoformat()}/main.xml"
+    )
     manif_uri = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRuri")
-    manif_uri.set("value", f"/akn/us-nv/act/nrs/chapter-{chapter_num}/eng@{date.today().isoformat()}/main.xml")
+    manif_uri.set(
+        "value", f"/akn/us-nv/act/nrs/chapter-{chapter_num}/eng@{date.today().isoformat()}/main.xml"
+    )
     manif_date = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRdate")
     manif_date.set("date", date.today().isoformat())
     manif_date.set("name", "generation")
@@ -342,7 +360,7 @@ def create_akn_xml(chapter_num: str, chapter_title: str, sections: list[dict]) -
     # TLC references
     arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://rules.foundation")
+    arch_ref.set("href", "https://axiom-foundation.org")
     arch_ref.set("showAs", "Atlas")
 
     nv_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
@@ -463,7 +481,12 @@ def convert_file(html_path: Path, output_dir: Path) -> dict:
     chapter_num = extract_chapter_number(filename)
 
     if not chapter_num:
-        return {"chapter": filename, "sections": 0, "success": False, "error": "Could not extract chapter number"}
+        return {
+            "chapter": filename,
+            "sections": 0,
+            "success": False,
+            "error": "Could not extract chapter number",
+        }
 
     try:
         with open(html_path, "r", encoding="cp1252", errors="replace") as f:

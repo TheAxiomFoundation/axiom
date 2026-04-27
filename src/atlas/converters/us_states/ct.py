@@ -266,7 +266,7 @@ class CTConverter:
                 self._client = httpx.Client(
                     timeout=60.0,
                     headers={
-                        "User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"
+                        "User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"
                     },
                     verify=ssl_context,
                 )
@@ -274,7 +274,7 @@ class CTConverter:
                 self._client = httpx.Client(
                     timeout=60.0,
                     headers={
-                        "User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"
+                        "User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"
                     },
                 )
         return self._client
@@ -309,7 +309,7 @@ class CTConverter:
             section_suffix = section_number.split("-")[1] if "-" in section_number else ""
             try:
                 sec_num = int(re.match(r"(\d+)", section_suffix).group(1)) if section_suffix else 0
-            except (AttributeError, ValueError):  # pragma: no cover
+            except AttributeError, ValueError:  # pragma: no cover
                 sec_num = 0  # pragma: no cover
 
             # Section number ranges for Title 12 chapters (approximate)
@@ -511,7 +511,7 @@ class CTConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Check for bold heading at start
             heading = None
@@ -521,7 +521,7 @@ class CTConverter:
                 # Headings are typically short phrases ending in period
                 if len(potential_heading) < 100 and potential_heading[0].isupper():
                     heading = potential_heading.rstrip(".")
-                    content = content[heading_match.end():]
+                    content = content[heading_match.end() :]
 
             # Parse level 2 children (1), (2), etc.
             children = self._parse_level2(content)
@@ -565,7 +565,7 @@ class CTConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse level 3 children (A), (B), etc.
             children = self._parse_level3(content)
@@ -602,7 +602,7 @@ class CTConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Limit content
             next_match = re.search(r"\([A-Z]\)|\(\d+\)|\([a-z]\)", content)
@@ -662,10 +662,7 @@ class CTConverter:
         html = self._get(url)
         parsed_sections = self._parse_chapter_html(html, chapter)
 
-        return {
-            sec_num: self._to_section(parsed)
-            for sec_num, parsed in parsed_sections.items()
-        }
+        return {sec_num: self._to_section(parsed) for sec_num, parsed in parsed_sections.items()}
 
     def fetch_section(self, section_number: str, chapter: str | None = None) -> Section:
         """Fetch and convert a single section.

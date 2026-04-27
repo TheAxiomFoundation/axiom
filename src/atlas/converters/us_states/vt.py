@@ -194,7 +194,7 @@ class VTConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -612,7 +612,9 @@ class VTConverter:
                 yield self.fetch_section(title, chapter, section_num)
             except VTConverterError as e:  # pragma: no cover
                 # Log but continue with other sections
-                print(f"Warning: Could not fetch {title} V.S.A. {section_num}: {e}")  # pragma: no cover
+                print(
+                    f"Warning: Could not fetch {title} V.S.A. {section_num}: {e}"
+                )  # pragma: no cover
                 continue  # pragma: no cover
 
     def iter_title(self, title: int) -> Iterator[Section]:

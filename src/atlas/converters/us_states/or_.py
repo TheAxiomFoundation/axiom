@@ -141,7 +141,7 @@ class ORConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -217,13 +217,11 @@ class ORConverter:
         # The section number and title are in bold. The title may be on a new line.
         # Uses re.DOTALL to match across newlines
         section_pattern = re.compile(
-            rf"^\s*({chapter}\.\d{{3}}[A-Za-z]?)\s+(.+?)\.?\s*$",
-            re.DOTALL
+            rf"^\s*({chapter}\.\d{{3}}[A-Za-z]?)\s+(.+?)\.?\s*$", re.DOTALL
         )
         # Repealed section pattern: "316.035 [1953 c.304 ...]"
         repealed_pattern = re.compile(
-            rf"^\s*({chapter}\.\d{{3}}[A-Za-z]?)\s*(\[.+\])\s*$",
-            re.DOTALL
+            rf"^\s*({chapter}\.\d{{3}}[A-Za-z]?)\s*(\[.+\])\s*$", re.DOTALL
         )
 
         for p in paragraphs:
@@ -241,13 +239,15 @@ class ORConverter:
                 if match or repealed_match:
                     # Save previous section if exists
                     if current_section:
-                        sections.append(self._finalize_section(
-                            current_section,
-                            current_text_parts,
-                            chapter,
-                            chapter_title,
-                            url,
-                        ))
+                        sections.append(
+                            self._finalize_section(
+                                current_section,
+                                current_text_parts,
+                                chapter,
+                                chapter_title,
+                                url,
+                            )
+                        )
                         current_text_parts = []
 
                     if repealed_match:
@@ -261,7 +261,7 @@ class ORConverter:
                             "history": history,
                         }
                         # Get any remaining text after the bold
-                        remaining = full_text[len(bold_text):].strip()
+                        remaining = full_text[len(bold_text) :].strip()
                         if remaining and not remaining.startswith("["):
                             current_text_parts.append(remaining)  # pragma: no cover
                     else:
@@ -276,7 +276,7 @@ class ORConverter:
                             "history": None,
                         }
                         # Get any remaining text after the bold (the body starts)
-                        remaining = full_text[len(bold_text):].strip()
+                        remaining = full_text[len(bold_text) :].strip()
                         if remaining:
                             current_text_parts.append(remaining)
                     continue
@@ -287,13 +287,15 @@ class ORConverter:
 
         # Don't forget the last section
         if current_section:
-            sections.append(self._finalize_section(
-                current_section,
-                current_text_parts,
-                chapter,
-                chapter_title,
-                url,
-            ))
+            sections.append(
+                self._finalize_section(
+                    current_section,
+                    current_text_parts,
+                    chapter,
+                    chapter_title,
+                    url,
+                )
+            )
 
         return sections
 
@@ -314,7 +316,7 @@ class ORConverter:
             history_match = re.search(r"\[(\d{4}\s+c\.\d+[^]]*)\]\s*$", full_text)
             if history_match:
                 history = history_match.group(0)
-                full_text = full_text[:history_match.start()].strip()
+                full_text = full_text[: history_match.start()].strip()
 
         # Parse subsections from text
         subsections = self._parse_subsections(full_text)
@@ -361,7 +363,7 @@ class ORConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse second-level children (a), (b), etc.
             children = self._parse_level2(content)
@@ -370,7 +372,7 @@ class ORConverter:
             if children:
                 first_child_match = re.search(r"\([a-z]\)", content)
                 direct_text = (
-                    content[:first_child_match.start()].strip()
+                    content[: first_child_match.start()].strip()
                     if first_child_match
                     else content.strip()
                 )
@@ -380,7 +382,7 @@ class ORConverter:
             # Clean up text - remove trailing subsections
             next_subsection = re.search(r"\(\d+\)", direct_text)
             if next_subsection:
-                direct_text = direct_text[:next_subsection.start()].strip()  # pragma: no cover
+                direct_text = direct_text[: next_subsection.start()].strip()  # pragma: no cover
 
             subsections.append(
                 ParsedORSubsection(
@@ -403,7 +405,7 @@ class ORConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse level 3 children (A), (B), etc.
             children = self._parse_level3(content)
@@ -412,7 +414,7 @@ class ORConverter:
             if children:  # pragma: no cover
                 first_child_match = re.search(r"\([A-Z]\)", content)
                 direct_text = (
-                    content[:first_child_match.start()].strip()
+                    content[: first_child_match.start()].strip()
                     if first_child_match
                     else content.strip()
                 )
@@ -420,9 +422,7 @@ class ORConverter:
                 # Stop at next numbered subsection or (a)-(z)
                 next_match = re.search(r"\(\d+\)|\([a-z]\)", content)
                 direct_text = (
-                    content[:next_match.start()].strip()
-                    if next_match
-                    else content.strip()
+                    content[: next_match.start()].strip() if next_match else content.strip()
                 )
 
             subsections.append(
@@ -446,12 +446,12 @@ class ORConverter:
                 continue
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Stop at parent-level markers
             next_match = re.search(r"\(\d+\)|\([a-z]\)|\([A-Z]\)", content)
             if next_match:
-                content = content[:next_match.start()]
+                content = content[: next_match.start()]
 
             subsections.append(
                 ParsedORSubsection(
@@ -579,11 +579,7 @@ class ORConverter:
             html = self._get(url)
             self._chapter_cache[chapter] = self._parse_chapter_html(html, chapter, url)
 
-        return [
-            p.section_number
-            for p in self._chapter_cache[chapter]
-            if not p.is_repealed
-        ]
+        return [p.section_number for p in self._chapter_cache[chapter] if not p.is_repealed]
 
     def iter_chapter(self, chapter: int) -> Iterator[Section]:
         """Iterate over all sections in a chapter.

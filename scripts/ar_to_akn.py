@@ -24,7 +24,12 @@ from xml.etree import ElementTree as ET
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.converters.us_states.ar import ARConverter, AR_TAX_CHAPTERS, AR_WELFARE_CHAPTERS, AR_TITLES
+from atlas.converters.us_states.ar import (
+    ARConverter,
+    AR_TAX_CHAPTERS,
+    AR_WELFARE_CHAPTERS,
+    AR_TITLES,
+)
 
 # Akoma Ntoso namespace
 AKN_NS = "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"
@@ -135,8 +140,8 @@ def section_to_akn_xml(section, title_num: int, chapter_num: int) -> str:
 
     tlc_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     tlc_rf.set("eId", "rules-foundation")
-    tlc_rf.set("href", "https://rules.foundation")
-    tlc_rf.set("showAs", "Rules Foundation")
+    tlc_rf.set("href", "https://axiom-foundation.org")
+    tlc_rf.set("showAs", "The Axiom Foundation")
 
     tlc_justia = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     tlc_justia.set("eId", "justia")
@@ -196,7 +201,9 @@ def section_to_akn_xml(section, title_num: int, chapter_num: int) -> str:
         # Add nested subsections (level 2)
         for child in subsec.children:
             child_elem = ET.SubElement(subsec_elem, f"{{{AKN_NS}}}paragraph")
-            child_elem.set("eId", f"sec_{section_id_safe}__subsec_{subsec.identifier}__para_{child.identifier}")
+            child_elem.set(
+                "eId", f"sec_{section_id_safe}__subsec_{subsec.identifier}__para_{child.identifier}"
+            )
 
             child_num = ET.SubElement(child_elem, f"{{{AKN_NS}}}num")
             child_num.text = f"({child.identifier})"
@@ -209,7 +216,10 @@ def section_to_akn_xml(section, title_num: int, chapter_num: int) -> str:
             # Add level 3 subsections
             for grandchild in child.children:
                 gc_elem = ET.SubElement(child_elem, f"{{{AKN_NS}}}subparagraph")
-                gc_elem.set("eId", f"sec_{section_id_safe}__subsec_{subsec.identifier}__para_{child.identifier}__subpara_{grandchild.identifier}")
+                gc_elem.set(
+                    "eId",
+                    f"sec_{section_id_safe}__subsec_{subsec.identifier}__para_{child.identifier}__subpara_{grandchild.identifier}",
+                )
 
                 gc_num = ET.SubElement(gc_elem, f"{{{AKN_NS}}}num")
                 gc_num.text = f"({grandchild.identifier})"
@@ -225,7 +235,9 @@ def section_to_akn_xml(section, title_num: int, chapter_num: int) -> str:
     return f'<?xml version="1.0" encoding="UTF-8"?>\n{xml_str}'
 
 
-def create_chapter_index(title_num: int, chapter_num: int, section_ids: list[str], chapter_name: str) -> str:
+def create_chapter_index(
+    title_num: int, chapter_num: int, section_ids: list[str], chapter_name: str
+) -> str:
     """Create an index file for a chapter listing all sections.
 
     Args:
@@ -266,7 +278,9 @@ def create_chapter_index(title_num: int, chapter_num: int, section_ids: list[str
     # FRBRExpression
     expression = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRExpression")
     expr_this = ET.SubElement(expression, f"{{{AKN_NS}}}FRBRthis")
-    expr_this.set("value", f"/akn/us-ar/act/aca/title-{title_num}/chapter-{chapter_num}/eng@{today}")
+    expr_this.set(
+        "value", f"/akn/us-ar/act/aca/title-{title_num}/chapter-{chapter_num}/eng@{today}"
+    )
     expr_uri = ET.SubElement(expression, f"{{{AKN_NS}}}FRBRuri")
     expr_uri.set("value", f"/akn/us-ar/act/aca/title-{title_num}/chapter-{chapter_num}/eng@{today}")
     expr_date = ET.SubElement(expression, f"{{{AKN_NS}}}FRBRdate")
@@ -280,9 +294,13 @@ def create_chapter_index(title_num: int, chapter_num: int, section_ids: list[str
     # FRBRManifestation
     manifestation = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRManifestation")
     manif_this = ET.SubElement(manifestation, f"{{{AKN_NS}}}FRBRthis")
-    manif_this.set("value", f"/akn/us-ar/act/aca/title-{title_num}/chapter-{chapter_num}/eng@{today}/main.xml")
+    manif_this.set(
+        "value", f"/akn/us-ar/act/aca/title-{title_num}/chapter-{chapter_num}/eng@{today}/main.xml"
+    )
     manif_uri = ET.SubElement(manifestation, f"{{{AKN_NS}}}FRBRuri")
-    manif_uri.set("value", f"/akn/us-ar/act/aca/title-{title_num}/chapter-{chapter_num}/eng@{today}/main.xml")
+    manif_uri.set(
+        "value", f"/akn/us-ar/act/aca/title-{title_num}/chapter-{chapter_num}/eng@{today}/main.xml"
+    )
     manif_date = ET.SubElement(manifestation, f"{{{AKN_NS}}}FRBRdate")
     manif_date.set("date", today)
     manif_date.set("name", "generation")
@@ -311,7 +329,9 @@ def create_chapter_index(title_num: int, chapter_num: int, section_ids: list[str
     return f'<?xml version="1.0" encoding="UTF-8"?>\n{xml_str}'
 
 
-def convert_chapter(converter: ARConverter, title_num: int, chapter_num: int, output_dir: Path) -> dict:
+def convert_chapter(
+    converter: ARConverter, title_num: int, chapter_num: int, output_dir: Path
+) -> dict:
     """Convert all sections in a chapter to AKN XML.
 
     Args:
@@ -395,9 +415,13 @@ def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Convert Arkansas Code to Akoma Ntoso XML")
     parser.add_argument("--title", type=int, default=26, help="Title number (default: 26)")
-    parser.add_argument("--chapters", type=str, help="Comma-separated chapter numbers (default: all tax chapters)")
+    parser.add_argument(
+        "--chapters", type=str, help="Comma-separated chapter numbers (default: all tax chapters)"
+    )
     parser.add_argument("--quick", action="store_true", help="Quick mode: just Title 26 Chapter 51")
-    parser.add_argument("--output", type=str, default="/tmp/rules-us-ar-akn", help="Output directory")
+    parser.add_argument(
+        "--output", type=str, default="/tmp/rules-us-ar-akn", help="Output directory"
+    )
     parser.add_argument("--delay", type=float, default=0.5, help="Rate limit delay in seconds")
     args = parser.parse_args()
 

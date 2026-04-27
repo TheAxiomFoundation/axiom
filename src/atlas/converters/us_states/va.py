@@ -159,7 +159,7 @@ class VAConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -236,8 +236,7 @@ class VAConverter:
             heading_text = heading.get_text(strip=True)
             # Match patterns like "§ 58.1-320. Tax rates" or "58.1-320. Tax rates"
             title_pattern = re.compile(
-                rf"(?:§\s*)?{re.escape(section_number)}[.\s]+(.+?)(?:\s*$)",
-                re.IGNORECASE
+                rf"(?:§\s*)?{re.escape(section_number)}[.\s]+(.+?)(?:\s*$)", re.IGNORECASE
             )
             match = title_pattern.search(heading_text)
             if match:
@@ -250,8 +249,7 @@ class VAConverter:
             if title_tag:
                 title_text = title_tag.get_text(strip=True)
                 title_pattern = re.compile(
-                    rf"(?:§\s*)?{re.escape(section_number)}[.\s]+(.+?)(?:\s*[-|]|$)",
-                    re.IGNORECASE
+                    rf"(?:§\s*)?{re.escape(section_number)}[.\s]+(.+?)(?:\s*[-|]|$)", re.IGNORECASE
                 )
                 match = title_pattern.search(title_text)
                 if match:
@@ -471,7 +469,7 @@ class VAConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Limit size and stop at next subsection
             next_subsection = re.search(r"\(\d+\)", content)

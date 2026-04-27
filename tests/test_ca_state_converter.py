@@ -142,9 +142,7 @@ class TestCAStateConverter:
     def test_parse_html_section(self):
         """Parse HTML into Statute model."""
         converter = CAStateConverter()
-        statute = converter._parse_html(
-            SAMPLE_SECTION_HTML, "RTC", "17052", "https://example.com"
-        )
+        statute = converter._parse_html(SAMPLE_SECTION_HTML, "RTC", "17052", "https://example.com")
 
         assert statute.jurisdiction == "us-ca"
         assert statute.code == "RTC"
@@ -158,9 +156,7 @@ class TestCAStateConverter:
     def test_parse_html_subsections(self):
         """Parse subsections from HTML."""
         converter = CAStateConverter()
-        statute = converter._parse_html(
-            SAMPLE_SECTION_HTML, "RTC", "17052", "https://example.com"
-        )
+        statute = converter._parse_html(SAMPLE_SECTION_HTML, "RTC", "17052", "https://example.com")
 
         # Should have subsections (a) and (b)
         assert len(statute.subsections) >= 2
@@ -170,9 +166,7 @@ class TestCAStateConverter:
     def test_parse_html_history(self):
         """Parse legislative history from HTML."""
         converter = CAStateConverter()
-        statute = converter._parse_html(
-            SAMPLE_SECTION_HTML, "RTC", "17052", "https://example.com"
-        )
+        statute = converter._parse_html(SAMPLE_SECTION_HTML, "RTC", "17052", "https://example.com")
 
         assert statute.history is not None
         assert "Stats. 2022" in statute.history
@@ -180,20 +174,16 @@ class TestCAStateConverter:
     def test_citation_format(self):
         """Statute generates correct citation format."""
         converter = CAStateConverter()
-        statute = converter._parse_html(
-            SAMPLE_SECTION_HTML, "RTC", "17052", "https://example.com"
-        )
+        statute = converter._parse_html(SAMPLE_SECTION_HTML, "RTC", "17052", "https://example.com")
 
         assert statute.citation == "CA RTC \u00a7 17052"
 
-    def test_rac_path_format(self):
-        """Statute generates correct RAC path."""
+    def test_rulespec_path_format(self):
+        """Statute generates correct RuleSpec path."""
         converter = CAStateConverter()
-        statute = converter._parse_html(
-            SAMPLE_SECTION_HTML, "RTC", "17052", "https://example.com"
-        )
+        statute = converter._parse_html(SAMPLE_SECTION_HTML, "RTC", "17052", "https://example.com")
 
-        assert statute.rac_path == "rac-us-ca/statute/RTC/17052.rac"
+        assert statute.rulespec_path == "rules-us-ca/statute/RTC/17052.yaml"
 
     def test_list_codes(self):
         """List available California codes."""

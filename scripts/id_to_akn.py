@@ -64,16 +64,20 @@ def section_to_akn_dict(section: Section) -> dict:
     for sub in section.subsections:
         children = []
         for child in sub.children:
-            children.append({
-                "identifier": child.identifier,
-                "text": child.text or "",
-                "children": [],
-            })
-        subsections.append({
-            "identifier": sub.identifier,
-            "text": sub.text or "",
-            "children": children,
-        })
+            children.append(
+                {
+                    "identifier": child.identifier,
+                    "text": child.text or "",
+                    "children": [],
+                }
+            )
+        subsections.append(
+            {
+                "identifier": sub.identifier,
+                "text": sub.text or "",
+                "children": children,
+            }
+        )
 
     return {
         "section_number": section_num,
@@ -85,7 +89,9 @@ def section_to_akn_dict(section: Section) -> dict:
     }
 
 
-def create_akn_xml(title_num: int, chapter_num: int, chapter_title: str, sections: list[dict]) -> str:
+def create_akn_xml(
+    title_num: int, chapter_num: int, chapter_title: str, sections: list[dict]
+) -> str:
     """Create Akoma Ntoso XML from parsed sections.
 
     Args:
@@ -145,10 +151,16 @@ def create_akn_xml(title_num: int, chapter_num: int, chapter_title: str, section
     expression = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRExpression")
 
     expr_this = ET.SubElement(expression, f"{{{AKN_NS}}}FRBRthis")
-    expr_this.set("value", f"/akn/us-id/act/idaho-statutes/title-{title_num}/chapter-{chapter_num}/eng@{today}")
+    expr_this.set(
+        "value",
+        f"/akn/us-id/act/idaho-statutes/title-{title_num}/chapter-{chapter_num}/eng@{today}",
+    )
 
     expr_uri = ET.SubElement(expression, f"{{{AKN_NS}}}FRBRuri")
-    expr_uri.set("value", f"/akn/us-id/act/idaho-statutes/title-{title_num}/chapter-{chapter_num}/eng@{today}")
+    expr_uri.set(
+        "value",
+        f"/akn/us-id/act/idaho-statutes/title-{title_num}/chapter-{chapter_num}/eng@{today}",
+    )
 
     expr_date = ET.SubElement(expression, f"{{{AKN_NS}}}FRBRdate")
     expr_date.set("date", today)
@@ -164,10 +176,16 @@ def create_akn_xml(title_num: int, chapter_num: int, chapter_title: str, section
     manifestation = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRManifestation")
 
     manif_this = ET.SubElement(manifestation, f"{{{AKN_NS}}}FRBRthis")
-    manif_this.set("value", f"/akn/us-id/act/idaho-statutes/title-{title_num}/chapter-{chapter_num}/eng@{today}/main.xml")
+    manif_this.set(
+        "value",
+        f"/akn/us-id/act/idaho-statutes/title-{title_num}/chapter-{chapter_num}/eng@{today}/main.xml",
+    )
 
     manif_uri = ET.SubElement(manifestation, f"{{{AKN_NS}}}FRBRuri")
-    manif_uri.set("value", f"/akn/us-id/act/idaho-statutes/title-{title_num}/chapter-{chapter_num}/eng@{today}/main.xml")
+    manif_uri.set(
+        "value",
+        f"/akn/us-id/act/idaho-statutes/title-{title_num}/chapter-{chapter_num}/eng@{today}/main.xml",
+    )
 
     manif_date = ET.SubElement(manifestation, f"{{{AKN_NS}}}FRBRdate")
     manif_date.set("date", today)
@@ -188,8 +206,8 @@ def create_akn_xml(title_num: int, chapter_num: int, chapter_title: str, section
 
     tlc_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     tlc_rf.set("eId", "rules-foundation")
-    tlc_rf.set("href", "https://rules.foundation")
-    tlc_rf.set("showAs", "Rules Foundation")
+    tlc_rf.set("href", "https://axiom-foundation.org")
+    tlc_rf.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -397,9 +415,7 @@ def fetch_title(
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Convert Idaho Statutes to Akoma Ntoso XML"
-    )
+    parser = argparse.ArgumentParser(description="Convert Idaho Statutes to Akoma Ntoso XML")
     parser.add_argument(
         "--titles",
         type=str,

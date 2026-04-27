@@ -146,9 +146,7 @@ class TXStatutesClient:
         self._last_request_time = 0.0  # pragma: no cover
         self.client = httpx.Client(
             timeout=120.0,
-            headers={
-                "User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"
-            },
+            headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             follow_redirects=True,
         )
 
@@ -214,7 +212,9 @@ class TXStatutesClient:
 
             for html_file in sorted(html_files):  # pragma: no cover
                 try:  # pragma: no cover
-                    html_content = zf.read(html_file).decode("utf-8", errors="replace")  # pragma: no cover
+                    html_content = zf.read(html_file).decode(
+                        "utf-8", errors="replace"
+                    )  # pragma: no cover
                     yield from self._parse_html_file(  # pragma: no cover
                         html_content, code, code_name, html_file
                     )
@@ -242,7 +242,9 @@ class TXStatutesClient:
 
         # Find all section headings - they have anchors with section numbers
         # Pattern: <a name="171.001">...</a> or similar
-        section_anchors = soup.find_all("a", attrs={"name": re.compile(r"^\d+\.\d+")})  # pragma: no cover
+        section_anchors = soup.find_all(
+            "a", attrs={"name": re.compile(r"^\d+\.\d+")}
+        )  # pragma: no cover
 
         for anchor in section_anchors:  # pragma: no cover
             section_num = anchor.get("name", "")  # pragma: no cover
@@ -250,7 +252,9 @@ class TXStatutesClient:
                 continue  # pragma: no cover
 
             # Find the section content - typically the parent or sibling elements
-            section_element = anchor.find_parent("p") or anchor.find_parent("div")  # pragma: no cover
+            section_element = anchor.find_parent("p") or anchor.find_parent(
+                "div"
+            )  # pragma: no cover
             if not section_element:  # pragma: no cover
                 continue  # pragma: no cover
 
@@ -260,7 +264,9 @@ class TXStatutesClient:
             if heading:  # pragma: no cover
                 title_text = heading.get_text(strip=True)  # pragma: no cover
                 # Remove section number prefix
-                title = re.sub(rf"^Sec\.?\s*{re.escape(section_num)}\.?\s*", "", title_text)  # pragma: no cover
+                title = re.sub(
+                    rf"^Sec\.?\s*{re.escape(section_num)}\.?\s*", "", title_text
+                )  # pragma: no cover
                 title = title.rstrip(".")  # pragma: no cover
 
             # Get section text - everything after the heading until next section
@@ -269,16 +275,22 @@ class TXStatutesClient:
             while current:  # pragma: no cover
                 if current.name and current.name in ["p", "div"]:  # pragma: no cover
                     # Check if this is the start of a new section
-                    new_anchor = current.find("a", attrs={"name": re.compile(r"^\d+\.\d+")})  # pragma: no cover
+                    new_anchor = current.find(
+                        "a", attrs={"name": re.compile(r"^\d+\.\d+")}
+                    )  # pragma: no cover
                     if new_anchor and new_anchor.get("name") != section_num:  # pragma: no cover
                         break  # pragma: no cover
-                    text_parts.append(current.get_text(separator="\n", strip=True))  # pragma: no cover
+                    text_parts.append(
+                        current.get_text(separator="\n", strip=True)
+                    )  # pragma: no cover
                 current = current.find_next_sibling()  # pragma: no cover
 
             text = "\n\n".join(text_parts)  # pragma: no cover
 
             # Build URL
-            url = f"{BASE_URL}/Docs/{code}/htm/{code}.{chapter}.htm#{section_num}"  # pragma: no cover
+            url = (
+                f"{BASE_URL}/Docs/{code}/htm/{code}.{chapter}.htm#{section_num}"  # pragma: no cover
+            )
 
             yield TXSection(  # pragma: no cover
                 code=code,

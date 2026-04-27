@@ -127,7 +127,7 @@ def nz_legislation_to_akn_xml(legislation: NZLegislation) -> str:
     # TLC references
     arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://rules.foundation")
+    arch_ref.set("href", "https://axiom-foundation.org")
     arch_ref.set("showAs", "Atlas")
 
     nz_parl = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
@@ -175,7 +175,9 @@ def add_provision_to_xml(parent: ET.Element, provision: NZProvision) -> None:
         provision: NZProvision object
     """
     # Create section element
-    sec_id = f"sec_{provision.label.replace('.', '-')}" if provision.label else f"sec_{provision.id}"
+    sec_id = (
+        f"sec_{provision.label.replace('.', '-')}" if provision.label else f"sec_{provision.id}"
+    )
     section = ET.SubElement(parent, f"{{{AKN_NS}}}section")
     section.set("eId", sec_id)
 
@@ -209,11 +211,7 @@ def add_provision_to_xml(parent: ET.Element, provision: NZProvision) -> None:
 
 
 def add_subprovision_to_xml(
-    parent: ET.Element,
-    subprov: NZProvision,
-    parent_id: str,
-    level: int,
-    index: int
+    parent: ET.Element, subprov: NZProvision, parent_id: str, level: int, index: int
 ) -> None:
     """Add a subprovision element to the XML tree.
 
@@ -253,11 +251,7 @@ def add_subprovision_to_xml(
 
 
 def add_labeled_para_to_xml(
-    parent: ET.Element,
-    para: NZLabeledParagraph,
-    parent_id: str,
-    level: int,
-    index: int
+    parent: ET.Element, para: NZLabeledParagraph, parent_id: str, level: int, index: int
 ) -> None:
     """Add a labeled paragraph element to the XML tree.
 
@@ -324,7 +318,7 @@ def fetch_rss_and_convert(output_dir: Path, limit: int = 100) -> dict:
     }
 
     for i, item in enumerate(rss_items[:limit]):
-        print(f"  [{i+1}/{results['total']}] Processing {item.title}...", end=" ")
+        print(f"  [{i + 1}/{results['total']}] Processing {item.title}...", end=" ")
 
         try:
             # Create a minimal legislation object from RSS item
@@ -511,9 +505,7 @@ def create_sample_akn_files(output_dir: Path) -> dict:
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Convert New Zealand statutes to Akoma Ntoso XML"
-    )
+    parser = argparse.ArgumentParser(description="Convert New Zealand statutes to Akoma Ntoso XML")
     parser.add_argument(
         "--output",
         type=str,

@@ -99,9 +99,13 @@ def section_to_akn_xml(section: Section, chapter_num: str, chapter_title: str) -
     # FRBRManifestation
     manif = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRManifestation")
     manif_this = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRthis")
-    manif_this.set("value", f"/akn/us-ct/act/cgs/sec-{section_num}/eng@{date.today().isoformat()}/main.xml")
+    manif_this.set(
+        "value", f"/akn/us-ct/act/cgs/sec-{section_num}/eng@{date.today().isoformat()}/main.xml"
+    )
     manif_uri = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRuri")
-    manif_uri.set("value", f"/akn/us-ct/act/cgs/sec-{section_num}/eng@{date.today().isoformat()}/main.xml")
+    manif_uri.set(
+        "value", f"/akn/us-ct/act/cgs/sec-{section_num}/eng@{date.today().isoformat()}/main.xml"
+    )
     manif_date = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRdate")
     manif_date.set("date", str(date.today()))
     manif_date.set("name", "generation")
@@ -114,7 +118,7 @@ def section_to_akn_xml(section: Section, chapter_num: str, chapter_title: str) -
 
     org_arch = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     org_arch.set("eId", "arch")
-    org_arch.set("href", "https://rules.foundation")
+    org_arch.set("href", "https://axiom-foundation.org")
     org_arch.set("showAs", "Atlas")
 
     org_ct = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
@@ -214,7 +218,9 @@ def convert_chapter(converter: CTConverter, chapter: str, output_dir: Path) -> t
     Returns:
         Tuple of (sections_found, sections_converted)
     """
-    chapter_title = CT_TAX_CHAPTERS.get(chapter) or CT_WELFARE_CHAPTERS.get(chapter, f"Chapter {chapter}")
+    chapter_title = CT_TAX_CHAPTERS.get(chapter) or CT_WELFARE_CHAPTERS.get(
+        chapter, f"Chapter {chapter}"
+    )
 
     print(f"  Fetching chapter {chapter}: {chapter_title}...", end=" ", flush=True)
 

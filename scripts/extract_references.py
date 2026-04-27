@@ -1,8 +1,8 @@
-"""Backfill the citation graph in ``akn.rule_references``.
+"""Backfill the citation graph in ``arch.rule_references``.
 
 For every rule with a non-empty body, run the citation extractors and
 upsert one row per extracted ref. Target rule ids are resolved against
-``akn.rules.citation_path`` — unresolved targets are stored anyway so a
+``arch.rules.citation_path`` — unresolved targets are stored anyway so a
 later ingestion (or a later re-run) activates the link.
 
 Semantics
@@ -108,14 +108,10 @@ def fetch_rules_page(
         # First page: inclusive lower bound at the prefix. Resumption pages:
         # strict greater-than the last path, same as the no-prefix path.
         if since_citation_path:
-            params.append(
-                f"citation_path=gt.{urllib.parse.quote(since_citation_path)}"
-            )
+            params.append(f"citation_path=gt.{urllib.parse.quote(since_citation_path)}")
         else:
             params.append(f"citation_path=gte.{urllib.parse.quote(prefix)}")
-        params.append(
-            f"citation_path=lt.{urllib.parse.quote(_prefix_upper_bound(prefix))}"
-        )
+        params.append(f"citation_path=lt.{urllib.parse.quote(_prefix_upper_bound(prefix))}")
     elif since_citation_path:
         params.append(f"citation_path=gt.{urllib.parse.quote(since_citation_path)}")
     url = f"{REST_URL}/rules?{'&'.join(params)}"
@@ -123,7 +119,7 @@ def fetch_rules_page(
         url,
         headers={
             **_auth_headers(service_key),
-            "Accept-Profile": "akn",
+            "Accept-Profile": "arch",
         },
     )
     return json.loads(_retrying_urlopen(req, timeout=60))
@@ -154,7 +150,7 @@ def resolve_target_ids(service_key: str, citation_paths: set[str]) -> dict[str, 
             url,
             headers={
                 **_auth_headers(service_key),
-                "Accept-Profile": "akn",
+                "Accept-Profile": "arch",
             },
         )
         try:
@@ -219,7 +215,7 @@ def delete_existing(service_key: str, source_ids: list[str]) -> None:
         url,
         headers={
             **_auth_headers(service_key),
-            "Content-Profile": "akn",
+            "Content-Profile": "arch",
         },
         method="DELETE",
     )
@@ -236,7 +232,7 @@ def insert_rows(service_key: str, rows: list[dict]) -> None:
         headers={
             **_auth_headers(service_key),
             "Content-Type": "application/json",
-            "Content-Profile": "akn",
+            "Content-Profile": "arch",
             "Prefer": "return=minimal",
         },
         method="POST",
@@ -391,9 +387,7 @@ def _dry_run_page(args: argparse.Namespace) -> list[dict]:
         params.append(f"doc_type=eq.{args.doc_type}")
     if args.prefix:
         params.append(f"citation_path=gte.{urllib.parse.quote(args.prefix)}")
-        params.append(
-            f"citation_path=lt.{urllib.parse.quote(_prefix_upper_bound(args.prefix))}"
-        )
+        params.append(f"citation_path=lt.{urllib.parse.quote(_prefix_upper_bound(args.prefix))}")
     url = f"{REST_URL}/rules?{'&'.join(params)}"
     req = urllib.request.Request(
         url,
@@ -401,7 +395,7 @@ def _dry_run_page(args: argparse.Namespace) -> list[dict]:
             "apikey": anon_key,
             "Authorization": f"Bearer {anon_key}",
             "User-Agent": USER_AGENT,
-            "Accept-Profile": "akn",
+            "Accept-Profile": "arch",
         },
     )
     with urllib.request.urlopen(req, timeout=60) as resp:

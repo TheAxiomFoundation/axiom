@@ -1,8 +1,8 @@
 -- Materialized view of the jurisdiction-to-jurisdiction citation flow,
 -- powering the chord/Sankey visualization on the Atlas landing page.
 --
--- Exact counts require joining akn.rule_references (148k rows) against
--- akn.rules twice to resolve source + target jurisdiction. That blows
+-- Exact counts require joining arch.rule_references (148k rows) against
+-- arch.rules twice to resolve source + target jurisdiction. That blows
 -- the PostgREST statement timeout on every call. Precompute once and
 -- refresh at end of each ingest via refresh_jurisdiction_counts.
 --
@@ -17,7 +17,7 @@
 -- target_jurisdiction — jurisdiction of the cited rule (e.g. 'us')
 -- ref_count            — how many citations go that direction
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS akn.jurisdiction_flows AS
+CREATE MATERIALIZED VIEW IF NOT EXISTS arch.jurisdiction_flows AS
 SELECT
   src.jurisdiction AS source_jurisdiction,
   CASE r.pattern_kind
@@ -29,26 +29,26 @@ SELECT
     ELSE 'unknown'
   END AS target_jurisdiction,
   COUNT(*)::bigint AS ref_count
-FROM akn.rule_references r
-JOIN akn.rules src ON src.id = r.source_rule_id
+FROM arch.rule_references r
+JOIN arch.rules src ON src.id = r.source_rule_id
 GROUP BY source_jurisdiction, target_jurisdiction;
 
 -- Unique index for CONCURRENTLY refresh; also the natural lookup key.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_jurisdiction_flows_pair
-  ON akn.jurisdiction_flows (source_jurisdiction, target_jurisdiction);
+  ON arch.jurisdiction_flows (source_jurisdiction, target_jurisdiction);
 
-REFRESH MATERIALIZED VIEW akn.jurisdiction_flows;
+REFRESH MATERIALIZED VIEW arch.jurisdiction_flows;
 
-GRANT SELECT ON akn.jurisdiction_flows TO anon, authenticated;
+GRANT SELECT ON arch.jurisdiction_flows TO anon, authenticated;
 
 -- RPC returns the array of flow edges sorted by weight, for the
 -- landing-page visual.
-CREATE OR REPLACE FUNCTION akn.get_jurisdiction_flows()
+CREATE OR REPLACE FUNCTION arch.get_jurisdiction_flows()
 RETURNS jsonb
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = akn, public
+SET search_path = arch, public
 AS $$
   SELECT COALESCE(
     jsonb_agg(
@@ -61,22 +61,22 @@ AS $$
     ),
     '[]'::jsonb
   )
-  FROM akn.jurisdiction_flows
+  FROM arch.jurisdiction_flows
 $$;
 
-GRANT EXECUTE ON FUNCTION akn.get_jurisdiction_flows() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION arch.get_jurisdiction_flows() TO anon, authenticated;
 
 -- Extend the ingest-driver refresh helper to cover the new MV too,
 -- so driver scripts don't need to call two RPCs.
-CREATE OR REPLACE FUNCTION akn.refresh_jurisdiction_counts()
+CREATE OR REPLACE FUNCTION arch.refresh_jurisdiction_counts()
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = akn, public
+SET search_path = arch, public
 AS $$
 BEGIN
-  REFRESH MATERIALIZED VIEW CONCURRENTLY akn.jurisdiction_counts;
-  REFRESH MATERIALIZED VIEW CONCURRENTLY akn.jurisdiction_flows;
+  REFRESH MATERIALIZED VIEW CONCURRENTLY arch.jurisdiction_counts;
+  REFRESH MATERIALIZED VIEW CONCURRENTLY arch.jurisdiction_flows;
 END
 $$;
 

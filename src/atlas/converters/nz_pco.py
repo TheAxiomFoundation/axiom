@@ -148,7 +148,7 @@ class NZPCOConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=self.timeout,
-                headers={"User-Agent": "Atlas/1.0 (contact@rules.foundation)"},
+                headers={"User-Agent": "Atlas/1.0 (contact@axiom-foundation.org)"},
                 follow_redirects=True,
             )
         return self._client
@@ -212,8 +212,14 @@ class NZPCOConverter:
         leg_id = root.get("id", "")
         year = int(root.get("year", "0"))
         number = int(root.get("act.no", root.get("bill.no", root.get("regulation.no", "0"))))
-        subtype_raw = root.get("act.type", root.get("bill.type", root.get("regulation.type", "public")))
-        subtype: NZLegislationSubtype = subtype_raw if subtype_raw in ("public", "private", "local", "government", "members", "imperial") else "public"
+        subtype_raw = root.get(
+            "act.type", root.get("bill.type", root.get("regulation.type", "public"))
+        )
+        subtype: NZLegislationSubtype = (
+            subtype_raw
+            if subtype_raw in ("public", "private", "local", "government", "members", "imperial")
+            else "public"
+        )
         stage = root.get("stage", "in-force")
 
         # Parse dates
@@ -432,7 +438,9 @@ class NZPCOConverter:
 
             # For citation elements, just get the link content
             if child.tag == "citation":
-                link_content = child.find(".//{http://www.arbortext.com/namespace/atidlm}linkcontent")
+                link_content = child.find(
+                    ".//{http://www.arbortext.com/namespace/atidlm}linkcontent"
+                )
                 if link_content is not None and link_content.text:
                     parts.append(link_content.text.strip())
                 else:
@@ -519,7 +527,9 @@ class NZPCOConverter:
 
         # Get dates
         published_elem = entry.find("atom:published", ns)
-        published = self._parse_iso_datetime(published_elem.text if published_elem is not None else None)
+        published = self._parse_iso_datetime(
+            published_elem.text if published_elem is not None else None
+        )
 
         updated_elem = entry.find("atom:updated", ns)
         updated = self._parse_iso_datetime(updated_elem.text if updated_elem is not None else None)
@@ -575,8 +585,7 @@ class NZPCOConverter:
             try:
                 # RFC 822 format
                 published = datetime.strptime(
-                    pub_date_elem.text.strip(),
-                    "%a, %d %b %Y %H:%M:%S %z"
+                    pub_date_elem.text.strip(), "%a, %d %b %Y %H:%M:%S %z"
                 )
             except ValueError:
                 pass
@@ -617,7 +626,9 @@ class NZPCOConverter:
         except ValueError:  # pragma: no cover
             return None  # pragma: no cover
 
-    def _parse_legislation_url(self, url: str) -> tuple[NZLegislationType, NZLegislationSubtype, int, int]:
+    def _parse_legislation_url(
+        self, url: str
+    ) -> tuple[NZLegislationType, NZLegislationSubtype, int, int]:
         """Parse legislation type, subtype, year, and number from URL.
 
         Args:
@@ -726,7 +737,9 @@ def parse_nz_legislation(path_or_content: Path | str) -> NZLegislation:
         return converter.parse_file(path_or_content)  # pragma: no cover
 
     # Check if it looks like a file path
-    if not path_or_content.strip().startswith("<?xml") and not path_or_content.strip().startswith("<"):  # pragma: no cover
+    if not path_or_content.strip().startswith("<?xml") and not path_or_content.strip().startswith(
+        "<"
+    ):  # pragma: no cover
         path = Path(path_or_content)  # pragma: no cover
         if path.exists():  # pragma: no cover
             return converter.parse_file(path)  # pragma: no cover

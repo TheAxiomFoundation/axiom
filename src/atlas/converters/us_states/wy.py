@@ -192,7 +192,7 @@ class WYConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -244,10 +244,7 @@ class WYConverter:
         """
         # URL-encode the search query for the section
         query = quote(section_number)
-        return (
-            f"{BASE_URL}?f=templates&fn=default.htm"
-            f"&vid=Publish:10.1048/Enu&q={query}"
-        )
+        return f"{BASE_URL}?f=templates&fn=default.htm&vid=Publish:10.1048/Enu&q={query}"
 
     def _build_title_pdf_url(self, title: int) -> str:
         """Build the URL for a title's PDF download.
@@ -383,7 +380,7 @@ class WYConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse second-level children (i), (ii), etc.
             children = self._parse_level2(content)
@@ -426,7 +423,7 @@ class WYConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1).lower()
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse third-level children (A), (B), etc.
             children = self._parse_level3(content)
@@ -468,7 +465,7 @@ class WYConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Stop at next subsection marker
             next_marker = re.search(r"\([a-zA-Z]\)|\([ivxlcdm]+\)", content, re.IGNORECASE)

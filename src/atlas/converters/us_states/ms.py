@@ -219,7 +219,7 @@ class MSConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=120.0,  # Longer timeout for large title files
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -283,9 +283,7 @@ class MSConverter:
 
         return title, chapter, section_suffix
 
-    def _find_section_element(
-        self, soup: BeautifulSoup, section_number: str
-    ) -> Tag | None:
+    def _find_section_element(self, soup: BeautifulSoup, section_number: str) -> Tag | None:
         """Find the section element in the HTML.
 
         Mississippi sections have IDs like:
@@ -332,9 +330,7 @@ class MSConverter:
             return MS_WELFARE_CHAPTERS.get(chapter, f"Chapter {chapter}")
         return f"Chapter {chapter}"  # pragma: no cover
 
-    def _extract_section_text(
-        self, section_elem: Tag, soup: BeautifulSoup
-    ) -> tuple[str, str]:
+    def _extract_section_text(self, section_elem: Tag, soup: BeautifulSoup) -> tuple[str, str]:
         """Extract section text and HTML from section element.
 
         The section content is in <p> tags following the h3 heading,
@@ -367,7 +363,11 @@ class MSConverter:
                         # Also stop at subsection/annotation headers
                         if child.name == "h4" and any(
                             kw in child.get_text().lower()
-                            for kw in ["cross references", "research references", "judicial decisions"]
+                            for kw in [
+                                "cross references",
+                                "research references",
+                                "judicial decisions",
+                            ]
                         ):
                             break  # pragma: no cover
                         content_parts.append(child.get_text(separator="\n", strip=True))
@@ -380,7 +380,9 @@ class MSConverter:
                         break  # pragma: no cover
                     if sibling.name == "h4":  # pragma: no cover
                         break  # pragma: no cover
-                    content_parts.append(sibling.get_text(separator="\n", strip=True))  # pragma: no cover
+                    content_parts.append(
+                        sibling.get_text(separator="\n", strip=True)
+                    )  # pragma: no cover
                     html_parts.append(str(sibling))  # pragma: no cover
 
         text = "\n".join(content_parts)
@@ -412,21 +414,20 @@ class MSConverter:
         section_title = ""
 
         # Parse the heading to extract title
-        title_match = re.search(
-            rf"§\s*{re.escape(section_number)}\.\s*(.+?)(?:\.|$)",
-            heading_text
-        )
+        title_match = re.search(rf"§\s*{re.escape(section_number)}\.\s*(.+?)(?:\.|$)", heading_text)
         if title_match:
             section_title = title_match.group(1).strip().rstrip(".")
 
         # If no match, try simpler pattern
         if not section_title:
             # Remove the section number prefix
-            section_title = re.sub(  # pragma: no cover
-                rf"§\s*{re.escape(section_number)}\.\s*",
-                "",
-                heading_text
-            ).strip().rstrip(".")
+            section_title = (
+                re.sub(  # pragma: no cover
+                    rf"§\s*{re.escape(section_number)}\.\s*", "", heading_text
+                )
+                .strip()
+                .rstrip(".")
+            )
 
         # Extract text and HTML content
         text, html_content = self._extract_section_text(section_elem, soup)
@@ -436,7 +437,7 @@ class MSConverter:
         history_match = re.search(
             r"HISTORY:\s*(.+?)(?=Cross References|RESEARCH|JUDICIAL|$)",
             text,
-            re.DOTALL | re.IGNORECASE
+            re.DOTALL | re.IGNORECASE,
         )
         if history_match:
             history = history_match.group(1).strip()[:1000]
@@ -477,7 +478,7 @@ class MSConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse second-level children (a), (b), etc.
             children = self._parse_level2(content)
@@ -486,7 +487,7 @@ class MSConverter:
             if children:
                 first_child_match = re.search(r"\([a-z]\)", content)
                 direct_text = (
-                    content[:first_child_match.start()].strip()
+                    content[: first_child_match.start()].strip()
                     if first_child_match
                     else content.strip()
                 )
@@ -496,7 +497,7 @@ class MSConverter:
             # Clean up text - remove trailing subsections
             next_subsection = re.search(r"\(\d+\)", direct_text)
             if next_subsection:  # pragma: no cover
-                direct_text = direct_text[:next_subsection.start()].strip()
+                direct_text = direct_text[: next_subsection.start()].strip()
 
             subsections.append(
                 ParsedMSSubsection(
@@ -519,12 +520,12 @@ class MSConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Limit to reasonable size and stop at next numbered subsection
             next_num = re.search(r"\(\d+\)", content)
             if next_num:  # pragma: no cover
-                content = content[:next_num.start()]
+                content = content[: next_num.start()]
 
             subsections.append(
                 ParsedMSSubsection(
@@ -611,9 +612,7 @@ class MSConverter:
         chapter_id_alt = f"t{title}c{chapter}"
 
         # Also look for direct section IDs
-        section_pattern = re.compile(
-            rf"t{title}c0*{chapter}s({title}-{chapter}-[\w-]+)"
-        )
+        section_pattern = re.compile(rf"t{title}c0*{chapter}s({title}-{chapter}-[\w-]+)")
 
         # Search for section headings
         for elem in soup.find_all(["h3", "a"]):

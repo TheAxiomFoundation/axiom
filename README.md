@@ -2,7 +2,7 @@
 
 **Comprehensive map of government legal sources.**
 
-Atlas is the unified source of truth for statutes, regulations, and IRS guidance that powers the Rules Foundation ecosystem.
+Atlas is the unified source of truth for statutes, regulations, and IRS guidance that powers the The Axiom Foundation ecosystem.
 
 ## Features
 
@@ -160,6 +160,6 @@ Apache 2.0
 
 ## Related Repos
 
-- [rac](https://github.com/RulesFoundation/rac) — Rules as Code DSL
-- [autorac](https://github.com/RulesFoundation/autorac) — AI-powered statute encoding
-- [rac-us](https://github.com/RulesFoundation/rac-us) — US federal rules in RAC
+- [rac](https://github.com/TheAxiomFoundation/rac) — Rules as Code DSL
+- [autorulespec](https://github.com/TheAxiomFoundation/autorulespec) — AI-powered statute encoding
+- [rules-us](https://github.com/TheAxiomFoundation/rules-us) — US federal rules in RuleSpec

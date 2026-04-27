@@ -194,10 +194,10 @@ params = {
 
 ### 3. Link Parameters to Source
 
-When encoding in rac-us:
+When encoding in rules-us:
 
 ```python
-# rac-us/26/32/eitc.rac
+# rules-us/26/32/eitc.yaml
 
 Variable:
   path: 26/32/eitc_max_credit
@@ -234,7 +234,7 @@ Create `scripts/extract_rev_proc_params.py` to:
 2. Extract tables using pdfplumber or tabula
 3. Parse EITC parameter tables
 4. Store in `parameters_json` field
-5. Generate RAC DSL snippets
+5. Generate RuleSpec DSL snippets
 
 ### Full IRB Scraper
 

@@ -1,6 +1,6 @@
-"""Ingest parsed statutes into Supabase akn.rules table.
+"""Ingest parsed statutes into Supabase arch.rules table.
 
-This module pushes parsed statute sections to the PostgreSQL `akn.rules` table
+This module pushes parsed statute sections to the PostgreSQL `arch.rules` table
 via the Supabase REST API.
 
 Usage:
@@ -44,11 +44,11 @@ class SupabaseIngestor:
         """Initialize with Supabase credentials.
 
         Args:
-            url: Supabase project URL (or COSILICO_SUPABASE_URL env var)
+            url: Supabase project URL (or AXIOM_SUPABASE_URL env var)
             key: Supabase service role key (or from Management API)
         """
         self.url = url or os.environ.get(
-            "COSILICO_SUPABASE_URL",
+            "AXIOM_SUPABASE_URL",
             "https://nsupqhfchdtqclomlrgs.supabase.co",
         )
         # Get service role key from Management API if not provided
@@ -59,9 +59,7 @@ class SupabaseIngestor:
         """Get service role key from Supabase Management API."""
         access_token = os.environ.get("SUPABASE_ACCESS_TOKEN")
         if not access_token:
-            raise ValueError(
-                "SUPABASE_ACCESS_TOKEN env var required to get service key"
-            )
+            raise ValueError("SUPABASE_ACCESS_TOKEN env var required to get service key")
 
         # Extract project ref from URL
         project_ref = self.url.split("//")[1].split(".")[0]
@@ -112,7 +110,7 @@ class SupabaseIngestor:
                             "apikey": self.key,
                             "Authorization": f"Bearer {self.key}",
                             "Content-Type": "application/json",
-                            "Content-Profile": "akn",  # Write to arch schema
+                            "Content-Profile": "arch",  # Write to arch schema
                             # Upsert: on conflict with citation_path, update
                             "Prefer": "resolution=merge-duplicates,return=minimal",
                         },
@@ -121,11 +119,13 @@ class SupabaseIngestor:
                     response.raise_for_status()
                 return len(rules)
             except (httpx.ReadTimeout, httpx.HTTPStatusError) as e:
-                is_server_error = isinstance(e, httpx.HTTPStatusError) and e.response.status_code >= 500
+                is_server_error = (
+                    isinstance(e, httpx.HTTPStatusError) and e.response.status_code >= 500
+                )
                 is_timeout = isinstance(e, httpx.ReadTimeout)
 
                 if (is_server_error or is_timeout) and attempt < max_retries - 1:
-                    wait_time = 2 ** attempt
+                    wait_time = 2**attempt
                     print(f"    Retry {attempt + 1}/{max_retries} after {wait_time}s...")
                     time.sleep(wait_time)
                     continue
@@ -159,15 +159,17 @@ class SupabaseIngestor:
             "doc_type": "statute",
             "parent_id": parent_id,
             "level": 0,
-            "ordinal": int(section.section_number.split(".")[0]) if section.section_number.replace(".", "").isdigit() else None,
+            "ordinal": int(section.section_number.split(".")[0])
+            if section.section_number.replace(".", "").isdigit()
+            else None,
             "heading": section.marginal_note,
             "body": section.text,
             "effective_date": section.in_force_date.isoformat() if section.in_force_date else None,
             "source_url": section.source_url,
             "source_path": section.source_path,
             "citation_path": citation_path,
-            "rac_path": None,
-            "has_rac": False,
+            "rulespec_path": None,
+            "has_rulespec": False,
         }
 
         # Recursively yield subsections
@@ -205,8 +207,8 @@ class SupabaseIngestor:
                 "source_url": None,
                 "source_path": None,
                 "citation_path": citation_path,
-                "rac_path": None,
-                "has_rac": False,
+                "rulespec_path": None,
+                "has_rulespec": False,
             }
 
             # Recursively handle children
@@ -329,12 +331,14 @@ class SupabaseIngestor:
             "ordinal": ordinal,
             "heading": section.section_title,
             "body": section.text,
-            "effective_date": section.effective_date.isoformat() if section.effective_date else None,
+            "effective_date": section.effective_date.isoformat()
+            if section.effective_date
+            else None,
             "source_url": section.source_url,
             "source_path": None,
             "citation_path": citation_path,
-            "rac_path": None,
-            "has_rac": False,
+            "rulespec_path": None,
+            "has_rulespec": False,
         }
 
         # Recursively yield subsections
@@ -355,7 +359,9 @@ class SupabaseIngestor:
         """Convert US Code subsections to rule dictionaries."""
         for i, sub in enumerate(subsections):
             # Use identifier if available (a, b, 1, 2, etc.), else ordinal
-            sub_key = sub.identifier if hasattr(sub, 'identifier') and sub.identifier else str(i + 1)
+            sub_key = (
+                sub.identifier if hasattr(sub, "identifier") and sub.identifier else str(i + 1)
+            )
             citation_path = f"{parent_path}/{sub_key}" if parent_path else None
             sub_id = _deterministic_id(citation_path) if citation_path else str(uuid4())
 
@@ -372,8 +378,8 @@ class SupabaseIngestor:
                 "source_url": None,
                 "source_path": None,
                 "citation_path": citation_path,
-                "rac_path": None,
-                "has_rac": False,
+                "rulespec_path": None,
+                "has_rulespec": False,
             }
 
             if sub.children:
@@ -515,8 +521,8 @@ class SupabaseIngestor:
             "source_url": section.source_url,
             "source_path": None,
             "citation_path": citation_path,
-            "rac_path": None,
-            "has_rac": False,
+            "rulespec_path": None,
+            "has_rulespec": False,
         }
 
         yield from self._uk_subsections_to_rules(
@@ -555,8 +561,8 @@ class SupabaseIngestor:
                 "source_url": None,
                 "source_path": None,
                 "citation_path": citation_path,
-                "rac_path": None,
-                "has_rac": False,
+                "rulespec_path": None,
+                "has_rulespec": False,
             }
 
             if sub.children:
@@ -683,7 +689,7 @@ class SupabaseIngestor:
         ordinal = None
         sec_num = section.citation.section
         # Try to extract a numeric prefix for ordering
-        match = re.match(r'(\d+)', sec_num) if sec_num else None
+        match = re.match(r"(\d+)", sec_num) if sec_num else None
         if match:
             ordinal = int(match.group(1))
 
@@ -701,12 +707,14 @@ class SupabaseIngestor:
             "ordinal": ordinal,
             "heading": section.section_title,
             "body": section.text,
-            "effective_date": section.effective_date.isoformat() if section.effective_date else None,
+            "effective_date": section.effective_date.isoformat()
+            if section.effective_date
+            else None,
             "source_url": section.source_url,
             "source_path": None,
             "citation_path": citation_path,
-            "rac_path": None,
-            "has_rac": False,
+            "rulespec_path": None,
+            "has_rulespec": False,
         }
 
         # Recursively yield subsections
@@ -728,7 +736,9 @@ class SupabaseIngestor:
     ) -> Iterator[dict]:
         """Convert state statute subsections to rule dictionaries."""
         for i, sub in enumerate(subsections):
-            sub_key = sub.identifier if hasattr(sub, 'identifier') and sub.identifier else str(i + 1)
+            sub_key = (
+                sub.identifier if hasattr(sub, "identifier") and sub.identifier else str(i + 1)
+            )
             citation_path = f"{parent_path}/{sub_key}" if parent_path else None
             sub_id = _deterministic_id(citation_path) if citation_path else str(uuid4())
 
@@ -745,8 +755,8 @@ class SupabaseIngestor:
                 "source_url": None,
                 "source_path": None,
                 "citation_path": citation_path,
-                "rac_path": None,
-                "has_rac": False,
+                "rulespec_path": None,
+                "has_rulespec": False,
             }
 
             if sub.children:

@@ -137,7 +137,7 @@ class KSConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
                 follow_redirects=True,
             )
         return self._client
@@ -201,7 +201,9 @@ class KSConverter:
         """
         match = re.match(r"(\d+)-(\d+)", section_str)
         if not match:
-            raise KSConverterError(f"Invalid section number format: {section_str}")  # pragma: no cover
+            raise KSConverterError(
+                f"Invalid section number format: {section_str}"
+            )  # pragma: no cover
 
         chapter = int(match.group(1))
         article_section = match.group(2)
@@ -216,7 +218,9 @@ class KSConverter:
             section = int(article_section[2:]) if len(article_section) > 2 else 0
         else:
             article = int(article_section[0])  # pragma: no cover
-            section = int(article_section[1:]) if len(article_section) > 1 else 0  # pragma: no cover
+            section = (
+                int(article_section[1:]) if len(article_section) > 1 else 0
+            )  # pragma: no cover
 
         return chapter, article, section
 
@@ -267,9 +271,7 @@ class KSConverter:
             if section_number in table_text:
                 # Extract section title - it appears after the section number
                 # Pattern: "79-3201. Title. The title of this act..."
-                title_pattern = re.compile(
-                    rf"{re.escape(section_number)}\.?\s*([^.]+)\."
-                )
+                title_pattern = re.compile(rf"{re.escape(section_number)}\.?\s*([^.]+)\.")
                 match = title_pattern.search(table_text)
                 if match:
                     section_title = match.group(1).strip()
@@ -326,7 +328,7 @@ class KSConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse second-level children (1), (2), etc.
             children = self._parse_numeric_subsections(content)
@@ -368,7 +370,7 @@ class KSConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Limit to reasonable size and stop at next lettered subsection
             next_letter = re.search(r"\([a-z]\)", content)
@@ -509,7 +511,9 @@ class KSConverter:
         for link in soup.find_all("a"):  # pragma: no cover
             href = link.get("href", "")  # pragma: no cover
             # Pattern like "079_032_0000_article"
-            match = re.search(rf"{self._format_chapter(chapter)}_(\d+)_0000_article", href)  # pragma: no cover
+            match = re.search(
+                rf"{self._format_chapter(chapter)}_(\d+)_0000_article", href
+            )  # pragma: no cover
             if match:  # pragma: no cover
                 article_num = int(match.group(1))  # pragma: no cover
                 if article_num not in articles:  # pragma: no cover

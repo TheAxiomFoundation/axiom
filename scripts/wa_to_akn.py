@@ -119,8 +119,8 @@ def section_to_akn_xml(section: Section) -> str:
 
     org_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     org_rf.set("eId", "rules-foundation")
-    org_rf.set("href", "https://rules.foundation")
-    org_rf.set("showAs", "Rules Foundation")
+    org_rf.set("href", "https://axiom-foundation.org")
+    org_rf.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -232,7 +232,11 @@ def convert_chapter(converter: WAConverter, chapter: str, output_dir: Path) -> i
         xml_content = section_to_akn_xml(section)
         filepath.write_text(xml_content, encoding="utf-8")
         count += 1
-        print(f"    {section_num}: {section.section_title[:50]}..." if len(section.section_title) > 50 else f"    {section_num}: {section.section_title}")
+        print(
+            f"    {section_num}: {section.section_title[:50]}..."
+            if len(section.section_title) > 50
+            else f"    {section_num}: {section.section_title}"
+        )
 
     return count
 
@@ -276,13 +280,17 @@ def convert_key_chapters(output_dir: Path) -> dict:
     }
 
     # Combine excise tax and public assistance chapters
-    chapters_to_convert = list(WA_EXCISE_TAX_CHAPTERS.keys()) + list(WA_PUBLIC_ASSISTANCE_CHAPTERS.keys())
+    chapters_to_convert = list(WA_EXCISE_TAX_CHAPTERS.keys()) + list(
+        WA_PUBLIC_ASSISTANCE_CHAPTERS.keys()
+    )
 
     print(f"Converting {len(chapters_to_convert)} key chapters...")
 
     with WAConverter(rate_limit_delay=0.3) as converter:
         for chapter in chapters_to_convert:
-            chapter_name = WA_EXCISE_TAX_CHAPTERS.get(chapter) or WA_PUBLIC_ASSISTANCE_CHAPTERS.get(chapter, "")
+            chapter_name = WA_EXCISE_TAX_CHAPTERS.get(chapter) or WA_PUBLIC_ASSISTANCE_CHAPTERS.get(
+                chapter, ""
+            )
             print(f"\nChapter {chapter}: {chapter_name}")
 
             try:
@@ -354,7 +362,9 @@ def main():
         total_sections = 0
 
         with WAConverter(rate_limit_delay=0.5) as converter:
-            for title_str in sorted(WA_TITLES.keys(), key=lambda x: (x.isdigit() and int(x) or 0, x)):
+            for title_str in sorted(
+                WA_TITLES.keys(), key=lambda x: (x.isdigit() and int(x) or 0, x)
+            ):
                 try:
                     title_int = int(title_str) if title_str.isdigit() else 0
                     if title_int > 0:

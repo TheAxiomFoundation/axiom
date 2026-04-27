@@ -199,7 +199,7 @@ class OKConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -276,7 +276,9 @@ class OKConverter:
         # OSCN pages typically have format: "Section {num}. {title}"
         header_patterns = [
             re.compile(rf"§\s*{re.escape(section_number.split('-')[1])}\.\s*(.+?)(?:\s*[-—]|$)"),
-            re.compile(rf"Section\s+{re.escape(section_number.split('-')[1])}\.\s*(.+?)(?:\s*[-—]|$)"),
+            re.compile(
+                rf"Section\s+{re.escape(section_number.split('-')[1])}\.\s*(.+?)(?:\s*[-—]|$)"
+            ),
             re.compile(rf"{re.escape(section_number.split('-')[1])}\.\s*(.+?)(?:\s*[-—]|$)"),
         ]
 
@@ -299,7 +301,9 @@ class OKConverter:
             if title_tag:  # pragma: no cover
                 title_text = title_tag.get_text(strip=True)  # pragma: no cover
                 # OSCN title format: "Section X - Title | OSCN"
-                match = re.search(r"Section\s+[\d.]+\s*[-—]\s*(.+?)(?:\s*\||\s*$)", title_text)  # pragma: no cover
+                match = re.search(
+                    r"Section\s+[\d.]+\s*[-—]\s*(.+?)(?:\s*\||\s*$)", title_text
+                )  # pragma: no cover
                 if match:  # pragma: no cover
                     section_title = match.group(1).strip()  # pragma: no cover
 
@@ -324,7 +328,9 @@ class OKConverter:
 
         if content_elem:
             # Remove navigation and scripts
-            for elem in content_elem.find_all(["nav", "script", "style", "header", "footer"]):  # pragma: no cover
+            for elem in content_elem.find_all(
+                ["nav", "script", "style", "header", "footer"]
+            ):  # pragma: no cover
                 elem.decompose()
             text = content_elem.get_text(separator="\n", strip=True)
             html_content = str(content_elem)
@@ -386,7 +392,7 @@ class OKConverter:
                 if not match:
                     continue  # pragma: no cover
                 identifier = match.group(1)
-                content = part[match.end():]
+                content = part[match.end() :]
 
                 # Parse lettered children: a., b., c.
                 children = self._parse_lettered_subsections(content)
@@ -422,7 +428,7 @@ class OKConverter:
                 if not match:  # pragma: no cover
                     continue  # pragma: no cover
                 identifier = match.group(1)  # pragma: no cover
-                content = part[match.end():]  # pragma: no cover
+                content = part[match.end() :]  # pragma: no cover
 
                 # Parse children: (a), (b), (c)
                 children = self._parse_paren_letter_subsections(content)  # pragma: no cover
@@ -464,7 +470,7 @@ class OKConverter:
             if not match:
                 continue  # pragma: no cover
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Limit and clean
             next_num = re.search(r"(?:^|\n)\s*\d+\.\s", content)
@@ -491,7 +497,7 @@ class OKConverter:
             if not match:  # pragma: no cover
                 continue  # pragma: no cover
             identifier = match.group(1)  # pragma: no cover
-            content = part[match.end():]  # pragma: no cover
+            content = part[match.end() :]  # pragma: no cover
 
             # Limit
             next_num = re.search(r"\(\d+\)", content)  # pragma: no cover
@@ -518,7 +524,7 @@ class OKConverter:
             if not match:
                 continue  # pragma: no cover
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse numbered children if present
             children = self._parse_subsections(content)
@@ -526,7 +532,9 @@ class OKConverter:
                 children = self._parse_lettered_subsections(content)
 
             if children:
-                first_child_match = re.search(r"(?:^|\n)\s*(?:\d+\.|[a-z]\.)\s", content)  # pragma: no cover
+                first_child_match = re.search(
+                    r"(?:^|\n)\s*(?:\d+\.|[a-z]\.)\s", content
+                )  # pragma: no cover
                 direct_text = (  # pragma: no cover
                     content[: first_child_match.start()].strip()
                     if first_child_match
@@ -598,9 +606,7 @@ class OKConverter:
         cite_id = self._get_cite_id(section_number)
         return self.fetch_by_cite_id(cite_id, section_number)
 
-    def fetch_by_cite_id(
-        self, cite_id: int, section_number: str | None = None
-    ) -> Section:
+    def fetch_by_cite_id(self, cite_id: int, section_number: str | None = None) -> Section:
         """Fetch and convert a section by OSCN CiteID.
 
         Args:

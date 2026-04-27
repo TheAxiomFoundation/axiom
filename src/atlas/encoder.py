@@ -27,13 +27,13 @@ class Encoding:
     completion_tokens: int
 
 
-SYSTEM_PROMPT = """You are an expert at encoding US tax and benefit law into RAC (Rules as Code).
+SYSTEM_PROMPT = """You are an expert at encoding US tax and benefit law into RuleSpec.
 
 Given a statute section, produce executable DSL code that implements the legal rules.
 
-## RAC Syntax
+## RuleSpec Syntax
 
-```rac
+```rulespec
 // Variable definition
 variable earned_income_credit {
   entity TaxUnit
@@ -88,17 +88,17 @@ parameter gov.irs.eitc.phase_in_rate {
 ## Output Format
 
 Respond with:
-1. **DSL Code**: The complete .rac file content
+1. **DSL Code**: The complete .yaml file content
 2. **Test Cases**: YAML test cases covering edge cases
 3. **Notes**: Any ambiguities or assumptions made
 
-Wrap DSL in ```rac ... ``` blocks.
+Wrap DSL in ```rulespec ... ``` blocks.
 Wrap tests in ```yaml ... ``` blocks.
 """
 
 
 def encode_section(section: Section, model: str = "claude-sonnet-4-20250514") -> Encoding:
-    """Encode a statute section into RAC (Rules as Code) using Claude.
+    """Encode a statute section into RuleSpec using Claude.
 
     Args:
         section: The statute section to encode
@@ -110,7 +110,7 @@ def encode_section(section: Section, model: str = "claude-sonnet-4-20250514") ->
     client = Anthropic()
 
     # Build the user prompt
-    user_prompt = f"""Encode the following statute section into RAC (Rules as Code):
+    user_prompt = f"""Encode the following statute section into RuleSpec:
 
 ## Citation
 {section.citation.title} USC § {section.citation.section}
@@ -134,7 +134,7 @@ def encode_section(section: Section, model: str = "claude-sonnet-4-20250514") ->
 
     # Extract DSL and tests from response
     content = response.content[0].text
-    dsl = _extract_code_block(content, "rac")
+    dsl = _extract_code_block(content, "rulespec")
     tests_yaml = _extract_code_block(content, "yaml")
 
     # Parse test cases
@@ -173,7 +173,7 @@ def encode_and_save(
 
     Args:
         section: Section to encode
-        output_dir: Directory to save output (e.g., ~/.rac/workspace)
+        output_dir: Directory to save output (e.g., ~/.rulespec/workspace)
         model: Claude model to use
 
     Returns:
@@ -195,7 +195,7 @@ def encode_and_save(
     )
 
     # Save DSL
-    (section_dir / "rules.rac").write_text(encoding.dsl)
+    (section_dir / "rules.yaml").write_text(encoding.dsl)
 
     # Save tests
     if encoding.test_cases:

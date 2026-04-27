@@ -5,7 +5,7 @@
 -- ``scripts/ingest_ny_laws.py``'s ``extract_text`` uses ``"\n\n".join(...)``
 -- to stitch paragraphs, which produces real U+000A characters in the
 -- Python string. But somewhere in the ingest pipeline these got double-
--- escaped — bodies in ``akn.rules`` now contain a mixture of real U+000A
+-- escaped — bodies in ``arch.rules`` now contain a mixture of real U+000A
 -- and literal two-character ``\n`` (U+005C + U+006E) sequences.
 --
 -- Consequences
@@ -23,7 +23,7 @@
 -- One-shot: replace every literal ``\n`` in NY bodies with a real
 -- newline. After this runs, a re-run of ``extract_references.py
 -- --prefix us-ny/`` rebuilds refs against the normalized bodies, and
--- ``akn.rule_references`` rows whose offsets point into the pre-
+-- ``arch.rule_references`` rows whose offsets point into the pre-
 -- normalization bodies get deleted as part of the re-run's
 -- idempotent DELETE-then-INSERT per source rule.
 --
@@ -33,7 +33,7 @@
 
 BEGIN;
 
-UPDATE akn.rules
+UPDATE arch.rules
 SET body = replace(body, '\n', E'\n')
 WHERE jurisdiction = 'us-ny'
   AND body LIKE '%\n%';
@@ -44,7 +44,7 @@ DECLARE
   stragglers integer;
 BEGIN
   SELECT COUNT(*) INTO stragglers
-  FROM akn.rules
+  FROM arch.rules
   WHERE jurisdiction = 'us-ny'
     AND body LIKE '%\n%';
   IF stragglers > 0 THEN

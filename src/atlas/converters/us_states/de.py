@@ -178,7 +178,7 @@ class DEConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -354,7 +354,9 @@ class DEConverter:
             return history_pattern.group(1).strip()[:500]
 
         # Alternative: look for links to SessionLaws
-        history_links = section_div.find_all("a", href=re.compile(r"SessionLaws"))  # pragma: no cover
+        history_links = section_div.find_all(
+            "a", href=re.compile(r"SessionLaws")
+        )  # pragma: no cover
         if history_links:  # pragma: no cover
             history_parts = []
             for link in history_links[:5]:  # Limit to first 5
@@ -376,7 +378,9 @@ class DEConverter:
 
         # Check for "not found" error
         if "cannot be found" in html.lower() or "not found" in html.lower():
-            raise DEConverterError(f"Chapter {chapter} not found in Title {title}", url)  # pragma: no cover
+            raise DEConverterError(
+                f"Chapter {chapter} not found in Title {title}", url
+            )  # pragma: no cover
 
         # Get chapter title from TitleHead
         chapter_title = None
@@ -547,7 +551,9 @@ class DEConverter:
                         parsed = self._parse_chapter_html(sc_html, title, chapter, sc_url)
                         all_sections.extend(self._to_section(p, title) for p in parsed)
                     except (httpx.HTTPError, DEConverterError) as e:  # pragma: no cover
-                        print(f"Warning: Could not fetch subchapter {sc_num}: {e}")  # pragma: no cover
+                        print(
+                            f"Warning: Could not fetch subchapter {sc_num}: {e}"
+                        )  # pragma: no cover
                         continue  # pragma: no cover
 
             return all_sections
@@ -625,7 +631,7 @@ class DEConverter:
                                     href = link_elem.get("href", "")
                                     if href.startswith("#"):
                                         section_numbers.append(href[1:])
-                    except (httpx.HTTPError, DEConverterError):  # pragma: no cover
+                    except httpx.HTTPError, DEConverterError:  # pragma: no cover
                         continue  # pragma: no cover
         else:
             # Sections listed directly on chapter page

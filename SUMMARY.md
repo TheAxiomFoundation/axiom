@@ -181,7 +181,7 @@ sqlite3 lawarchive.db "
    - Announcements
    - Private Letter Rulings (if available)
 
-3. **Integration with RAC**
+3. **Integration with RuleSpec**
    - Add `@source` decorator to reference guidance docs
    - Automatic parameter syncing from lawarchive
    - Validation against official sources
@@ -189,9 +189,9 @@ sqlite3 lawarchive.db "
 4. **API Endpoints**
    - REST API for guidance queries
    - GraphQL interface
-   - Integration with RAC API
+   - Integration with RuleSpec API
 
-## Benefits for Rules Foundation
+## Benefits for The Axiom Foundation
 
 1. **Source Documentation**
    - Every parameter can cite its authoritative source
@@ -206,7 +206,7 @@ sqlite3 lawarchive.db "
 3. **Automation Potential**
    - AI agents can automatically fetch latest Rev. Procs
    - Extract parameters from PDFs
-   - Update rac-us encodings
+   - Update rules-us encodings
    - Flag when new guidance is published
 
 4. **Research Capabilities**
@@ -244,4 +244,4 @@ The IRS guidance document feature is now fully operational in Atlas. The system 
 - ✅ Foundation for automated parameter extraction
 - ✅ Complete documentation
 
-AI encoding agents can now access authoritative parameter sources, enabling fully-cited and verifiable tax and benefit encodings in RAC.
+AI encoding agents can now access authoritative parameter sources, enabling fully-cited and verifiable tax and benefit encodings in RuleSpec.

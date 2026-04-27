@@ -1,7 +1,7 @@
 # DC Tax Law Exploration for Lawarchive
 
 **Date:** 2025-12-25
-**Issue:** rac-us-mat
+**Issue:** rules-us-mat
 **Purpose:** Assess feasibility of importing DC tax law into atlas
 
 ## Executive Summary
@@ -281,7 +281,7 @@ atlas (R2)/
 
 ## Provisions to Encode First
 
-Priority order for rac-us encoding:
+Priority order for rules-us encoding:
 
 1. **DC Individual Income Tax Rates** (47-1806.03)
    - 7-bracket graduated rate structure
@@ -309,7 +309,7 @@ Priority order for rac-us encoding:
 2. [ ] Clone law-xml-codified and test parsing
 3. [ ] Add DC sections to atlas.db
 4. [ ] Create catalog entries for key tax sections
-5. [ ] Implement DC individual income tax in rac-us
+5. [ ] Implement DC individual income tax in rules-us
 
 ## Sources
 

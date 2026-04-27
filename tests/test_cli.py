@@ -118,8 +118,10 @@ class TestTitlesCommand:
         mock_arch_cls.return_value = mock_arch
         mock_arch.list_titles.return_value = [
             TitleInfo(
-                number=26, name="Internal Revenue Code",
-                section_count=2345, last_updated=date(2024, 1, 1),
+                number=26,
+                name="Internal Revenue Code",
+                section_count=2345,
+                last_updated=date(2024, 1, 1),
                 is_positive_law=True,
             )
         ]
@@ -196,14 +198,14 @@ class TestIngestCommand:
 
 class TestValidateCommand:
     def test_validate_passing(self, tmp_path):
-        rules_file = tmp_path / "rules.rac"
+        rules_file = tmp_path / "rules.yaml"
         rules_file.write_text(
-            'variable earned_income_credit {\n'
+            "variable earned_income_credit {\n"
             '  reference "26 USC 32"\n'
-            '  formula {\n'
-            '    return 0\n'
-            '  }\n'
-            '}\n'
+            "  formula {\n"
+            "    return 0\n"
+            "  }\n"
+            "}\n"
         )
 
         runner = CliRunner()
@@ -211,7 +213,7 @@ class TestValidateCommand:
         assert result.exit_code == 0
 
     def test_validate_no_definitions(self, tmp_path):
-        rules_file = tmp_path / "rules.rac"
+        rules_file = tmp_path / "rules.yaml"
         rules_file.write_text("// empty file\n")
 
         runner = CliRunner()
@@ -219,7 +221,7 @@ class TestValidateCommand:
         assert result.exit_code == 1
 
     def test_validate_with_warnings(self, tmp_path):
-        rules_file = tmp_path / "rules.rac"
+        rules_file = tmp_path / "rules.yaml"
         rules_file.write_text("parameter gov.irs.eitc.rate {}\n")
 
         runner = CliRunner()
@@ -228,7 +230,7 @@ class TestValidateCommand:
         assert result.exit_code == 0
 
     def test_validate_file_not_found(self, tmp_path):
-        tmp_path / "rules.rac"
+        tmp_path / "rules.yaml"
         # File doesn't exist, but tmp_path does exist as dir
         runner = CliRunner()
         result = runner.invoke(main, ["validate", str(tmp_path)])

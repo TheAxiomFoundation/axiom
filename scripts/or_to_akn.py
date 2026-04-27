@@ -45,9 +45,7 @@ def section_to_akn_dict(section: Section) -> dict:
         "title": section.section_title,
         "text": section.text,
         "history": None,  # History is embedded in text for OR
-        "subsections": [
-            subsection_to_dict(sub) for sub in section.subsections
-        ],
+        "subsections": [subsection_to_dict(sub) for sub in section.subsections],
     }
 
 
@@ -110,9 +108,13 @@ def create_akn_xml(chapter_num: str, chapter_title: str, sections: list[dict]) -
     # FRBRExpression
     expr = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRExpression")
     expr_this = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRthis")
-    expr_this.set("value", f"/akn/us-or/act/ors/chapter-{chapter_num}/eng@{date.today().isoformat()}")
+    expr_this.set(
+        "value", f"/akn/us-or/act/ors/chapter-{chapter_num}/eng@{date.today().isoformat()}"
+    )
     expr_uri = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRuri")
-    expr_uri.set("value", f"/akn/us-or/act/ors/chapter-{chapter_num}/eng@{date.today().isoformat()}")
+    expr_uri.set(
+        "value", f"/akn/us-or/act/ors/chapter-{chapter_num}/eng@{date.today().isoformat()}"
+    )
     expr_date = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRdate")
     expr_date.set("date", date.today().isoformat())
     expr_date.set("name", "publication")
@@ -124,9 +126,13 @@ def create_akn_xml(chapter_num: str, chapter_title: str, sections: list[dict]) -
     # FRBRManifestation
     manif = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRManifestation")
     manif_this = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRthis")
-    manif_this.set("value", f"/akn/us-or/act/ors/chapter-{chapter_num}/eng@{date.today().isoformat()}/main.xml")
+    manif_this.set(
+        "value", f"/akn/us-or/act/ors/chapter-{chapter_num}/eng@{date.today().isoformat()}/main.xml"
+    )
     manif_uri = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRuri")
-    manif_uri.set("value", f"/akn/us-or/act/ors/chapter-{chapter_num}/eng@{date.today().isoformat()}/main.xml")
+    manif_uri.set(
+        "value", f"/akn/us-or/act/ors/chapter-{chapter_num}/eng@{date.today().isoformat()}/main.xml"
+    )
     manif_date = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRdate")
     manif_date.set("date", date.today().isoformat())
     manif_date.set("name", "generation")
@@ -140,7 +146,7 @@ def create_akn_xml(chapter_num: str, chapter_title: str, sections: list[dict]) -
     # TLC references
     arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://rules.foundation")
+    arch_ref.set("href", "https://axiom-foundation.org")
     arch_ref.set("showAs", "Atlas")
 
     or_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
@@ -251,7 +257,9 @@ def add_subsection_to_xml(parent: ET.Element, subsection: dict, parent_id: str, 
         add_subsection_to_xml(elem, child, sub_id, level + 1)
 
 
-def convert_chapter(converter: ORConverter, chapter_num: int, chapter_title: str, output_dir: Path) -> dict:
+def convert_chapter(
+    converter: ORConverter, chapter_num: int, chapter_title: str, output_dir: Path
+) -> dict:
     """Convert a single chapter to Akoma Ntoso XML.
 
     Returns:
@@ -276,7 +284,12 @@ def convert_chapter(converter: ORConverter, chapter_num: int, chapter_title: str
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(xml_content)
 
-        return {"chapter": str(chapter_num), "sections": len(sections), "success": True, "error": None}
+        return {
+            "chapter": str(chapter_num),
+            "sections": len(sections),
+            "success": True,
+            "error": None,
+        }
 
     except Exception as e:
         return {"chapter": str(chapter_num), "sections": 0, "success": False, "error": str(e)}
@@ -303,7 +316,9 @@ def main():
         for chapter_str, chapter_title in all_chapters.items():
             # Skip chapters with letter suffixes (308A, 317A) for now
             if not chapter_str.isdigit():
-                print(f"  [SKIP] Chapter {chapter_str}: non-numeric chapter numbers not yet supported")
+                print(
+                    f"  [SKIP] Chapter {chapter_str}: non-numeric chapter numbers not yet supported"
+                )
                 continue
 
             chapter_num = int(chapter_str)

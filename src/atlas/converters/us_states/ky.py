@@ -163,7 +163,7 @@ class KYConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -332,9 +332,7 @@ class KYConverter:
 
         chapter = int(section_number.split(".")[0])
         chapter_title = (
-            KY_TAX_CHAPTERS.get(chapter)
-            or KY_WELFARE_CHAPTERS.get(chapter)
-            or f"Chapter {chapter}"
+            KY_TAX_CHAPTERS.get(chapter) or KY_WELFARE_CHAPTERS.get(chapter) or f"Chapter {chapter}"
         )
 
         title_roman, title_name = self._get_title_for_chapter(chapter)
@@ -342,9 +340,7 @@ class KYConverter:
         # Extract section title from the text
         # Format: "141.010 Definitions" or "141.010 Definitions for KRS Chapter 141."
         section_title = ""
-        title_pattern = re.compile(
-            rf"{re.escape(section_number)}\s+([^\n.]+?)(?:\s*\.|\s*\n|$)"
-        )
+        title_pattern = re.compile(rf"{re.escape(section_number)}\s+([^\n.]+?)(?:\s*\.|\s*\n|$)")
         match = title_pattern.search(text)
         if match:
             section_title = match.group(1).strip()
@@ -588,9 +584,7 @@ class KYConverter:
 
         # Filter cached sections for this chapter
         prefix = f"{chapter}."
-        section_numbers = [
-            s for s in self._section_id_cache.keys() if s.startswith(prefix)
-        ]
+        section_numbers = [s for s in self._section_id_cache.keys() if s.startswith(prefix)]
 
         # Sort by section number
         def sort_key(s: str) -> tuple[int, str]:

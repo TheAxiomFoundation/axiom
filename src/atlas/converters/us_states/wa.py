@@ -279,7 +279,7 @@ class WAConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -354,7 +354,9 @@ class WAConverter:
                 # Extract title after colon or after section number
                 if ":" in heading_text:
                     section_title = heading_text.split(":", 1)[1].strip()
-                elif re.search(rf"{re.escape(section_number)}\s+(.+)", heading_text):  # pragma: no cover
+                elif re.search(
+                    rf"{re.escape(section_number)}\s+(.+)", heading_text
+                ):  # pragma: no cover
                     match = re.search(rf"{re.escape(section_number)}\s+(.+)", heading_text)
                     if match:
                         section_title = match.group(1).strip().rstrip(".")
@@ -419,7 +421,7 @@ class WAConverter:
                 if "/" in date_str:
                     parts = date_str.split("/")
                     effective_date = date(int(parts[2]), int(parts[0]), int(parts[1]))
-            except (ValueError, IndexError):
+            except ValueError, IndexError:
                 pass
 
         # Parse subsections
@@ -776,4 +778,6 @@ def download_wa_public_assistance_chapters() -> Iterator[Section]:
         Section objects
     """
     with WAConverter() as converter:  # pragma: no cover
-        yield from converter.iter_chapters(list(WA_PUBLIC_ASSISTANCE_CHAPTERS.keys()))  # pragma: no cover
+        yield from converter.iter_chapters(
+            list(WA_PUBLIC_ASSISTANCE_CHAPTERS.keys())
+        )  # pragma: no cover

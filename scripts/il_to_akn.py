@@ -104,19 +104,46 @@ IL_CHAPTERS: dict[int, str] = {
 
 # Chapter IDs used in URL parameters
 IL_CHAPTER_IDS: dict[int, int] = {
-    5: 2, 10: 3, 15: 4, 20: 5, 25: 6, 30: 7, 35: 8, 40: 9, 45: 10,
-    50: 11, 55: 12, 60: 13, 65: 14, 70: 15, 75: 16, 105: 17, 110: 18,
-    205: 20, 305: 28, 405: 33, 505: 38, 605: 43, 625: 44, 720: 49,
-    725: 50, 735: 52, 765: 57, 805: 61, 815: 63, 820: 64,
+    5: 2,
+    10: 3,
+    15: 4,
+    20: 5,
+    25: 6,
+    30: 7,
+    35: 8,
+    40: 9,
+    45: 10,
+    50: 11,
+    55: 12,
+    60: 13,
+    65: 14,
+    70: 15,
+    75: 16,
+    105: 17,
+    110: 18,
+    205: 20,
+    305: 28,
+    405: 33,
+    505: 38,
+    605: 43,
+    625: 44,
+    720: 49,
+    725: 50,
+    735: 52,
+    765: 57,
+    805: 61,
+    815: 63,
+    820: 64,
 }
 
 
 @dataclass
 class ParsedSection:
     """Parsed Illinois statute section."""
+
     section_number: str  # e.g., "201"
-    section_title: str   # e.g., "Tax imposed"
-    text: str           # Full text content
+    section_title: str  # e.g., "Tax imposed"
+    text: str  # Full text content
     subsections: list["ParsedSubsection"] = field(default_factory=list)
     source_note: str | None = None
 
@@ -124,6 +151,7 @@ class ParsedSection:
 @dataclass
 class ParsedSubsection:
     """A subsection within an Illinois statute."""
+
     identifier: str  # e.g., "a", "1", "A"
     text: str
     children: list["ParsedSubsection"] = field(default_factory=list)
@@ -132,6 +160,7 @@ class ParsedSubsection:
 @dataclass
 class ParsedArticle:
     """A parsed article containing sections."""
+
     article_number: str
     article_title: str
     sections: list[ParsedSection] = field(default_factory=list)
@@ -140,6 +169,7 @@ class ParsedArticle:
 @dataclass
 class ParsedAct:
     """A parsed act containing articles."""
+
     chapter_num: int
     act_num: int
     act_name: str
@@ -156,7 +186,7 @@ class ILFetcher:
         self._last_request_time = 0.0
         self.client = httpx.Client(
             timeout=60.0,
-            headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+            headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             follow_redirects=True,
         )
 
@@ -271,10 +301,7 @@ class ILFetcher:
         text = soup.get_text(separator=" ", strip=True)
 
         # Find all section boundaries
-        section_pattern = re.compile(
-            r"Sec\.\s+(\d+[a-zA-Z\-\.]*)\.\s+([^.]+)\.\s*",
-            re.MULTILINE
-        )
+        section_pattern = re.compile(r"Sec\.\s+(\d+[a-zA-Z\-\.]*)\.\s+([^.]+)\.\s*", re.MULTILINE)
 
         matches = list(section_pattern.finditer(text))
 
@@ -313,13 +340,15 @@ class ILFetcher:
             # Parse subsections
             subsections = self._parse_subsections(content)
 
-            sections.append(ParsedSection(
-                section_number=section_num,
-                section_title=section_title,
-                text=content,
-                subsections=subsections,
-                source_note=source_note,
-            ))
+            sections.append(
+                ParsedSection(
+                    section_number=section_num,
+                    section_title=section_title,
+                    text=content,
+                    subsections=subsections,
+                    source_note=source_note,
+                )
+            )
 
         return sections
 
@@ -336,7 +365,7 @@ class ILFetcher:
                 continue
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse second-level children (1), (2), etc.
             children = self._parse_subsection_level2(content)
@@ -345,7 +374,7 @@ class ILFetcher:
             if children:
                 first_child_match = re.search(r"\(\d+\)", content)
                 direct_text = (
-                    content[:first_child_match.start()].strip()
+                    content[: first_child_match.start()].strip()
                     if first_child_match
                     else content.strip()
                 )
@@ -355,13 +384,15 @@ class ILFetcher:
             # Clean up - stop at next lettered subsection
             next_sub = re.search(r"\([a-z]\)", direct_text)
             if next_sub:
-                direct_text = direct_text[:next_sub.start()].strip()
+                direct_text = direct_text[: next_sub.start()].strip()
 
-            subsections.append(ParsedSubsection(
-                identifier=identifier,
-                text=direct_text[:2000],
-                children=children,
-            ))
+            subsections.append(
+                ParsedSubsection(
+                    identifier=identifier,
+                    text=direct_text[:2000],
+                    children=children,
+                )
+            )
 
         return subsections
 
@@ -376,22 +407,24 @@ class ILFetcher:
                 continue
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Limit size
             next_num = re.search(r"\(\d+\)", content)
             if next_num:
-                content = content[:next_num.start()]
+                content = content[: next_num.start()]
 
             next_letter = re.search(r"\([a-z]\)", content)
             if next_letter:
-                content = content[:next_letter.start()]
+                content = content[: next_letter.start()]
 
-            subsections.append(ParsedSubsection(
-                identifier=identifier,
-                text=content.strip()[:2000],
-                children=[],
-            ))
+            subsections.append(
+                ParsedSubsection(
+                    identifier=identifier,
+                    text=content.strip()[:2000],
+                    children=[],
+                )
+            )
 
         return subsections
 
@@ -452,9 +485,13 @@ def create_akn_xml(
     # FRBRExpression
     expr = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRExpression")
     expr_this = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRthis")
-    expr_this.set("value", f"/akn/us-il/act/ilcs/{chapter_num}-{act_num}/eng@{date.today().isoformat()}")
+    expr_this.set(
+        "value", f"/akn/us-il/act/ilcs/{chapter_num}-{act_num}/eng@{date.today().isoformat()}"
+    )
     expr_uri = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRuri")
-    expr_uri.set("value", f"/akn/us-il/act/ilcs/{chapter_num}-{act_num}/eng@{date.today().isoformat()}")
+    expr_uri.set(
+        "value", f"/akn/us-il/act/ilcs/{chapter_num}-{act_num}/eng@{date.today().isoformat()}"
+    )
     expr_date = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRdate")
     expr_date.set("date", date.today().isoformat())
     expr_date.set("name", "publication")
@@ -466,9 +503,15 @@ def create_akn_xml(
     # FRBRManifestation
     manif = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRManifestation")
     manif_this = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRthis")
-    manif_this.set("value", f"/akn/us-il/act/ilcs/{chapter_num}-{act_num}/eng@{date.today().isoformat()}/main.xml")
+    manif_this.set(
+        "value",
+        f"/akn/us-il/act/ilcs/{chapter_num}-{act_num}/eng@{date.today().isoformat()}/main.xml",
+    )
     manif_uri = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRuri")
-    manif_uri.set("value", f"/akn/us-il/act/ilcs/{chapter_num}-{act_num}/eng@{date.today().isoformat()}/main.xml")
+    manif_uri.set(
+        "value",
+        f"/akn/us-il/act/ilcs/{chapter_num}-{act_num}/eng@{date.today().isoformat()}/main.xml",
+    )
     manif_date = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRdate")
     manif_date.set("date", date.today().isoformat())
     manif_date.set("name", "generation")
@@ -481,7 +524,7 @@ def create_akn_xml(
 
     arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://rules.foundation")
+    arch_ref.set("href", "https://axiom-foundation.org")
     arch_ref.set("showAs", "Atlas")
 
     il_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
@@ -723,7 +766,7 @@ def main():
                 continue
 
             if args.max_acts > 0:
-                acts = acts[:args.max_acts]
+                acts = acts[: args.max_acts]
 
             for act_num, act_id, act_name in acts:
                 result = convert_act(
@@ -739,7 +782,9 @@ def main():
                     if result["sections"] > 0:
                         successful_acts += 1
                         total_sections += result["sections"]
-                        print(f"    [OK] {chapter_num} ILCS {act_num}/: {result['sections']} sections")
+                        print(
+                            f"    [OK] {chapter_num} ILCS {act_num}/: {result['sections']} sections"
+                        )
                     else:
                         empty_acts += 1
                         print(f"    [--] {chapter_num} ILCS {act_num}/: no sections found")

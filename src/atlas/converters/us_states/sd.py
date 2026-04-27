@@ -218,7 +218,7 @@ class SDConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -338,7 +338,9 @@ class SDConverter:
             if og_title:  # pragma: no cover
                 content = og_title.get("content", "")  # pragma: no cover
                 # Pattern: "SD 10-1-1 - Title here"
-                match = re.search(rf"SD\s*{re.escape(section_number)}\s*[-–—]\s*(.+)", content)  # pragma: no cover
+                match = re.search(
+                    rf"SD\s*{re.escape(section_number)}\s*[-–—]\s*(.+)", content
+                )  # pragma: no cover
                 if match:  # pragma: no cover
                     section_title = match.group(1).strip()  # pragma: no cover
 
@@ -383,7 +385,7 @@ class SDConverter:
                 from dateutil import parser as date_parser
 
                 effective_date = date_parser.parse(eff_match.group(1)).date()
-            except (ValueError, ImportError):  # pragma: no cover
+            except ValueError, ImportError:  # pragma: no cover
                 pass
 
         return ParsedSDSection(
@@ -535,7 +537,9 @@ class SDConverter:
         try:
             html = self._get(url)
         except httpx.HTTPStatusError as e:  # pragma: no cover
-            raise SDConverterError(f"Section {section_number} not found", url) from e  # pragma: no cover
+            raise SDConverterError(
+                f"Section {section_number} not found", url
+            ) from e  # pragma: no cover
 
         parsed = self._parse_section_html(html, section_number, url)
         return self._to_section(parsed)
@@ -588,7 +592,9 @@ class SDConverter:
             href = link.get("href", "")  # pragma: no cover
             # Match chapter links like /statutes/DisplayStatute.aspx?Type=Statute&Statute=10-1
             # or /Statutes?Statute=10-1
-            match = re.search(rf"Statute=({title}-[\dA-Za-z]+)(?:$|[&\s])", href)  # pragma: no cover
+            match = re.search(
+                rf"Statute=({title}-[\dA-Za-z]+)(?:$|[&\s])", href
+            )  # pragma: no cover
             if match:  # pragma: no cover
                 chapter = match.group(1)  # pragma: no cover
                 if chapter not in chapters:  # pragma: no cover

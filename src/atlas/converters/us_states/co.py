@@ -202,7 +202,7 @@ class COConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -284,16 +284,12 @@ class COConverter:
         if "404" in h1_text or "page not found" in h1_text:
             raise COConverterError(f"Section {section_number} not found", url)  # pragma: no cover
 
-        title_number, article_number, section_part = self._parse_section_number(
-            section_number
-        )
+        title_number, article_number, section_part = self._parse_section_number(section_number)
         title_name = CO_TITLES.get(title_number, f"Title {title_number}")
 
         # Get article name based on title
         if title_number == 39:
-            article_name = CO_TAX_ARTICLES.get(
-                article_number, f"Article {article_number}"
-            )
+            article_name = CO_TAX_ARTICLES.get(article_number, f"Article {article_number}")
         elif title_number == 26:
             article_name = CO_HUMAN_SERVICES_ARTICLES.get(
                 article_number, f"Article {article_number}"
@@ -607,9 +603,7 @@ class COConverter:
         parsed = self._parse_section_html(html, section_number, url)
         return self._to_section(parsed)
 
-    def get_article_section_numbers(
-        self, title: int, article: int
-    ) -> list[str]:
+    def get_article_section_numbers(self, title: int, article: int) -> list[str]:
         """Get list of section numbers in an article.
 
         Args:
@@ -640,7 +634,10 @@ class COConverter:
                 if section_num not in section_numbers:
                     section_numbers.append(section_num)
 
-        return sorted(section_numbers, key=lambda x: [int(p) if p.isdigit() else p for p in re.split(r'[-.]', x)])
+        return sorted(
+            section_numbers,
+            key=lambda x: [int(p) if p.isdigit() else p for p in re.split(r"[-.]", x)],
+        )
 
     def iter_article(self, title: int, article: int) -> Iterator[Section]:
         """Iterate over all sections in an article.

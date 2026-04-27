@@ -69,7 +69,9 @@ class CanadaLegislationFetcher:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=self.timeout,
-                headers={"User-Agent": "Atlas/1.0 (legislation archiver; contact@rules.foundation)"},
+                headers={
+                    "User-Agent": "Atlas/1.0 (legislation archiver; contact@axiom-foundation.org)"
+                },
                 follow_redirects=True,
             )
         return self._client

@@ -274,7 +274,7 @@ class NMConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -444,9 +444,7 @@ class NMConverter:
 
         if content_elem:
             # Remove navigation and scripts
-            for elem in content_elem.find_all(
-                ["nav", "script", "style", "header", "footer"]
-            ):
+            for elem in content_elem.find_all(["nav", "script", "style", "header", "footer"]):
                 elem.decompose()  # pragma: no cover
             text = content_elem.get_text(separator="\n", strip=True)
             html_content = str(content_elem)
@@ -556,7 +554,7 @@ class NMConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse second-level children (1), (2), etc.
             children = self._parse_level2(content)
@@ -598,7 +596,7 @@ class NMConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse third-level children (a), (b), etc.
             children = self._parse_level3(content)
@@ -645,7 +643,7 @@ class NMConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Stop at next higher-level subsection
             next_num = re.search(r"\(\d+\)", content)

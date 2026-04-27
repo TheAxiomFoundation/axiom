@@ -214,7 +214,7 @@ class WVConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
                 follow_redirects=True,
             )
         return self._client
@@ -263,7 +263,9 @@ class WVConverter:
         """
         parts = section_number.split("-")
         if len(parts) < 3:
-            raise WVConverterError(f"Invalid section number format: {section_number}")  # pragma: no cover
+            raise WVConverterError(
+                f"Invalid section number format: {section_number}"
+            )  # pragma: no cover
 
         chapter = int(parts[0])
         article = parts[1]  # Can be "21" or "6B"
@@ -282,7 +284,9 @@ class WVConverter:
 
         # Check for "not found" error - look for specific error page patterns
         # We check for section number not appearing in h4 headings (valid pages have h4 with section number)
-        section_heading = soup.find("h4", string=re.compile(rf"§?\s*{re.escape(section_number)}", re.I))
+        section_heading = soup.find(
+            "h4", string=re.compile(rf"§?\s*{re.escape(section_number)}", re.I)
+        )
         if not section_heading:
             # Also check page title as fallback
             title_tag = soup.find("title")
@@ -307,8 +311,7 @@ class WVConverter:
             heading_text = heading.get_text(strip=True)
             # Match patterns like "11-21-1. Legislative findings" or "§11-21-1. Legislative findings"
             title_pattern = re.compile(
-                rf"(?:§\s*)?{re.escape(section_number)}[.\s]+(.+?)(?:\s*$)",
-                re.IGNORECASE
+                rf"(?:§\s*)?{re.escape(section_number)}[.\s]+(.+?)(?:\s*$)", re.IGNORECASE
             )
             match = title_pattern.search(heading_text)
             if match:
@@ -321,8 +324,7 @@ class WVConverter:
             if title_tag:
                 title_text = title_tag.get_text(strip=True)
                 title_pattern = re.compile(
-                    rf"(?:§\s*)?{re.escape(section_number)}[.\s]+(.+?)(?:\s*[-|]|$)",
-                    re.IGNORECASE
+                    rf"(?:§\s*)?{re.escape(section_number)}[.\s]+(.+?)(?:\s*[-|]|$)", re.IGNORECASE
                 )
                 match = title_pattern.search(title_text)
                 if match:
@@ -336,7 +338,9 @@ class WVConverter:
                     link_text = link.get_text(strip=True)
                     if article.upper() in link_text.upper():
                         # Extract article name from breadcrumb
-                        article_match = re.search(r"ARTICLE\s+\d+[A-Z]?\.\s*(.+)", link_text, re.IGNORECASE)
+                        article_match = re.search(
+                            r"ARTICLE\s+\d+[A-Z]?\.\s*(.+)", link_text, re.IGNORECASE
+                        )
                         if article_match:
                             article_name = article_name or article_match.group(1).strip()
 
@@ -351,7 +355,9 @@ class WVConverter:
 
         if content_elem:
             # Remove navigation and scripts
-            for elem in content_elem.find_all(["nav", "script", "style", "header", "footer"]):  # pragma: no cover
+            for elem in content_elem.find_all(
+                ["nav", "script", "style", "header", "footer"]
+            ):  # pragma: no cover
                 elem.decompose()
             text = content_elem.get_text(separator="\n", strip=True)
             html_content = str(content_elem)
@@ -361,7 +367,9 @@ class WVConverter:
 
         # Extract history note - WV uses "Bill History" section
         history = None
-        history_section = soup.find(class_="history") or soup.find("div", string=re.compile(r"Bill History", re.I))
+        history_section = soup.find(class_="history") or soup.find(
+            "div", string=re.compile(r"Bill History", re.I)
+        )
         if history_section:
             history = history_section.get_text(strip=True)[:2000]
         else:  # pragma: no cover
@@ -431,7 +439,7 @@ class WVConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse nested (1), (2), etc.
             children = self._parse_nested_numbered(content)
@@ -474,7 +482,7 @@ class WVConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse nested (a), (b), etc.
             children = self._parse_nested_lettered(content)
@@ -516,7 +524,7 @@ class WVConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse (A), (B), etc. as third level
             children = self._parse_uppercase_letters(content)
@@ -558,7 +566,7 @@ class WVConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)  # pragma: no cover
-            content = part[match.end():]  # pragma: no cover
+            content = part[match.end() :]  # pragma: no cover
 
             # Limit size and stop at next subsection
             next_letter = re.search(r"\([a-z]\)", content)  # pragma: no cover
@@ -590,7 +598,7 @@ class WVConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Limit size
             next_letter = re.search(r"\([A-Z]\)", content)

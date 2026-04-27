@@ -182,7 +182,7 @@ class PAConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -308,7 +308,9 @@ class PAConverter:
         # Extract cross-references
         cross_refs = []
         cross_ref_match = re.search(
-            r"Cross References\.?\s*(.+?)(?=\n\n|History|$)", section_text, re.IGNORECASE | re.DOTALL
+            r"Cross References\.?\s*(.+?)(?=\n\n|History|$)",
+            section_text,
+            re.IGNORECASE | re.DOTALL,
         )
         if cross_ref_match:
             ref_text = cross_ref_match.group(1)
@@ -412,7 +414,9 @@ class PAConverter:
 
             # Get text before first child
             if children:
-                first_child_match = re.search(r"\([ivxlc]+\)", content, re.IGNORECASE)  # pragma: no cover
+                first_child_match = re.search(
+                    r"\([ivxlc]+\)", content, re.IGNORECASE
+                )  # pragma: no cover
                 direct_text = (  # pragma: no cover
                     content[: first_child_match.start()].strip()
                     if first_child_match
@@ -439,7 +443,9 @@ class PAConverter:
         parts = re.split(r"(?=\((?:i{1,3}|iv|vi{0,3}|ix|x)\)\s)", text, flags=re.IGNORECASE)
 
         for part in parts[1:]:
-            match = re.match(r"\((i{1,3}|iv|vi{0,3}|ix|x)\)\s*", part, re.IGNORECASE)  # pragma: no cover
+            match = re.match(
+                r"\((i{1,3}|iv|vi{0,3}|ix|x)\)\s*", part, re.IGNORECASE
+            )  # pragma: no cover
             if not match:  # pragma: no cover
                 continue  # pragma: no cover
 
@@ -575,7 +581,9 @@ class PAConverter:
                 yield self.fetch_section(title, section_num)
             except PAConverterError as e:  # pragma: no cover
                 # Log but continue with other sections
-                print(f"Warning: Could not fetch {title} Pa.C.S. {section_num}: {e}")  # pragma: no cover
+                print(
+                    f"Warning: Could not fetch {title} Pa.C.S. {section_num}: {e}"
+                )  # pragma: no cover
                 continue  # pragma: no cover
 
     def iter_titles(

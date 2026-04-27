@@ -7,7 +7,7 @@
 -- Dual consumer:
 --   * Atlas viewer — render body text with clickable <a> tags at
 --     (start_offset, end_offset), linking to /atlas/{target_citation_path}.
---   * RAC tooling (autorac, rac-compile) — use the outgoing refs of an
+--   * RuleSpec tooling (axiom-encode, rules-compile) — use the outgoing refs of an
 --     encoded rule as the candidate list for its `imports:` block.
 --
 -- The table is append-only on extraction; the extractor is idempotent
@@ -57,7 +57,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_rule_references_source_span
   ON arch.rule_references (source_rule_id, start_offset, end_offset);
 
 -- Outgoing lookups: "what does THIS rule cite?" — primary path for both
--- the viewer's body-render and RAC's import candidates.
+-- the viewer's body-render and RuleSpec's import candidates.
 CREATE INDEX IF NOT EXISTS idx_rule_references_source
   ON arch.rule_references (source_rule_id);
 

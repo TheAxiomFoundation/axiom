@@ -201,7 +201,7 @@ class FLConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -380,7 +380,9 @@ class FLConverter:
 
         return intro_text
 
-    def _parse_subsections_from_html(self, section_body) -> list[ParsedFLSubsection]:  # pragma: no cover
+    def _parse_subsections_from_html(
+        self, section_body
+    ) -> list[ParsedFLSubsection]:  # pragma: no cover
         """Parse subsections from the structured HTML with CSS classes.
 
         The HTML uses classes like Subsection, Paragraph, SubParagraph, etc.
@@ -395,7 +397,9 @@ class FLConverter:
 
         return subsections
 
-    def _parse_subsection_div(self, div, level: int) -> ParsedFLSubsection | None:  # pragma: no cover
+    def _parse_subsection_div(
+        self, div, level: int
+    ) -> ParsedFLSubsection | None:  # pragma: no cover
         """Parse a single subsection div recursively."""
         # Get the number/identifier
         num_elem = div.find("span", class_="Number")

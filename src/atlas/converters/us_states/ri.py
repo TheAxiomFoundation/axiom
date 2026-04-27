@@ -242,7 +242,7 @@ class RIConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -333,7 +333,11 @@ class RIConverter:
         soup = BeautifulSoup(html, "html.parser")
 
         # Check for "not found" error
-        if "404" in html.lower() or "not found" in html.lower() or "cannot be found" in html.lower():
+        if (
+            "404" in html.lower()
+            or "not found" in html.lower()
+            or "cannot be found" in html.lower()
+        ):
             raise RIConverterError(f"Section {section_number} not found", url)
 
         title = self._extract_title_from_section(section_number)
@@ -671,7 +675,9 @@ class RIConverter:
                 soup = BeautifulSoup(html, "html.parser")  # pragma: no cover
 
                 # Find section links
-                pattern = re.compile(rf"({re.escape(chapter)}-[\d.]+)\.htm", re.IGNORECASE)  # pragma: no cover
+                pattern = re.compile(
+                    rf"({re.escape(chapter)}-[\d.]+)\.htm", re.IGNORECASE
+                )  # pragma: no cover
                 for link in soup.find_all("a", href=True):  # pragma: no cover
                     href = link.get("href", "")  # pragma: no cover
                     match = pattern.search(href)  # pragma: no cover
@@ -679,7 +685,7 @@ class RIConverter:
                         section_num = match.group(1)  # pragma: no cover
                         if section_num not in section_numbers:  # pragma: no cover
                             section_numbers.append(section_num)  # pragma: no cover
-            except (httpx.HTTPStatusError, Exception):  # pragma: no cover
+            except httpx.HTTPStatusError, Exception:  # pragma: no cover
                 # Part doesn't exist, continue
                 continue  # pragma: no cover
 

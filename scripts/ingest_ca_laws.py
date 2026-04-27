@@ -3,7 +3,7 @@
 The ``TheAxiomFoundation/rules-us-ca`` GitHub repo carries section XML
 files in Akoma Ntoso 3.0 format under ``statutes/{code}/{code}-{section}.xml``.
 This script clones the repo to a scratch dir (if not already cached),
-walks those files, and uploads one row per section to ``akn.rules``
+walks those files, and uploads one row per section to ``arch.rules``
 with ``jurisdiction='us-ca'``.
 
 Design
@@ -119,7 +119,7 @@ def build_row(xml_path: Path, law_code: str) -> dict | None:
         # Strip the "{code}-" prefix from e.g. "rtc-17041" → "17041".
         stem = xml_path.stem
         prefix = f"{law_code}-"
-        section_id = stem[len(prefix):] if stem.startswith(prefix) else stem
+        section_id = stem[len(prefix) :] if stem.startswith(prefix) else stem
 
     # Normalize whitespace / trailing dots.
     section_id = re.sub(r"\s+", "-", section_id.strip().strip(".")) or xml_path.stem

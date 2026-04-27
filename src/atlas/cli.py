@@ -216,7 +216,7 @@ def refs(ctx: click.Context, citation: str):
     "--output",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path.home() / ".rac" / "workspace",
+    default=Path.home() / ".rulespec" / "workspace",
     help="Output directory for encoded files",
 )
 @click.option(
@@ -224,10 +224,10 @@ def refs(ctx: click.Context, citation: str):
 )
 @click.pass_context
 def encode(ctx: click.Context, citation: str, output: Path, model: str):
-    """Encode a statute section into RAC (Rules as Code) using AI.
+    """Encode a statute section into RuleSpec using AI.
 
     Reads the statute from the archive and generates:
-    - rules.rac (DSL code)
+    - rules.yaml (DSL code)
     - tests.yaml (test cases)
     - statute.md (reference text)
     - metadata.json (provenance)
@@ -270,7 +270,7 @@ def encode(ctx: click.Context, citation: str, output: Path, model: str):
     console.print()
     console.print("[bold]Files created:[/bold]")
     console.print(f"  📜 {section_dir / 'statute.md'}")
-    console.print(f"  📄 {section_dir / 'rules.rac'}")
+    console.print(f"  📄 {section_dir / 'rules.yaml'}")
     console.print(f"  🧪 {section_dir / 'tests.yaml'}")
     console.print(f"  📋 {section_dir / 'metadata.json'}")
     console.print()
@@ -289,10 +289,10 @@ def validate(path: Path):
     - Test case format
 
     Example:
-        atlas validate ~/.rac/workspace/federal/statute/26/32
+        atlas validate ~/.rulespec/workspace/federal/statute/26/32
     """
-    # Find rules.rac file
-    rules_file = path / "rules.rac" if path.is_dir() else path
+    # Find rules.yaml file
+    rules_file = path / "rules.yaml" if path.is_dir() else path
 
     if not rules_file.exists():
         console.print(f"[red]Not found:[/red] {rules_file}")
@@ -467,7 +467,9 @@ def _download_fl_state(ctx: click.Context, chapters: tuple[str, ...], list_laws:
             table.add_row(str(ch), title, "Social Welfare")
 
         console.print(table)
-        console.print(f"\n[dim]Total: {len(FL_TAX_CHAPTERS) + len(FL_WELFARE_CHAPTERS)} chapters available[/dim]")
+        console.print(
+            f"\n[dim]Total: {len(FL_TAX_CHAPTERS) + len(FL_WELFARE_CHAPTERS)} chapters available[/dim]"
+        )
         return
 
     # Default to tax chapters if none specified
@@ -481,7 +483,9 @@ def _download_fl_state(ctx: click.Context, chapters: tuple[str, ...], list_laws:
 
     with FLStatutesClient(rate_limit_delay=0.3) as client:
         for chapter in chapter_list:
-            chapter_name = FL_TAX_CHAPTERS.get(chapter) or FL_WELFARE_CHAPTERS.get(chapter, f"Chapter {chapter}")
+            chapter_name = FL_TAX_CHAPTERS.get(chapter) or FL_WELFARE_CHAPTERS.get(
+                chapter, f"Chapter {chapter}"
+            )
             console.print(f"\n[blue]Downloading:[/blue] Florida {chapter_name} (Ch. {chapter})")
 
             try:
@@ -580,8 +584,8 @@ def verify(path: Path, pe_var: str, tolerance: float, save: Path | None):
     to expected values from the DSL encoding.
 
     Examples:
-        atlas verify ~/.rac/workspace/federal/statute/26/32 -v eitc
-        atlas verify ~/.rac/workspace/federal/statute/26/24 -v ctc
+        atlas verify ~/.rulespec/workspace/federal/statute/26/32 -v eitc
+        atlas verify ~/.rulespec/workspace/federal/statute/26/24 -v ctc
     """
     from atlas.verifier import (
         print_verification_report,
@@ -680,7 +684,9 @@ def fetch_guidance(
 
     with IRSBulkFetcher() as fetcher:
         # First, list all available documents (multi-page)
-        console.print("[dim]Scanning IRS drop folder (may take a minute for multiple pages)...[/dim]")
+        console.print(
+            "[dim]Scanning IRS drop folder (may take a minute for multiple pages)...[/dim]"
+        )
 
         def page_progress(msg: str) -> None:
             console.print(f"[dim]{msg}[/dim]")
@@ -717,7 +723,7 @@ def fetch_guidance(
         # Fetch and store each document
         for i, doc in enumerate(all_docs):
             console.print(
-                f"[{i+1}/{len(all_docs)}] Fetching {doc.doc_type.value} {doc.doc_number}...",
+                f"[{i + 1}/{len(all_docs)}] Fetching {doc.doc_type.value} {doc.doc_number}...",
                 end=" ",
             )
 
@@ -820,12 +826,14 @@ def stats(ctx: click.Context, as_json: bool):
     usc_stats = []
     usc_total_sections = 0
     for row in usc_rows:
-        usc_stats.append({
-            "title": row[0],
-            "name": row[1],
-            "sections": row[2],
-            "last_updated": row[3],
-        })
+        usc_stats.append(
+            {
+                "title": row[0],
+                "name": row[1],
+                "sections": row[2],
+                "last_updated": row[3],
+            }
+        )
         usc_total_sections += row[2]
 
     stats_data["us_code"] = {
@@ -995,7 +1003,9 @@ def stats(ctx: click.Context, as_json: bool):
 @click.option("--max-sections", "-n", type=int, help="Limit sections per jurisdiction")
 @click.option("--concurrency", "-c", default=5, help="Concurrent requests (HTML only)")
 @click.option("--force", "-f", is_flag=True, help="Re-download even if files exist")
-@click.option("--min-files", default=10, help="Skip states with at least this many files (default: 10)")
+@click.option(
+    "--min-files", default=10, help="Skip states with at least this many files (default: 10)"
+)
 @click.option("--log", "-l", is_flag=True, help="Write log to timestamped file in data/")
 def crawl(
     jurisdiction: str,
@@ -1052,10 +1062,12 @@ def crawl(
         class TeeWriter:
             def __init__(self, *writers):
                 self.writers = writers
+
             def write(self, text):
                 for w in self.writers:
                     w.write(text)
                     w.flush()
+
             def flush(self):
                 for w in self.writers:
                     w.flush()
@@ -1097,7 +1109,9 @@ def crawl(
                     skipped += 1
                     continue
 
-            console.print(f"\n[bold blue]{progress} {'[DRY RUN] ' if dry_run else ''}Crawling {jur}...[/bold blue]")
+            console.print(
+                f"\n[bold blue]{progress} {'[DRY RUN] ' if dry_run else ''}Crawling {jur}...[/bold blue]"
+            )
 
             # Check if Archive.org has bulk data (spec first, then fallback)
             if is_archive_org_state(jur) or jur in ARCHIVE_ORG_STATES:
@@ -1484,11 +1498,13 @@ def download_uk(
             year_acts = by_year[year]
             examples = ", ".join(a.title[:30] for a in year_acts[:2])
             if len(year_acts) > 2:
-                examples += f" (+{len(year_acts)-2} more)"
+                examples += f" (+{len(year_acts) - 2} more)"
             table.add_row(str(year), str(len(year_acts)), examples)
 
         console.print(table)
-        console.print(f"\n[dim]Total: {len(acts)} acts from {min(by_year.keys())} to {max(by_year.keys())}[/dim]")
+        console.print(
+            f"\n[dim]Total: {len(acts)} acts from {min(by_year.keys())} to {max(by_year.keys())}[/dim]"
+        )
         return
 
     # Priority acts mode
@@ -1517,6 +1533,7 @@ def download_uk(
                     await fetcher._rate_limit()
 
                     import httpx
+
                     async with httpx.AsyncClient() as client:
                         response = await client.get(
                             url,
@@ -1537,7 +1554,9 @@ def download_uk(
             return total_sections
 
         total = asyncio.run(download_priority())
-        console.print(f"\n[green]Downloaded {len(UK_PRIORITY_ACTS)} priority acts ({total} total sections)[/green]")
+        console.print(
+            f"\n[green]Downloaded {len(UK_PRIORITY_ACTS)} priority acts ({total} total sections)[/green]"
+        )
         return
 
     # Bulk download ALL acts mode
@@ -1562,8 +1581,12 @@ def download_uk(
         if resume and progress.downloaded:
             console.print(f"[cyan]Resuming download: {progress.summary}[/cyan]")
         elif progress.downloaded and not resume:
-            console.print(f"[yellow]Previous progress found ({len(progress.downloaded)} acts)[/yellow]")
-            console.print("[yellow]Use --resume to continue, or delete progress.json to start fresh[/yellow]")
+            console.print(
+                f"[yellow]Previous progress found ({len(progress.downloaded)} acts)[/yellow]"
+            )
+            console.print(
+                "[yellow]Use --resume to continue, or delete progress.json to start fresh[/yellow]"
+            )
             return
 
         async def bulk_download():
@@ -1573,7 +1596,9 @@ def download_uk(
                     page_size=50,
                     progress_callback=lambda msg: console.print(f"[dim]{msg}[/dim]"),
                 )
-                console.print(f"\n[green]Found {len(acts)} acts (dry run - not downloading)[/green]")
+                console.print(
+                    f"\n[green]Found {len(acts)} acts (dry run - not downloading)[/green]"
+                )
                 return None
 
             result = await fetcher.bulk_download_ukpga(
@@ -1601,7 +1626,9 @@ def download_uk(
 
     # Single act/section download (original behavior)
     if not citation:
-        console.print("[red]Error:[/red] CITATION required unless using --all, --priority, or --list-acts")
+        console.print(
+            "[red]Error:[/red] CITATION required unless using --all, --priority, or --list-acts"
+        )
         console.print("\nExamples:")
         console.print("  arch download-uk ukpga/2003/1")
         console.print("  arch download-uk --all")
@@ -1708,7 +1735,7 @@ def extract_guidance(doc_id: str, output: Path, as_json: bool):
     # Extract year from doc_number
     try:
         year = int(doc_number.split("-")[0])
-    except (ValueError, IndexError):
+    except ValueError, IndexError:
         console.print(f"[red]Invalid document number:[/red] {doc_number}")
         console.print("[dim]Expected format: YYYY-NN (e.g., 2024-40)[/dim]")
         raise SystemExit(1)
@@ -1759,11 +1786,18 @@ def extract_guidance(doc_id: str, output: Path, as_json: bool):
                     f"  {s.section_num}. {s.heading or '(no heading)'}"
                     for s in rev_proc.sections[:10]
                 )
-                + (f"\n  ... and {len(rev_proc.sections) - 10} more" if len(rev_proc.sections) > 10 else "")
+                + (
+                    f"\n  ... and {len(rev_proc.sections) - 10} more"
+                    if len(rev_proc.sections) > 10
+                    else ""
+                )
                 + "\n\n"
                 + f"[bold blue]Parameters ({len(rev_proc.parameters)}):[/bold blue]\n"
                 + (
-                    "\n".join(f"  - {k}: {len(v) if isinstance(v, dict) else v} values" for k, v in rev_proc.parameters.items())
+                    "\n".join(
+                        f"  - {k}: {len(v) if isinstance(v, dict) else v} values"
+                        for k, v in rev_proc.parameters.items()
+                    )
                     if rev_proc.parameters
                     else "  (none extracted)"
                 ),
@@ -1787,10 +1821,18 @@ def extract_guidance(doc_id: str, output: Path, as_json: bool):
                     for n_kids in ["0", "1", "2", "3"]:
                         table.add_row(
                             n_kids,
-                            f"${values.get('max_credit', {}).get(n_kids, 'N/A'):,}" if values.get('max_credit', {}).get(n_kids) else "N/A",
-                            f"${values.get('earned_income_amount', {}).get(n_kids, 'N/A'):,}" if values.get('earned_income_amount', {}).get(n_kids) else "N/A",
-                            f"${values.get('phaseout_start', {}).get('joint', {}).get(n_kids, 'N/A'):,}" if values.get('phaseout_start', {}).get('joint', {}).get(n_kids) else "N/A",
-                            f"${values.get('phaseout_end', {}).get('joint', {}).get(n_kids, 'N/A'):,}" if values.get('phaseout_end', {}).get('joint', {}).get(n_kids) else "N/A",
+                            f"${values.get('max_credit', {}).get(n_kids, 'N/A'):,}"
+                            if values.get("max_credit", {}).get(n_kids)
+                            else "N/A",
+                            f"${values.get('earned_income_amount', {}).get(n_kids, 'N/A'):,}"
+                            if values.get("earned_income_amount", {}).get(n_kids)
+                            else "N/A",
+                            f"${values.get('phaseout_start', {}).get('joint', {}).get(n_kids, 'N/A'):,}"
+                            if values.get("phaseout_start", {}).get("joint", {}).get(n_kids)
+                            else "N/A",
+                            f"${values.get('phaseout_end', {}).get('joint', {}).get(n_kids, 'N/A'):,}"
+                            if values.get("phaseout_end", {}).get("joint", {}).get(n_kids)
+                            else "N/A",
                         )
                     console.print(table)
 
@@ -1922,8 +1964,7 @@ def sb(source_path: str, jurisdiction: str, children: bool, deep: bool, as_json:
                     "source_path": section.rule.source_path,
                 },
                 "children": [
-                    {"id": c.id, "heading": c.heading, "body": c.body}
-                    for c in section.children
+                    {"id": c.id, "heading": c.heading, "body": c.body} for c in section.children
                 ],
             }
             console.print_json(json_module.dumps(data, indent=2))

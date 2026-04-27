@@ -1,19 +1,19 @@
 # Rule references
 
-`akn.rule_references` is Atlas's citation graph. One row per cite found
+`arch.rule_references` is Atlas's citation graph. One row per cite found
 inside a rule's body text. The same table serves two consumers:
 
 - **Atlas viewer** — renders body text with clickable `<a>` tags at the
   recorded `(start_offset, end_offset)` spans.
-- **RAC tooling** (autorac, rac-compile) — uses the outgoing refs of an
+- **RuleSpec tooling** (autorulespec, rulespec-compile) — uses the outgoing refs of an
   encoded rule as the candidate list for its `imports:` block.
 
 ## Schema
 
 ```
-source_rule_id        UUID  → akn.rules(id)
+source_rule_id        UUID  → arch.rules(id)
 target_citation_path  TEXT  "us/statute/42/9902/2"
-target_rule_id        UUID  → akn.rules(id)  NULL if target not yet ingested
+target_rule_id        UUID  → arch.rules(id)  NULL if target not yet ingested
 citation_text         TEXT  "42 U.S.C. 9902(2)"
 pattern_kind          TEXT  "usc" | "cfr" | ...
 start_offset          INT
@@ -29,7 +29,7 @@ extractor runs.
 ## The RPC
 
 ```
-akn.get_references(citation_path_in text)
+arch.get_references(citation_path_in text)
 ```
 
 Returns one row per outgoing and incoming ref for the given rule,
@@ -50,7 +50,7 @@ rule and are rendered as a "referenced by" panel on the rule page.
 Typescript:
 
 ```ts
-const { data } = await supabaseAkn.rpc('get_references', {
+const { data } = await supabaseArch.rpc('get_references', {
   citation_path_in: rule.citation_path,
 })
 
@@ -64,13 +64,13 @@ uses for `ts_headline`'s `<mark>` markers. Unresolved targets
 (`target_resolved === false`) should render with a muted style so users
 know the link works but the target isn't in the archive yet.
 
-## Consumer: RAC encoding (autorac, rac-compile)
+## Consumer: RuleSpec encoding (autorulespec, rulespec-compile)
 
 When encoding a statute or regulation, call `get_references` for that
 rule's `citation_path` and use the outgoing refs as the candidate
 `imports:` list.
 
-The RAC import format is:
+The RuleSpec import format is:
 
 ```yaml
 imports:
@@ -83,10 +83,10 @@ target's own encoding.
 
 Two workflows:
 
-**1. Target is already encoded.** Query the target's `.rac` file or a
+**1. Target is already encoded.** Query the target's `.yaml` file or a
 future `arch.rule_encodings` table that maps
 `citation_path → exported variable names`. Pick the name that matches
-the statutory context. autorac's encoder prompt can include this as
+the statutory context. autorulespec's encoder prompt can include this as
 part of the input:
 
 ```
@@ -107,8 +107,8 @@ The extractor owns its rows per source rule. To re-extract (e.g. after
 improving the patterns), the backfill script does:
 
 ```
-DELETE FROM akn.rule_references WHERE source_rule_id IN (...);
-INSERT INTO akn.rule_references ... (fresh rows);
+DELETE FROM arch.rule_references WHERE source_rule_id IN (...);
+INSERT INTO arch.rule_references ... (fresh rows);
 ```
 
 per 500-rule batch. This keeps the table clean when body text or
@@ -130,7 +130,7 @@ New extractor = new subclass of `atlas.citations.extractor.Extractor`,
 registered in `all_extractors()`. Bias toward high-precision patterns;
 `confidence` exists for the cases that can't be certain (internal refs,
 act-name lookups). Low-confidence refs should ship gated — the viewer
-can default-hide them and the RAC prompt can exclude them from its
+can default-hide them and the RuleSpec prompt can exclude them from its
 candidate list.
 
 Scope not yet covered:

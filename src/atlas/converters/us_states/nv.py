@@ -165,7 +165,7 @@ class NVConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -241,7 +241,9 @@ class NVConverter:
         Nevada chapters contain all sections in one page, anchored by name attributes.
         """
         chapter = self._extract_chapter_from_section(section_number)
-        section_suffix = section_number.split(".", 1)[1] if "." in section_number else section_number
+        section_suffix = (
+            section_number.split(".", 1)[1] if "." in section_number else section_number
+        )
 
         # Build anchor name: NRS361Sec010
         anchor_name = self._get_anchor_name(chapter, section_suffix)
@@ -254,7 +256,9 @@ class NVConverter:
             anchor = soup.find("a", attrs={"name": anchor_name_alt})
 
         if not anchor:
-            raise NVConverterError(f"Section {section_number} not found (anchor {anchor_name})", url)
+            raise NVConverterError(
+                f"Section {section_number} not found (anchor {anchor_name})", url
+            )
 
         # The anchor is inside a <p class="SectBody"> or <span>
         # Navigate to the parent paragraph
@@ -271,21 +275,23 @@ class NVConverter:
 
         # Get chapter title
         chapter_title = (
-            NV_TAX_CHAPTERS.get(chapter)
-            or NV_WELFARE_CHAPTERS.get(chapter)
-            or f"Chapter {chapter}"
+            NV_TAX_CHAPTERS.get(chapter) or NV_WELFARE_CHAPTERS.get(chapter) or f"Chapter {chapter}"
         )
 
         # Determine title number and name
         title_number = None
         title_name = None
         if chapter in NV_TAX_CHAPTERS or (
-            chapter.rstrip("ABCD") and chapter.rstrip("ABCD").isdigit() and 360 <= int(chapter.rstrip("ABCD")) <= 377
+            chapter.rstrip("ABCD")
+            and chapter.rstrip("ABCD").isdigit()
+            and 360 <= int(chapter.rstrip("ABCD")) <= 377
         ):
             title_number = 32
             title_name = "Revenue and Taxation"
         elif chapter in NV_WELFARE_CHAPTERS or (
-            chapter.rstrip("ABCD") and chapter.rstrip("ABCD").isdigit() and 422 <= int(chapter.rstrip("ABCD")) <= 432
+            chapter.rstrip("ABCD")
+            and chapter.rstrip("ABCD").isdigit()
+            and 422 <= int(chapter.rstrip("ABCD")) <= 432
         ):
             title_number = 38
             title_name = "Public Welfare"
@@ -311,17 +317,21 @@ class NVConverter:
                 # The leadline is followed by the actual content
                 idx = full_text.find(leadline_text)
                 if idx >= 0:
-                    content_after_leadline = full_text[idx + len(leadline_text):].strip()
+                    content_after_leadline = full_text[idx + len(leadline_text) :].strip()
                     if content_after_leadline:
                         content_parts.append(content_after_leadline)
                 else:
                     # Fallback: try regex pattern
-                    content_match = re.search(rf"NRS\s*{re.escape(section_number)}\s+.+?\.\s*(.+)$", full_text, re.DOTALL)  # pragma: no cover
+                    content_match = re.search(
+                        rf"NRS\s*{re.escape(section_number)}\s+.+?\.\s*(.+)$", full_text, re.DOTALL
+                    )  # pragma: no cover
                     if content_match:  # pragma: no cover
                         content_parts.append(content_match.group(1))  # pragma: no cover
             else:
                 # No leadline - extract content after section number
-                content_match = re.search(rf"NRS\s*{re.escape(section_number)}\s+(.*)$", full_text, re.DOTALL)  # pragma: no cover
+                content_match = re.search(
+                    rf"NRS\s*{re.escape(section_number)}\s+(.*)$", full_text, re.DOTALL
+                )  # pragma: no cover
                 if content_match:  # pragma: no cover
                     content_parts.append(content_match.group(1))  # pragma: no cover
 
@@ -334,7 +344,9 @@ class NVConverter:
             # Check if this is a new section (has anchor with NRS###Sec pattern)
             if current.name == "p":
                 # Check for section anchor in this paragraph
-                has_section_anchor = current.find("a", attrs={"name": re.compile(r"NRS\d+[A-Za-z]?Sec")})
+                has_section_anchor = current.find(
+                    "a", attrs={"name": re.compile(r"NRS\d+[A-Za-z]?Sec")}
+                )
                 if has_section_anchor:
                     break  # pragma: no cover
 

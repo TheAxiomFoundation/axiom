@@ -50,7 +50,9 @@ def make_element(tag: str, attrib: dict = None, text: str = None) -> ET.Element:
     return elem
 
 
-def make_subelement(parent: ET.Element, tag: str, attrib: dict = None, text: str = None) -> ET.Element:
+def make_subelement(
+    parent: ET.Element, tag: str, attrib: dict = None, text: str = None
+) -> ET.Element:
     """Create a subelement in the AKN namespace."""
     elem = ET.SubElement(parent, f"{{{AKN_NS}}}{tag}", attrib or {})
     if text:
@@ -61,10 +63,11 @@ def make_subelement(parent: ET.Element, tag: str, attrib: dict = None, text: str
 def sanitize_id(text: str) -> str:
     """Convert text to a valid XML ID."""
     import re
+
     # Remove special characters, replace spaces/dots with underscores
-    text = re.sub(r'[^\w\s.-]', '', text)
-    text = re.sub(r'[\s.]+', '_', text)
-    text = re.sub(r'-+', '-', text)
+    text = re.sub(r"[^\w\s.-]", "", text)
+    text = re.sub(r"[\s.]+", "_", text)
+    text = re.sub(r"-+", "-", text)
     return text.lower()[:100]
 
 
@@ -118,16 +121,24 @@ def create_akn_document(section: Section) -> ET.Element:
 
     # References
     references = make_subelement(meta, "references", {"source": "#rules-foundation"})
-    make_subelement(references, "TLCOrganization", {
-        "eId": "missouri-legislature",
-        "href": "https://revisor.mo.gov",
-        "showAs": "Missouri General Assembly"
-    })
-    make_subelement(references, "TLCOrganization", {
-        "eId": "rules-foundation",
-        "href": "https://rules.foundation",
-        "showAs": "Rules Foundation"
-    })
+    make_subelement(
+        references,
+        "TLCOrganization",
+        {
+            "eId": "missouri-legislature",
+            "href": "https://revisor.mo.gov",
+            "showAs": "Missouri General Assembly",
+        },
+    )
+    make_subelement(
+        references,
+        "TLCOrganization",
+        {
+            "eId": "rules-foundation",
+            "href": "https://axiom-foundation.org",
+            "showAs": "The Axiom Foundation",
+        },
+    )
 
     # Publication/lifecycle
     if section.source_url:
@@ -210,8 +221,8 @@ def write_akn_file(root: ET.Element, output_path: Path):
     tree = ET.ElementTree(root)
 
     # Write with XML declaration
-    with open(output_path, 'wb') as f:
-        tree.write(f, encoding='UTF-8', xml_declaration=True)
+    with open(output_path, "wb") as f:
+        tree.write(f, encoding="UTF-8", xml_declaration=True)
 
 
 def convert_chapter(converter: MOConverter, chapter: int, output_dir: Path) -> tuple[int, int]:
@@ -222,7 +233,9 @@ def convert_chapter(converter: MOConverter, chapter: int, output_dir: Path) -> t
     chapter_dir = output_dir / f"chapter-{chapter}"
     chapter_dir.mkdir(parents=True, exist_ok=True)
 
-    chapter_title = MO_TAX_CHAPTERS.get(chapter) or MO_WELFARE_CHAPTERS.get(chapter) or f"Chapter {chapter}"
+    chapter_title = (
+        MO_TAX_CHAPTERS.get(chapter) or MO_WELFARE_CHAPTERS.get(chapter) or f"Chapter {chapter}"
+    )
     print(f"\nChapter {chapter}: {chapter_title}")
     print(f"  Fetching section list...", end=" ", flush=True)
 
@@ -250,7 +263,11 @@ def convert_chapter(converter: MOConverter, chapter: int, output_dir: Path) -> t
             output_path = chapter_dir / output_filename
             write_akn_file(akn_root, output_path)
 
-            print(f"OK ({section.section_title[:40]}...)" if len(section.section_title) > 40 else f"OK ({section.section_title})")
+            print(
+                f"OK ({section.section_title[:40]}...)"
+                if len(section.section_title) > 40
+                else f"OK ({section.section_title})"
+            )
             converted += 1
 
         except MOConverterError as e:
@@ -295,17 +312,17 @@ def main():
 
     # Track statistics
     stats = {
-        'chapters': 0,
-        'sections_found': 0,
-        'sections_converted': 0,
+        "chapters": 0,
+        "sections_found": 0,
+        "sections_converted": 0,
     }
 
     with MOConverter(rate_limit_delay=0.3) as converter:
         for chapter in chapters:
             found, converted = convert_chapter(converter, chapter, output_dir)
-            stats['chapters'] += 1
-            stats['sections_found'] += found
-            stats['sections_converted'] += converted
+            stats["chapters"] += 1
+            stats["sections_found"] += found
+            stats["sections_converted"] += converted
 
     # Print summary
     print(f"\n{'=' * 60}")
@@ -317,7 +334,7 @@ def main():
     print(f"Output directory:      {output_dir}")
     print(f"{'=' * 60}")
 
-    return 0 if stats['sections_converted'] > 0 else 1
+    return 0 if stats["sections_converted"] > 0 else 1
 
 
 if __name__ == "__main__":

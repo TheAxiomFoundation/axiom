@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-Atlas is Rules Foundation's legal document archive. It downloads, parses, and stores legal and regulatory documents from official government sources, enabling programmatic access with full-text search.
+Atlas is The Axiom Foundation's legal document archive. It downloads, parses, and stores legal and regulatory documents from official government sources, enabling programmatic access with full-text search.
 
 ### Scope
 
@@ -14,7 +14,7 @@ Atlas archives **legal sources only**:
 - **IRS Guidance**: Revenue Procedures, Revenue Rulings, Notices, Publications
 - **Regulations**: CFR titles (from eCFR)
 
-This repo is part of Rules Foundation (see parent CLAUDE.md). For microdata and calibration targets, see the `arch` repo.
+This repo is part of The Axiom Foundation (see parent CLAUDE.md). For microdata and calibration targets, see the `arch` repo.
 
 ### Infrastructure
 
@@ -36,9 +36,9 @@ arch search "earned income" --title 26  # Full-text search
 arch serve                 # Start REST API at localhost:8000
 
 # AI encoding pipeline
-arch encode "26 USC 32"    # Encode statute into RAC (Rules as Code)
-arch validate ~/.rac/workspace/federal/statute/26/32
-arch verify ~/.rac/workspace/federal/statute/26/32 -v eitc
+arch encode "26 USC 32"    # Encode statute into RuleSpec (Rules as Code)
+arch validate ~/.yaml/workspace/federal/statute/26/32
+arch verify ~/.yaml/workspace/federal/statute/26/32 -v eitc
 
 # Testing
 pytest                           # Run all tests
@@ -68,7 +68,7 @@ mypy src/arch/                   # Type check
         │
         ▼
 ┌─────────────────┐     ┌─────────────────┐
-│  .rac      │────▶│  Verifier       │────▶ PolicyEngine
+│  .yaml      │────▶│  Verifier       │────▶ PolicyEngine
 │  rules + tests  │     │  verifier.py    │      comparison
 └─────────────────┘     └─────────────────┘
 ```
@@ -80,7 +80,7 @@ mypy src/arch/                   # Type check
 - **`models_guidance.py`** - IRS guidance document models (Rev. Procs, Rulings)
 - **`parsers/uslm.py`** - USLM XML parser for US Code
 - **`storage/sqlite.py`** - SQLite backend with FTS5 full-text search
-- **`encoder.py`** - AI pipeline: statute -> RAC (Rules as Code)
+- **`encoder.py`** - AI pipeline: statute -> RuleSpec (Rules as Code)
 - **`verifier.py`** - Compare DSL outputs vs PolicyEngine
 - **`cli.py`** - Click CLI commands
 
@@ -140,7 +140,7 @@ Citations follow USC format and convert to filesystem paths:
 ### DSL Encoding Output
 
 `arch encode` generates four files per section:
-- `rules.rac` - Executable DSL code
+- `rules.yaml` - Executable DSL code
 - `tests.yaml` - Test cases for verification
 - `statute.md` - Original statute text
 - `metadata.json` - Provenance (model, tokens, timestamp)
@@ -159,9 +159,9 @@ pytest tests/test_models.py::TestCitation::test_parse_simple_citation -v
 
 ## Notes
 
-This repo was moved from CosilicoAI to RulesFoundation in Jan 2026. All references have since been updated to Rules Foundation.
+This repo was moved from CosilicoAI to TheAxiomFoundation in Jan 2026. All references have since been updated to The Axiom Foundation.
 
-- **GitHub**: `RulesFoundation/atlas`
-- **Local**: `/Users/maxghenis/RulesFoundation/atlas`
+- **GitHub**: `TheAxiomFoundation/atlas`
+- **Local**: `/Users/maxghenis/TheAxiomFoundation/atlas`
 - **R2 Bucket**: `atlas` (migrated from `arch`)
 - **Credentials**: `~/.config/rulesfoundation/r2-credentials.json`

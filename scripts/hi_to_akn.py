@@ -127,8 +127,8 @@ def section_to_akn_xml(section: Section, chapter_num: int, chapter_title: str) -
 
     org_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     org_rf.set("eId", "rules-foundation")
-    org_rf.set("href", "https://rules.foundation")
-    org_rf.set("showAs", "Rules Foundation")
+    org_rf.set("href", "https://axiom-foundation.org")
+    org_rf.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -231,9 +231,9 @@ def convert_chapter(
         Tuple of (sections_converted, sections_failed)
     """
     chapter_title = (
-        HI_TAX_CHAPTERS.get(chapter_num) or
-        HI_WELFARE_CHAPTERS.get(chapter_num) or
-        f"Chapter {chapter_num}"
+        HI_TAX_CHAPTERS.get(chapter_num)
+        or HI_WELFARE_CHAPTERS.get(chapter_num)
+        or f"Chapter {chapter_num}"
     )
 
     print(f"  Converting Chapter {chapter_num}: {chapter_title}")

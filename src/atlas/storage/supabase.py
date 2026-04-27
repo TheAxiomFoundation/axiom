@@ -320,10 +320,7 @@ class SupabaseStorage:
 
     def _row_to_statute(self, row: dict) -> Statute:
         """Convert database row to Statute model."""
-        subsections = [
-            self._dict_to_subsection(d)
-            for d in (row["subsections_json"] or [])
-        ]
+        subsections = [self._dict_to_subsection(d) for d in (row["subsections_json"] or [])]
 
         return Statute(
             jurisdiction=row["jurisdiction"],
@@ -387,8 +384,10 @@ class SupabaseStorage:
 
         results = []
         for row in rows:
-            # Construct RAC path
-            rac_path = f"rac-{row['jurisdiction']}/statute/{row['code']}/{row['section']}.rac"
+            # Construct RuleSpec path
+            rulespec_path = (
+                f"rules-{row['jurisdiction']}/statute/{row['code']}/{row['section']}.yaml"
+            )
 
             results.append(
                 StatuteSearchResult(
@@ -398,7 +397,7 @@ class SupabaseStorage:
                     title=row["title"],
                     snippet=row["snippet"],
                     score=float(row["score"]),
-                    rac_path=rac_path,
+                    rulespec_path=rulespec_path,
                 )
             )
 

@@ -210,7 +210,7 @@ class AKConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
                 follow_redirects=True,
             )
         return self._client
@@ -285,9 +285,7 @@ class AKConverter:
         title_name = AK_TITLES.get(title_num, f"Title {title_num}")
         return title_num, title_name
 
-    def _get_chapter_info(
-        self, title: int, chapter: str
-    ) -> tuple[str, str]:
+    def _get_chapter_info(self, title: int, chapter: str) -> tuple[str, str]:
         """Get chapter number and name.
 
         Args:
@@ -377,9 +375,7 @@ class AKConverter:
 
         if content_elem:
             # Remove navigation and scripts
-            for elem in content_elem.find_all(
-                ["nav", "script", "style", "header", "footer"]
-            ):
+            for elem in content_elem.find_all(["nav", "script", "style", "header", "footer"]):
                 elem.decompose()  # pragma: no cover
             text = content_elem.get_text(separator="\n", strip=True)
             html_content = str(content_elem)
@@ -435,7 +431,7 @@ class AKConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse second-level children (1), (2), etc.
             children = self._parse_level2(content)
@@ -477,7 +473,7 @@ class AKConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse third-level children (A), (B), etc.
             children = self._parse_level3(content)
@@ -519,7 +515,7 @@ class AKConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Stop at next higher-level subsection
             next_num = re.search(r"\(\d+\)", content)
@@ -598,7 +594,9 @@ class AKConverter:
         Returns:
             URL to the section print page
         """
-        return f"{BASE_URL}/statutes.asp?media=print&secStart={section_number}&secEnd={section_number}"
+        return (
+            f"{BASE_URL}/statutes.asp?media=print&secStart={section_number}&secEnd={section_number}"
+        )
 
     def fetch_section(self, section_number: str) -> Section:
         """Fetch and convert a single section.
@@ -620,7 +618,9 @@ class AKConverter:
         try:
             html = self._get(url)
         except httpx.HTTPError as e:  # pragma: no cover
-            raise AKConverterError(f"Failed to fetch section {section_number}: {e}", url)  # pragma: no cover
+            raise AKConverterError(
+                f"Failed to fetch section {section_number}: {e}", url
+            )  # pragma: no cover
 
         # Parse the HTML for the specific section
         parsed = self._parse_section_html(html, section_number, url)
@@ -646,9 +646,7 @@ class AKConverter:
         section_numbers = []
 
         # Parse: #43.23.005 >Sec. 43.23.005.   Eligibility.
-        pattern = re.compile(
-            r'#(\d+\.\d+\.\d+[A-Za-z]?)\s*>Sec\.\s+[\d.]+[A-Za-z]?\.\s+([^<]+)<'
-        )
+        pattern = re.compile(r"#(\d+\.\d+\.\d+[A-Za-z]?)\s*>Sec\.\s+[\d.]+[A-Za-z]?\.\s+([^<]+)<")
 
         for match in pattern.finditer(html):
             section_num = match.group(1)  # e.g., "43.23.005"

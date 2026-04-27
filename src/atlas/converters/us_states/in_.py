@@ -191,7 +191,7 @@ class INConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
                 follow_redirects=True,
             )
         return self._client
@@ -609,9 +609,7 @@ class INConverter:
         try:
             html = self._get(url)
         except httpx.HTTPStatusError as e:  # pragma: no cover
-            raise INConverterError(
-                f"Failed to fetch section {section_number}: {e}", url
-            ) from e
+            raise INConverterError(f"Failed to fetch section {section_number}: {e}", url) from e
         parsed = self._parse_section_html(html, section_number, url)
         return self._to_section(parsed)
 

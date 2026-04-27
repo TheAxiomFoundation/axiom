@@ -9,14 +9,14 @@ Arch uses a unified statute model with source adapters for each jurisdiction:
 │                      UNIFIED STATUTE MODEL                          │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Statute(                                                           │
-│    jurisdiction="us-ca",        # Matches RAC repo naming           │
+│    jurisdiction="us-ca",        # Matches RuleSpec repo naming           │
 │    code="RTC",                  # Code/title identifier             │
 │    section="17041",             # Section number                    │
 │    title="Personal income tax", # Section heading                   │
 │    text="...",                  # Full text content                 │
 │  )                                                                  │
 ├─────────────────────────────────────────────────────────────────────┤
-│  Citation path: rac-us-ca/statute/RTC/17041.rac                     │
+│  Citation path: rules-us-ca/statute/RTC/17041.yaml                     │
 │  DB path:       us-ca/statute/RTC/17041                             │
 └─────────────────────────────────────────────────────────────────────┘
 
@@ -32,10 +32,10 @@ Arch uses a unified statute model with source adapters for each jurisdiction:
 
 ### Jurisdiction IDs
 
-Jurisdiction IDs match RAC repo naming:
-- `us` → `rac-us` (federal)
-- `us-ca` → `rac-us-ca` (California)
-- `us-ny` → `rac-us-ny` (New York)
+Jurisdiction IDs match RuleSpec repo naming:
+- `us` → `rules-us` (federal)
+- `us-ca` → `rules-us-ca` (California)
+- `us-ny` → `rules-us-ny` (New York)
 
 ### Storage
 

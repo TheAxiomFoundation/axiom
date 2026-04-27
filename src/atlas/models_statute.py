@@ -2,15 +2,15 @@
 
 Supports federal (US Code) and state statutes with consistent structure.
 
-Jurisdiction IDs match RAC repo naming:
-- us          -> rac-us (federal)
-- us-ca       -> rac-us-ca (California)
-- us-ny       -> rac-us-ny (New York)
-- uk          -> rac-uk (United Kingdom)
+Jurisdiction IDs match rules repo naming:
+- us          -> rules-us (federal)
+- us-ca       -> rules-us-ca (California)
+- us-ny       -> rules-us-ny (New York)
+- uk          -> rules-uk (United Kingdom)
 
-Citation paths use slashes like RAC engine:
-- rac-us/statute/26/32/a.rac
-- rac-us-ca/statute/RTC/17041/a.rac
+Citation paths use slashes like RuleSpec engine:
+- rules-us/statute/26/32/a.yaml
+- rules-us-ca/statute/RTC/17041/a.yaml
 """
 
 from datetime import date, datetime
@@ -158,9 +158,9 @@ class Statute(BaseModel):
     - State (CA RTC): jurisdiction="us-ca", code="RTC", section="17041"
     - State (NY TAX): jurisdiction="us-ny", code="TAX", section="601"
 
-    Citation path format matches RAC engine:
-    - rac-us/statute/26/32.rac
-    - rac-us-ca/statute/RTC/17041.rac
+    Citation path format matches RuleSpec engine:
+    - rules-us/statute/26/32.yaml
+    - rules-us-ca/statute/RTC/17041.yaml
     """
 
     # Core identification
@@ -258,22 +258,22 @@ class Statute(BaseModel):
         return base
 
     @property
-    def rac_path(self) -> str:
-        """Return RAC-style path for file storage.
+    def rulespec_path(self) -> str:
+        """Return RuleSpec-style path for file storage.
 
         Examples:
-        - rac-us/statute/26/32.rac
-        - rac-us-ca/statute/RTC/17041.rac
-        - rac-us-ca/statute/RTC/17041/a.rac (with subsection)
+        - rules-us/statute/26/32.yaml
+        - rules-us-ca/statute/RTC/17041.yaml
+        - rules-us-ca/statute/RTC/17041/a.yaml (with subsection)
         """
-        base = f"rac-{self.jurisdiction}/statute/{self.code}/{self.section}"
+        base = f"rules-{self.jurisdiction}/statute/{self.code}/{self.section}"
         if self.subsection_path:
-            return f"{base}/{self.subsection_path}.rac"
-        return f"{base}.rac"
+            return f"{base}/{self.subsection_path}.yaml"
+        return f"{base}.yaml"
 
     @property
     def db_path(self) -> str:
-        """Return database storage path (without .rac extension).
+        """Return database storage path (without .yaml extension).
 
         Examples:
         - us/statute/26/32
@@ -354,7 +354,7 @@ class StatuteSearchResult(BaseModel):
     title: str
     snippet: str = Field(..., description="Relevant text snippet with highlights")
     score: float = Field(..., description="Relevance score")
-    rac_path: str
+    rulespec_path: str
 
     model_config = {"extra": "forbid"}
 

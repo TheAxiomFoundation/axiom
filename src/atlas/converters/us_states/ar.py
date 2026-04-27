@@ -185,7 +185,7 @@ class ARConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
                 follow_redirects=True,
             )
         return self._client
@@ -215,7 +215,9 @@ class ARConverter:
         """
         parts = section_number.split("-")
         if len(parts) != 3:
-            raise ARConverterError(f"Invalid section number format: {section_number}")  # pragma: no cover
+            raise ARConverterError(
+                f"Invalid section number format: {section_number}"
+            )  # pragma: no cover
 
         title = int(parts[0])
         chapter = int(parts[1])
@@ -236,10 +238,7 @@ class ARConverter:
 
         # Justia URL pattern: /codes/arkansas/title-26/subtitle-5/chapter-51/section-26-51-101/
         # We'll try without subtitle first since we don't always know it
-        return (
-            f"{BASE_URL}/title-{title}/subtitle-5/chapter-{chapter}"
-            f"/section-{section_number}/"
-        )
+        return f"{BASE_URL}/title-{title}/subtitle-5/chapter-{chapter}/section-{section_number}/"
 
     def _build_chapter_url(self, title: int, chapter: int) -> str:
         """Build the URL for a chapter's contents.
@@ -333,7 +332,9 @@ class ARConverter:
         if history_elem:
             history = history_elem.get_text(strip=True)[:1000]
         else:
-            history_match = re.search(r"History\.?\s*[-:]?\s*(.+?)(?:\n\n|$)", text, re.DOTALL)  # pragma: no cover
+            history_match = re.search(
+                r"History\.?\s*[-:]?\s*(.+?)(?:\n\n|$)", text, re.DOTALL
+            )  # pragma: no cover
             if history_match:  # pragma: no cover
                 history = history_match.group(1).strip()[:1000]  # pragma: no cover
 
@@ -345,7 +346,9 @@ class ARConverter:
                 from datetime import datetime  # pragma: no cover
 
                 date_str = eff_match.group(1)  # pragma: no cover
-                effective_date = datetime.strptime(date_str.replace(",", ""), "%B %d %Y").date()  # pragma: no cover
+                effective_date = datetime.strptime(
+                    date_str.replace(",", ""), "%B %d %Y"
+                ).date()  # pragma: no cover
             except ValueError:  # pragma: no cover
                 pass
 
@@ -556,9 +559,7 @@ class ARConverter:
         try:
             html = self._get(url)
         except httpx.HTTPStatusError as e:  # pragma: no cover
-            raise ARConverterError(
-                f"HTTP error fetching section {section_number}: {e}", url
-            ) from e
+            raise ARConverterError(f"HTTP error fetching section {section_number}: {e}", url) from e
         parsed = self._parse_section_html(html, section_number, url)
         return self._to_section(parsed)
 
@@ -687,7 +688,9 @@ def download_ar_tax_chapters() -> Iterator[Section]:
         Section objects
     """
     with ARConverter() as converter:  # pragma: no cover
-        yield from converter.iter_chapters(title=26, chapters=list(AR_TAX_CHAPTERS.keys()))  # pragma: no cover
+        yield from converter.iter_chapters(
+            title=26, chapters=list(AR_TAX_CHAPTERS.keys())
+        )  # pragma: no cover
 
 
 def download_ar_welfare_chapters() -> Iterator[Section]:
@@ -697,4 +700,6 @@ def download_ar_welfare_chapters() -> Iterator[Section]:
         Section objects
     """
     with ARConverter() as converter:  # pragma: no cover
-        yield from converter.iter_chapters(title=20, chapters=list(AR_WELFARE_CHAPTERS.keys()))  # pragma: no cover
+        yield from converter.iter_chapters(
+            title=20, chapters=list(AR_WELFARE_CHAPTERS.keys())
+        )  # pragma: no cover

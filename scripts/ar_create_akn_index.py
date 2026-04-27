@@ -158,8 +158,8 @@ def create_title_xml(title_num: int, title_name: str, chapters: dict[int, str]) 
 
     tlc_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     tlc_rf.set("eId", "rules-foundation")
-    tlc_rf.set("href", "https://rules.foundation")
-    tlc_rf.set("showAs", "Rules Foundation")
+    tlc_rf.set("href", "https://axiom-foundation.org")
+    tlc_rf.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -226,7 +226,9 @@ def create_chapter_placeholder(title_num: int, chapter_num: int, chapter_name: s
     # FRBRExpression
     expression = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRExpression")
     expr_this = ET.SubElement(expression, f"{{{AKN_NS}}}FRBRthis")
-    expr_this.set("value", f"/akn/us-ar/act/aca/title-{title_num}/chapter-{chapter_num}/eng@{today}")
+    expr_this.set(
+        "value", f"/akn/us-ar/act/aca/title-{title_num}/chapter-{chapter_num}/eng@{today}"
+    )
     expr_uri = ET.SubElement(expression, f"{{{AKN_NS}}}FRBRuri")
     expr_uri.set("value", f"/akn/us-ar/act/aca/title-{title_num}/chapter-{chapter_num}/eng@{today}")
     expr_date = ET.SubElement(expression, f"{{{AKN_NS}}}FRBRdate")
@@ -240,9 +242,13 @@ def create_chapter_placeholder(title_num: int, chapter_num: int, chapter_name: s
     # FRBRManifestation
     manifestation = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRManifestation")
     manif_this = ET.SubElement(manifestation, f"{{{AKN_NS}}}FRBRthis")
-    manif_this.set("value", f"/akn/us-ar/act/aca/title-{title_num}/chapter-{chapter_num}/eng@{today}/main.xml")
+    manif_this.set(
+        "value", f"/akn/us-ar/act/aca/title-{title_num}/chapter-{chapter_num}/eng@{today}/main.xml"
+    )
     manif_uri = ET.SubElement(manifestation, f"{{{AKN_NS}}}FRBRuri")
-    manif_uri.set("value", f"/akn/us-ar/act/aca/title-{title_num}/chapter-{chapter_num}/eng@{today}/main.xml")
+    manif_uri.set(
+        "value", f"/akn/us-ar/act/aca/title-{title_num}/chapter-{chapter_num}/eng@{today}/main.xml"
+    )
     manif_date = ET.SubElement(manifestation, f"{{{AKN_NS}}}FRBRdate")
     manif_date.set("date", today)
     manif_date.set("name", "generation")

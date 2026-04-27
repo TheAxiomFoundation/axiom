@@ -33,7 +33,7 @@ RETURNS TABLE (
   citation_path text,
   heading text,
   snippet text,
-  has_rac boolean,
+  has_rulespec boolean,
   rank real
 )
 LANGUAGE sql
@@ -54,7 +54,7 @@ AS $$
       p.tsq,
       'StartSel=<mark>,StopSel=</mark>,MaxWords=30,MinWords=15,ShortWord=3,MaxFragments=1'
     ) AS snippet,
-    r.has_rac,
+    r.has_rulespec,
     ts_rank_cd(r.fts, p.tsq) AS rank
   FROM arch.rules r
   CROSS JOIN parsed p

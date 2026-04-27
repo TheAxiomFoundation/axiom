@@ -28,7 +28,9 @@ def section_to_akn_xml(section, state: str) -> str:
     ET.register_namespace("", AKN_NS)
 
     # Get section identifier
-    section_id = section.citation.section if hasattr(section.citation, 'section') else str(section.citation)
+    section_id = (
+        section.citation.section if hasattr(section.citation, "section") else str(section.citation)
+    )
 
     # Create root
     akomaNtoso = ET.Element(f"{{{AKN_NS}}}akomaNtoso")
@@ -57,9 +59,13 @@ def section_to_akn_xml(section, state: str) -> str:
     # FRBRExpression
     expr = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRExpression")
     expr_this = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRthis")
-    expr_this.set("value", f"/akn/us-{state}/act/statute/sec-{section_id}/eng@{date.today().isoformat()}")
+    expr_this.set(
+        "value", f"/akn/us-{state}/act/statute/sec-{section_id}/eng@{date.today().isoformat()}"
+    )
     expr_uri = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRuri")
-    expr_uri.set("value", f"/akn/us-{state}/act/statute/sec-{section_id}/eng@{date.today().isoformat()}")
+    expr_uri.set(
+        "value", f"/akn/us-{state}/act/statute/sec-{section_id}/eng@{date.today().isoformat()}"
+    )
     expr_date = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRdate")
     expr_date.set("date", str(date.today()))
     expr_date.set("name", "publication")
@@ -71,9 +77,15 @@ def section_to_akn_xml(section, state: str) -> str:
     # FRBRManifestation
     manif = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRManifestation")
     manif_this = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRthis")
-    manif_this.set("value", f"/akn/us-{state}/act/statute/sec-{section_id}/eng@{date.today().isoformat()}/main.xml")
+    manif_this.set(
+        "value",
+        f"/akn/us-{state}/act/statute/sec-{section_id}/eng@{date.today().isoformat()}/main.xml",
+    )
     manif_uri = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRuri")
-    manif_uri.set("value", f"/akn/us-{state}/act/statute/sec-{section_id}/eng@{date.today().isoformat()}/main.xml")
+    manif_uri.set(
+        "value",
+        f"/akn/us-{state}/act/statute/sec-{section_id}/eng@{date.today().isoformat()}/main.xml",
+    )
     manif_date = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRdate")
     manif_date.set("date", str(date.today()))
     manif_date.set("name", "generation")
@@ -85,8 +97,8 @@ def section_to_akn_xml(section, state: str) -> str:
     references.set("source", "#rules-foundation")
     org = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     org.set("eId", "rules-foundation")
-    org.set("href", "https://rules.foundation")
-    org.set("showAs", "Rules Foundation")
+    org.set("href", "https://axiom-foundation.org")
+    org.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -131,15 +143,16 @@ class StatePipeline:
         self.r2_rules = get_r2_rules_xml()
         self.converter = None
         self.stats = {
-            'sections_found': 0,
-            'raw_uploaded': 0,
-            'akn_uploaded': 0,
-            'errors': 0,
+            "sections_found": 0,
+            "raw_uploaded": 0,
+            "akn_uploaded": 0,
+            "errors": 0,
         }
 
     def _load_converter(self):
         """Dynamically load the state converter."""
         import importlib
+
         module_path = STATE_CONVERTERS.get(self.state)
         if not module_path:
             raise ValueError(f"No converter for state: {self.state}")
@@ -153,15 +166,19 @@ class StatePipeline:
 
         # Try alternate naming
         for name in dir(module):
-            if name.endswith('Converter') and name != 'Converter':
+            if name.endswith("Converter") and name != "Converter":
                 return getattr(module, name)()
 
         raise ValueError(f"No converter class found in {module_path}")
 
     def process_section(self, section, raw_html: str, source_url: str) -> bool:
         """Process a single section: archive raw + convert + upload AKN."""
-        section_id = section.citation.section if hasattr(section.citation, 'section') else str(section.citation)
-        safe_id = section_id.replace('/', '-').replace('.', '-')
+        section_id = (
+            section.citation.section
+            if hasattr(section.citation, "section")
+            else str(section.citation)
+        )
+        safe_id = section_id.replace("/", "-").replace(".", "-")
 
         try:
             # 1. Upload raw HTML to arch bucket
@@ -173,13 +190,13 @@ class StatePipeline:
                     raw_key,
                     raw_html,
                     metadata={
-                        'source-url': source_url[:256],
-                        'state': self.state,
-                        'section-id': section_id,
-                        'fetched-at': datetime.now(timezone.utc).isoformat(),
-                    }
+                        "source-url": source_url[:256],
+                        "state": self.state,
+                        "section-id": section_id,
+                        "fetched-at": datetime.now(timezone.utc).isoformat(),
+                    },
                 )
-            self.stats['raw_uploaded'] += 1
+            self.stats["raw_uploaded"] += 1
 
             # 2. Convert to AKN XML
             akn_xml = section_to_akn_xml(section, self.state)
@@ -193,26 +210,27 @@ class StatePipeline:
                     akn_key,
                     akn_xml,
                     metadata={
-                        'raw-key': raw_key,
-                        'raw-hash': raw_hash,
-                        'state': self.state,
-                        'section-id': section_id,
-                    }
+                        "raw-key": raw_key,
+                        "raw-hash": raw_hash,
+                        "state": self.state,
+                        "section-id": section_id,
+                    },
                 )
-            self.stats['akn_uploaded'] += 1
+            self.stats["akn_uploaded"] += 1
 
             return True
 
         except Exception as e:
             print(f"    ERROR processing {section_id}: {e}")
-            self.stats['errors'] += 1
+            self.stats["errors"] += 1
             return False
 
     def _get_chapter_url(self, chapter, title: int | None = None) -> str:
         """Get the URL for a chapter."""
-        if hasattr(self.converter, '_build_chapter_url'):
+        if hasattr(self.converter, "_build_chapter_url"):
             # Check how many arguments the method takes
             import inspect
+
             sig = inspect.signature(self.converter._build_chapter_url)
             params = list(sig.parameters.keys())
             if len(params) == 2 and title is not None:
@@ -222,29 +240,34 @@ class StatePipeline:
                 return self.converter._build_chapter_url(chapter)
             else:
                 # Fall back to just chapter if title not provided
-                return self.converter._build_chapter_url(chapter) if len(params) == 1 else f"https://{self.state}.gov/statute/chapter/{chapter}"
-        elif hasattr(self.converter, 'base_url'):
+                return (
+                    self.converter._build_chapter_url(chapter)
+                    if len(params) == 1
+                    else f"https://{self.state}.gov/statute/chapter/{chapter}"
+                )
+        elif hasattr(self.converter, "base_url"):
             return f"{self.converter.base_url}/chapter/{chapter}"
         else:
             return f"https://{self.state}.gov/statute/chapter/{chapter}"
 
     def _fetch_raw_html(self, url: str) -> str:
         """Fetch raw HTML from URL using converter's HTTP client."""
-        if hasattr(self.converter, '_get'):
+        if hasattr(self.converter, "_get"):
             return self.converter._get(url)
-        elif hasattr(self.converter, 'client'):
+        elif hasattr(self.converter, "client"):
             response = self.converter.client.get(url)
             return response.text
         else:
             import httpx
+
             response = httpx.get(url, follow_redirects=True, timeout=30)
             return response.text
 
     def run(self):
         """Run the pipeline for this state."""
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Processing {self.state.upper()}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         if self.dry_run:
             print("DRY RUN - no uploads will be performed")
@@ -261,6 +284,7 @@ class StatePipeline:
         # Get sections to process
         module = type(self.converter).__module__
         import importlib
+
         mod = importlib.import_module(module)
 
         # chapters will be list of (chapter, title) tuples for states like AK that need both
@@ -268,32 +292,37 @@ class StatePipeline:
         chapters = []
 
         # Check for state-specific chapter dicts that map to titles/codes
-        if self.state == 'ak':
+        if self.state == "ak":
             # Alaska uses separate dicts per title
-            if hasattr(mod, 'AK_TAX_CHAPTERS'):
-                for ch in getattr(mod, 'AK_TAX_CHAPTERS').keys():
+            if hasattr(mod, "AK_TAX_CHAPTERS"):
+                for ch in getattr(mod, "AK_TAX_CHAPTERS").keys():
                     chapters.append((ch, 43))  # Title 43 = Revenue and Taxation
-            if hasattr(mod, 'AK_WELFARE_CHAPTERS'):
-                for ch in getattr(mod, 'AK_WELFARE_CHAPTERS').keys():
+            if hasattr(mod, "AK_WELFARE_CHAPTERS"):
+                for ch in getattr(mod, "AK_WELFARE_CHAPTERS").keys():
                     chapters.append((ch, 47))  # Title 47 = Welfare
-        elif self.state == 'tx':
+        elif self.state == "tx":
             # Texas uses code + chapter: TX_TAX_CHAPTERS are Tax Code, TX_WELFARE_CHAPTERS are HR Code
-            if hasattr(mod, 'TX_TAX_CHAPTERS'):
-                for ch in getattr(mod, 'TX_TAX_CHAPTERS').keys():
-                    chapters.append((ch, 'TX'))  # TX = Tax Code
-            if hasattr(mod, 'TX_WELFARE_CHAPTERS'):
-                for ch in getattr(mod, 'TX_WELFARE_CHAPTERS').keys():
-                    chapters.append((ch, 'HR'))  # HR = Human Resources Code
+            if hasattr(mod, "TX_TAX_CHAPTERS"):
+                for ch in getattr(mod, "TX_TAX_CHAPTERS").keys():
+                    chapters.append((ch, "TX"))  # TX = Tax Code
+            if hasattr(mod, "TX_WELFARE_CHAPTERS"):
+                for ch in getattr(mod, "TX_WELFARE_CHAPTERS").keys():
+                    chapters.append((ch, "HR"))  # HR = Human Resources Code
         else:
             # Standard pattern for other states
-            for attr in ['TAX_CHAPTERS', 'WELFARE_CHAPTERS', f'{self.state.upper()}_TAX_CHAPTERS', f'{self.state.upper()}_WELFARE_CHAPTERS']:
+            for attr in [
+                "TAX_CHAPTERS",
+                "WELFARE_CHAPTERS",
+                f"{self.state.upper()}_TAX_CHAPTERS",
+                f"{self.state.upper()}_WELFARE_CHAPTERS",
+            ]:
                 if hasattr(mod, attr):
                     for ch in getattr(mod, attr).keys():
                         chapters.append((ch, None))
 
             if not chapters:
                 print("No chapters found, trying title-based approach...")
-                for attr in ['TITLES', f'{self.state.upper()}_TITLES', 'TAX_TITLES']:
+                for attr in ["TITLES", f"{self.state.upper()}_TITLES", "TAX_TITLES"]:
                     if hasattr(mod, attr):
                         for t in getattr(mod, attr).keys():
                             chapters.append((str(t), None))
@@ -312,7 +341,7 @@ class StatePipeline:
                 raw_html = self._fetch_raw_html(url)
 
                 # 2. Archive raw HTML to R2 arch bucket (chapter level)
-                safe_chapter = display_name.replace('/', '-').replace('.', '-')
+                safe_chapter = display_name.replace("/", "-").replace(".", "-")
                 raw_key = f"us/statutes/states/{self.state}/raw/chapter-{safe_chapter}.html"
 
                 if not self.dry_run:
@@ -320,22 +349,22 @@ class StatePipeline:
                         raw_key,
                         raw_html,
                         metadata={
-                            'source-url': url[:256],
-                            'state': self.state,
-                            'chapter': display_name,
-                            'fetched-at': datetime.now(timezone.utc).isoformat(),
-                        }
+                            "source-url": url[:256],
+                            "state": self.state,
+                            "chapter": display_name,
+                            "fetched-at": datetime.now(timezone.utc).isoformat(),
+                        },
                     )
-                self.stats['raw_uploaded'] += 1
+                self.stats["raw_uploaded"] += 1
 
                 # 3. Parse into sections - AK/TX use iter_chapter(title/code, chapter)
-                if self.state == 'ak' and title_or_code:
+                if self.state == "ak" and title_or_code:
                     # Alaska converter uses iter_chapter(title, chapter)
                     sections = list(self.converter.iter_chapter(title_or_code, chapter_num))
-                elif self.state == 'tx' and title_or_code:
+                elif self.state == "tx" and title_or_code:
                     # Texas converter uses iter_chapter(code, chapter) not fetch_chapter
                     sections = list(self.converter.iter_chapter(title_or_code, chapter_num))
-                elif hasattr(self.converter, 'fetch_chapter'):
+                elif hasattr(self.converter, "fetch_chapter"):
                     sections = self.converter.fetch_chapter(chapter_num)
                     if isinstance(sections, dict):
                         sections = list(sections.values())
@@ -348,12 +377,16 @@ class StatePipeline:
                     continue
 
                 print(f"{len(sections)} sections")
-                self.stats['sections_found'] += len(sections)
+                self.stats["sections_found"] += len(sections)
 
                 # 4. Convert each section to AKN and upload
                 for section in sections:
-                    section_id = section.citation.section if hasattr(section.citation, 'section') else str(section.citation)
-                    safe_id = section_id.replace('/', '-').replace('.', '-')
+                    section_id = (
+                        section.citation.section
+                        if hasattr(section.citation, "section")
+                        else str(section.citation)
+                    )
+                    safe_id = section_id.replace("/", "-").replace(".", "-")
 
                     try:
                         # Convert to AKN
@@ -367,24 +400,24 @@ class StatePipeline:
                                 akn_key,
                                 akn_xml,
                                 metadata={
-                                    'raw-key': raw_key,
-                                    'state': self.state,
-                                    'section-id': section_id,
-                                    'chapter': display_name,
-                                }
+                                    "raw-key": raw_key,
+                                    "state": self.state,
+                                    "section-id": section_id,
+                                    "chapter": display_name,
+                                },
                             )
-                        self.stats['akn_uploaded'] += 1
+                        self.stats["akn_uploaded"] += 1
 
                     except Exception as e:
                         print(f"    ERROR {section_id}: {e}")
-                        self.stats['errors'] += 1
+                        self.stats["errors"] += 1
 
                 # Rate limiting between chapters
                 time.sleep(0.5)
 
             except Exception as e:
                 print(f"ERROR: {e}")
-                self.stats['errors'] += 1
+                self.stats["errors"] += 1
 
         return self.stats
 
@@ -398,7 +431,7 @@ def run_supabase_ingestion(state: str | None = None, all_states: bool = False):
     if all_states:
         print("Ingesting all states into Supabase...")
         results = orch.ingest_all_states()
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("SUPABASE INGESTION RESULTS:")
         total = 0
         for state_code, count in sorted(results.items()):
@@ -418,7 +451,9 @@ def main():
     parser.add_argument("--state", help="State code (e.g., ak, ny)")
     parser.add_argument("--all-states", action="store_true", help="Process all states")
     parser.add_argument("--dry-run", action="store_true", help="Don't actually upload")
-    parser.add_argument("--supabase", action="store_true", help="Ingest into Supabase instead of R2")
+    parser.add_argument(
+        "--supabase", action="store_true", help="Ingest into Supabase instead of R2"
+    )
     args = parser.parse_args()
 
     if args.supabase:
@@ -434,10 +469,10 @@ def main():
         return
 
     total_stats = {
-        'sections_found': 0,
-        'raw_uploaded': 0,
-        'akn_uploaded': 0,
-        'errors': 0,
+        "sections_found": 0,
+        "raw_uploaded": 0,
+        "akn_uploaded": 0,
+        "errors": 0,
     }
 
     for state in states:
@@ -453,7 +488,7 @@ def main():
         print(f"    AKN uploaded:   {stats['akn_uploaded']}")
         print(f"    Errors:         {stats['errors']}")
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("TOTAL STATS:")
     print(f"  Sections found: {total_stats['sections_found']}")
     print(f"  Raw uploaded:   {total_stats['raw_uploaded']}")

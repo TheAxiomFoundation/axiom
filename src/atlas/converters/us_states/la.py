@@ -189,7 +189,7 @@ class LAConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -289,7 +289,9 @@ class LAConverter:
 
                 # Fallback: Look for section symbol pattern
                 if not section_title:
-                    symbol_match = re.search(r"\u00A7\d+\.\s*(.+?)(?:\s*[A-Z]\.|$)", first_para)  # pragma: no cover
+                    symbol_match = re.search(
+                        r"\u00A7\d+\.\s*(.+?)(?:\s*[A-Z]\.|$)", first_para
+                    )  # pragma: no cover
                     if symbol_match:  # pragma: no cover
                         section_title = symbol_match.group(1).strip()  # pragma: no cover
 

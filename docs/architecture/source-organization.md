@@ -14,7 +14,7 @@ Never mix document types. A guidance document (IRS Rev. Proc., USDA COLA memo) n
 | Repo | Purpose |
 |------|---------|
 | **arch** | Archive tooling + document catalog (this repo) |
-| **rac-us** | Executable encodings (.rac formulas, parameters.yaml, tests.yaml) |
+| **rules-us** | Executable encodings (.yaml formulas, parameters.yaml, tests.yaml) |
 
 ## Arch Repo Structure
 
@@ -60,16 +60,16 @@ arch (R2 bucket)/
 
 See [R2 Setup Guide](../infrastructure/R2_SETUP.md) for full details.
 
-## rac-us Structure (Encodings)
+## rules-us Structure (Encodings)
 
 ```
-rac-us/
+rules-us/
 ├── 26/                          # Title 26 statutes (path = citation)
-│   ├── 24/a/credit.rac
-│   └── 63/c/standard_deduction.rac
+│   ├── 24/a/credit.yaml
+│   └── 63/c/standard_deduction.yaml
 │
 ├── 7/                           # Title 7 statutes
-│   └── 2017/a/allotment.rac
+│   └── 2017/a/allotment.yaml
 │
 ├── irs/                         # IRS guidance encodings
 │   └── rev-proc-2023-34/
@@ -107,6 +107,6 @@ variable standard_deduction {
    - `catalog/statute/26/63.yaml` → describes `sources/statutes/us/usc/26/63.xml` in R2
    - `catalog/guidance/irs/...` → describes `sources/guidance/irs/...` in R2
 
-2. **Encodings live in rac-us, not here**
+2. **Encodings live in rules-us, not here**
 
 3. **Archive tooling lives in scripts/ and src/arch/**

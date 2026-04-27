@@ -135,7 +135,7 @@ class WIConverter:
             self._client = httpx.Client(
                 timeout=60.0,
                 follow_redirects=True,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -184,9 +184,7 @@ class WIConverter:
 
         chapter = int(section_number.split(".")[0])
         chapter_title = (
-            WI_TAX_CHAPTERS.get(chapter)
-            or WI_WELFARE_CHAPTERS.get(chapter)
-            or f"Chapter {chapter}"
+            WI_TAX_CHAPTERS.get(chapter) or WI_WELFARE_CHAPTERS.get(chapter) or f"Chapter {chapter}"
         )
 
         # Extract section title from the document
@@ -199,7 +197,9 @@ class WIConverter:
         content_elem = soup.find("div", id="document", class_="statutes")
         if content_elem:
             # Remove navigation elements
-            for elem in content_elem.find_all(["div"], class_=["navigation", "navigation_up"]):  # pragma: no cover
+            for elem in content_elem.find_all(
+                ["div"], class_=["navigation", "navigation_up"]
+            ):  # pragma: no cover
                 elem.decompose()
             text = content_elem.get_text(separator="\n", strip=True)
             html_content = str(content_elem)
@@ -236,7 +236,9 @@ class WIConverter:
         # Try to find from the section number + title pattern
         # Pattern: "71.01 Definitions."
         pattern = re.compile(rf"{re.escape(section_number)}\s+([^.]+)")  # pragma: no cover
-        for elem in soup.find_all(["span", "div"], class_=re.compile(r"qsatxt.*level3")):  # pragma: no cover
+        for elem in soup.find_all(
+            ["span", "div"], class_=re.compile(r"qsatxt.*level3")
+        ):  # pragma: no cover
             text = elem.get_text(strip=True)  # pragma: no cover
             match = pattern.search(text)  # pragma: no cover
             if match:  # pragma: no cover

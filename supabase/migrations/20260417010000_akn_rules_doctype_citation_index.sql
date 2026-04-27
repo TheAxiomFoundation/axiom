@@ -3,7 +3,7 @@
 -- scripts/extract_references.py walks rules by doc_type + citation_path
 -- using keyset pagination:
 --
---   SELECT id, citation_path, body FROM akn.rules
+--   SELECT id, citation_path, body FROM arch.rules
 --   WHERE body IS NOT NULL
 --     AND doc_type = 'regulation'
 --     AND citation_path > '<cursor>'
@@ -23,5 +23,5 @@
 -- excluding the ~40% of rows with no body (parts, subparts, etc.).
 
 CREATE INDEX IF NOT EXISTS idx_rules_doctype_citation_body
-  ON akn.rules (doc_type, citation_path)
+  ON arch.rules (doc_type, citation_path)
   WHERE body IS NOT NULL;

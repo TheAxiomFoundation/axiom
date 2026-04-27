@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract cross-references from US Code XML and populate rac.rule_dependencies.
+"""Extract cross-references from US Code XML and populate rulespec.rule_dependencies.
 
 Uses structured <ref href="/us/usc/t26/s151"> tags instead of regex parsing.
 """
@@ -145,7 +145,7 @@ def main():
     try:
         with conn.cursor() as cur:
             # Clear existing dependencies (we'll repopulate from XML)
-            cur.execute("DELETE FROM rac.rule_dependencies")
+            cur.execute("DELETE FROM rulespec.rule_dependencies")
             deleted = cur.rowcount
             print(f"Deleted {deleted} existing dependencies")
 
@@ -153,7 +153,7 @@ def main():
             cur.execute(
                 """
                 SELECT id, citation_path
-                FROM akn.rules
+                FROM arch.rules
                 WHERE citation_path LIKE 'us/statute/26/%'
             """
             )
@@ -191,7 +191,7 @@ def main():
                 execute_values(
                     cur,
                     """
-                    INSERT INTO rac.rule_dependencies
+                    INSERT INTO rulespec.rule_dependencies
                     (from_rule_id, from_citation_path, to_citation_path, to_citation_raw, reference_type)
                     VALUES %s
                     ON CONFLICT (from_citation_path, to_citation_raw) DO NOTHING

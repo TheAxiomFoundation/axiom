@@ -143,9 +143,7 @@ class IRSBulkFetcher:
         self.client = httpx.Client(
             timeout=timeout,
             follow_redirects=True,
-            headers={
-                "User-Agent": "Atlas/1.0 (Policy Research; +https://rules.foundation)"
-            },
+            headers={"User-Agent": "Atlas/1.0 (Policy Research; +https://axiom-foundation.org)"},
         )
 
     def _fetch_drop_listing(self, progress_callback: Callable[[str], None] | None = None) -> str:
@@ -315,7 +313,11 @@ class IRSBulkFetcher:
             List of fetched RevenueProcedure objects
         """
         if doc_types is None:
-            doc_types = [GuidanceType.REV_PROC, GuidanceType.REV_RUL, GuidanceType.NOTICE]  # pragma: no cover
+            doc_types = [
+                GuidanceType.REV_PROC,
+                GuidanceType.REV_RUL,
+                GuidanceType.NOTICE,
+            ]  # pragma: no cover
 
         if download_dir:
             download_dir.mkdir(parents=True, exist_ok=True)
@@ -333,7 +335,9 @@ class IRSBulkFetcher:
         results = []
         for i, doc in enumerate(all_docs):
             if progress_callback:
-                progress_callback(f"[{i+1}/{len(all_docs)}] Fetching {doc.doc_number} ({doc.doc_type.value})")
+                progress_callback(
+                    f"[{i + 1}/{len(all_docs)}] Fetching {doc.doc_number} ({doc.doc_type.value})"
+                )
 
             try:
                 pdf_content = self.fetch_pdf(doc)
@@ -426,10 +430,17 @@ class IRSBulkFetcher:
         import time  # pragma: no cover
 
         from atlas.fetchers.pdf_extractor import PDFTextExtractor  # pragma: no cover
-        from atlas.fetchers.irs_parser import IRSDocumentParser, IRSParameterExtractor  # pragma: no cover
+        from atlas.fetchers.irs_parser import (
+            IRSDocumentParser,
+            IRSParameterExtractor,
+        )  # pragma: no cover
 
         if doc_types is None:  # pragma: no cover
-            doc_types = [GuidanceType.REV_PROC, GuidanceType.REV_RUL, GuidanceType.NOTICE]  # pragma: no cover
+            doc_types = [
+                GuidanceType.REV_PROC,
+                GuidanceType.REV_RUL,
+                GuidanceType.NOTICE,
+            ]  # pragma: no cover
 
         if output_dir is None:  # pragma: no cover
             output_dir = Path("data/guidance")  # pragma: no cover
@@ -467,7 +478,9 @@ class IRSBulkFetcher:
         stats["total_found"] = len(all_docs)  # pragma: no cover
 
         if progress_callback:  # pragma: no cover
-            progress_callback(f"Found {len(all_docs)} documents for years {years}")  # pragma: no cover
+            progress_callback(
+                f"Found {len(all_docs)} documents for years {years}"
+            )  # pragma: no cover
 
         # Initialize extractors
         pdf_extractor = PDFTextExtractor() if extract_text else None  # pragma: no cover
@@ -486,7 +499,9 @@ class IRSBulkFetcher:
             pdf_path = pdf_dir / doc.pdf_filename  # pragma: no cover
             if skip_existing and pdf_path.exists():  # pragma: no cover
                 if progress_callback:  # pragma: no cover
-                    progress_callback(f"  Skipping (exists): {doc.pdf_filename}")  # pragma: no cover
+                    progress_callback(
+                        f"  Skipping (exists): {doc.pdf_filename}"
+                    )  # pragma: no cover
                 stats["skipped"] += 1  # pragma: no cover
                 continue  # pragma: no cover
 
@@ -521,7 +536,9 @@ class IRSBulkFetcher:
                         if extract_params and param_extractor and full_text:  # pragma: no cover
                             parameters = param_extractor.extract(full_text)  # pragma: no cover
                             if parameters:  # pragma: no cover
-                                params_filename = doc.pdf_filename.replace(".pdf", ".json")  # pragma: no cover
+                                params_filename = doc.pdf_filename.replace(
+                                    ".pdf", ".json"
+                                )  # pragma: no cover
                                 params_path = params_dir / params_filename  # pragma: no cover
                                 params_path.write_text(  # pragma: no cover
                                     json.dumps(parameters, indent=2),
@@ -530,18 +547,28 @@ class IRSBulkFetcher:
 
                     except Exception as e:  # pragma: no cover
                         if progress_callback:  # pragma: no cover
-                            progress_callback(f"  Warning: Text extraction failed: {e}")  # pragma: no cover
+                            progress_callback(
+                                f"  Warning: Text extraction failed: {e}"
+                            )  # pragma: no cover
 
                 # Update statistics
                 stats["downloaded"] += 1  # pragma: no cover
                 doc_type_key = doc.doc_type.value  # pragma: no cover
-                stats["by_type"][doc_type_key] = stats["by_type"].get(doc_type_key, 0) + 1  # pragma: no cover
-                stats["by_year"][doc.year] = stats["by_year"].get(doc.year, 0) + 1  # pragma: no cover
+                stats["by_type"][doc_type_key] = (
+                    stats["by_type"].get(doc_type_key, 0) + 1
+                )  # pragma: no cover
+                stats["by_year"][doc.year] = (
+                    stats["by_year"].get(doc.year, 0) + 1
+                )  # pragma: no cover
 
                 if progress_callback:  # pragma: no cover
                     size_kb = len(pdf_content) / 1024  # pragma: no cover
-                    params_info = f", {len(parameters)} param groups" if parameters else ""  # pragma: no cover
-                    progress_callback(f"  Downloaded: {size_kb:.1f} KB{params_info}")  # pragma: no cover
+                    params_info = (
+                        f", {len(parameters)} param groups" if parameters else ""
+                    )  # pragma: no cover
+                    progress_callback(
+                        f"  Downloaded: {size_kb:.1f} KB{params_info}"
+                    )  # pragma: no cover
 
             except Exception as e:  # pragma: no cover
                 stats["errors"] += 1  # pragma: no cover

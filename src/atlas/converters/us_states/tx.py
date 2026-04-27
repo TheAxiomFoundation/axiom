@@ -158,7 +158,7 @@ class TXConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -236,7 +236,9 @@ class TXConverter:
             body_text = body.get_text(strip=True).lower()
             # Only raise if the body is very short and contains error text (typical 404 page)
             if len(body_text) < 500 and ("page not found" in body_text or "404 error" in body_text):
-                raise TXConverterError(f"Section {code}-{section_number} not found", url)  # pragma: no cover
+                raise TXConverterError(
+                    f"Section {code}-{section_number} not found", url
+                )  # pragma: no cover
 
         chapter = int(section_number.split(".")[0])
 
@@ -257,7 +259,9 @@ class TXConverter:
             h1_text = h1.get_text(strip=True)
             # Try to extract title after section number
             # Pattern: "Section NNN.NNN Title Here"
-            match = re.search(rf"Section\s+{re.escape(section_number)}\s+(.+)", h1_text, re.IGNORECASE)
+            match = re.search(
+                rf"Section\s+{re.escape(section_number)}\s+(.+)", h1_text, re.IGNORECASE
+            )
             if match:
                 section_title = match.group(1).strip()
             else:
@@ -268,7 +272,9 @@ class TXConverter:
 
         # Try breadcrumb for title info
         title_name = None
-        breadcrumb = soup.find("ol", class_="breadcrumb") or soup.find(attrs={"itemtype": "BreadcrumbList"})
+        breadcrumb = soup.find("ol", class_="breadcrumb") or soup.find(
+            attrs={"itemtype": "BreadcrumbList"}
+        )
         if breadcrumb:
             # Look for title in breadcrumb path
             crumbs = breadcrumb.find_all("li") or breadcrumb.find_all("span")
@@ -288,7 +294,9 @@ class TXConverter:
 
         if content_elem:
             # Remove navigation and scripts
-            for elem in content_elem.find_all(["nav", "script", "style", "header", "footer", "aside"]):
+            for elem in content_elem.find_all(
+                ["nav", "script", "style", "header", "footer", "aside"]
+            ):
                 elem.decompose()  # pragma: no cover
             text = content_elem.get_text(separator="\n", strip=True)
             html_content = str(content_elem)
@@ -355,7 +363,7 @@ class TXConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse second-level children (1), (2), etc.
             children = self._parse_level2(content)
@@ -401,7 +409,7 @@ class TXConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)  # pragma: no cover
-            content = part[match.end():]  # pragma: no cover
+            content = part[match.end() :]  # pragma: no cover
 
             # Limit to reasonable size and stop at next numbered subsection
             next_num = re.search(r"\(\d+\)", content)  # pragma: no cover
@@ -429,7 +437,7 @@ class TXConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse level 3 children (A), (B), etc.
             children = self._parse_level3(content)
@@ -465,7 +473,7 @@ class TXConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)  # pragma: no cover
-            content = part[match.end():]  # pragma: no cover
+            content = part[match.end() :]  # pragma: no cover
 
             # Limit size and stop at boundaries
             next_upper = re.search(r"\([A-Z]\)", content)  # pragma: no cover
@@ -694,4 +702,6 @@ def download_tx_welfare_chapters() -> Iterator[Section]:
         Section objects
     """
     with TXConverter() as converter:  # pragma: no cover
-        yield from converter.iter_chapters("HR", list(TX_WELFARE_CHAPTERS.keys()))  # pragma: no cover
+        yield from converter.iter_chapters(
+            "HR", list(TX_WELFARE_CHAPTERS.keys())
+        )  # pragma: no cover

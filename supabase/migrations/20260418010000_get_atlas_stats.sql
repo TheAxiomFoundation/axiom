@@ -7,21 +7,21 @@
 -- a single index lookup.
 --
 -- Returned shape:
---   rules_count          — approx rows in akn.rules
---   references_count     — approx rows in akn.rule_references
---   jurisdictions_count  — distinct non-null jurisdictions in akn.rules
+--   rules_count          — approx rows in arch.rules
+--   references_count     — approx rows in arch.rule_references
+--   jurisdictions_count  — distinct non-null jurisdictions in arch.rules
 --
 -- Interjurisdictional-ref counts were considered but require a heap
 -- join across the refs table, which blows PostgREST's statement-
 -- timeout. Revisit once we have a materialized side-table for graph
 -- stats.
 
-CREATE OR REPLACE FUNCTION akn.get_atlas_stats()
+CREATE OR REPLACE FUNCTION arch.get_atlas_stats()
 RETURNS jsonb
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = akn, public
+SET search_path = arch, public
 AS $$
   SELECT jsonb_build_object(
     'rules_count',
@@ -29,7 +29,7 @@ AS $$
         (
           SELECT reltuples::bigint
           FROM pg_class
-          WHERE oid = 'akn.rules'::regclass
+          WHERE oid = 'arch.rules'::regclass
         ),
         0
       ),
@@ -38,19 +38,19 @@ AS $$
         (
           SELECT reltuples::bigint
           FROM pg_class
-          WHERE oid = 'akn.rule_references'::regclass
+          WHERE oid = 'arch.rule_references'::regclass
         ),
         0
       ),
     'jurisdictions_count',
       (
         SELECT COUNT(DISTINCT jurisdiction)::int
-        FROM akn.rules
+        FROM arch.rules
         WHERE jurisdiction IS NOT NULL
       )
   )
 $$;
 
-GRANT EXECUTE ON FUNCTION akn.get_atlas_stats() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION arch.get_atlas_stats() TO anon, authenticated;
 
 NOTIFY pgrst, 'reload schema';

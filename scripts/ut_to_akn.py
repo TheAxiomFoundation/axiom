@@ -126,8 +126,8 @@ def section_to_akn_xml(section: Section, chapter_id: str, chapter_title: str) ->
 
     org_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     org_rf.set("eId", "rules-foundation")
-    org_rf.set("href", "https://rules.foundation")
-    org_rf.set("showAs", "Rules Foundation")
+    org_rf.set("href", "https://axiom-foundation.org")
+    org_rf.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -230,9 +230,9 @@ def convert_chapter(
         Tuple of (sections_converted, sections_failed)
     """
     chapter_title = (
-        UT_TAX_CHAPTERS.get(chapter_id) or
-        UT_WELFARE_CHAPTERS.get(chapter_id) or
-        f"Chapter {chapter_id}"
+        UT_TAX_CHAPTERS.get(chapter_id)
+        or UT_WELFARE_CHAPTERS.get(chapter_id)
+        or f"Chapter {chapter_id}"
     )
 
     print(f"  Converting Chapter {chapter_id}: {chapter_title}")
@@ -289,9 +289,7 @@ def convert_chapter(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Convert Utah Code to Akoma Ntoso XML"
-    )
+    parser = argparse.ArgumentParser(description="Convert Utah Code to Akoma Ntoso XML")
     parser.add_argument(
         "--chapter",
         type=str,

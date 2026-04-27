@@ -26,11 +26,11 @@ logger = logging.getLogger(__name__)
 
 # Priority Acts for PolicyEngine UK
 UK_PRIORITY_ACTS = [
-    "ukpga/2003/1",   # Income Tax (Earnings and Pensions) Act 2003
-    "ukpga/2007/3",   # Income Tax Act 2007
-    "ukpga/2009/4",   # Corporation Tax Act 2009
-    "ukpga/1992/4",   # Social Security Contributions and Benefits Act 1992
-    "ukpga/2012/5",   # Welfare Reform Act 2012
+    "ukpga/2003/1",  # Income Tax (Earnings and Pensions) Act 2003
+    "ukpga/2007/3",  # Income Tax Act 2007
+    "ukpga/2009/4",  # Corporation Tax Act 2009
+    "ukpga/1992/4",  # Social Security Contributions and Benefits Act 1992
+    "ukpga/2012/5",  # Welfare Reform Act 2012
     "ukpga/2002/21",  # Tax Credits Act 2002
     "ukpga/1992/12",  # Taxation of Chargeable Gains Act 1992
     "ukpga/1994/23",  # Value Added Tax Act 1994
@@ -95,7 +95,7 @@ class BulkDownloadProgress:
                 self.total_sections = data.get("total_sections", 0)
                 if data.get("started_at"):
                     self.started_at = datetime.fromisoformat(data["started_at"])
-            except (json.JSONDecodeError, KeyError):
+            except json.JSONDecodeError, KeyError:
                 pass
 
     def save(self) -> None:
@@ -214,6 +214,7 @@ class UKLegislationFetcher:
     async def _rate_limit(self) -> None:
         """Enforce rate limiting between requests."""
         import time
+
         now = time.time()
         elapsed = now - self._last_request_time
         if elapsed < self.rate_limit_delay:
@@ -237,7 +238,9 @@ class UKLegislationFetcher:
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 url,
-                headers={"User-Agent": "Atlas/1.0 (https://github.com/RulesFoundation/atlas; contact@rules.foundation)"},
+                headers={
+                    "User-Agent": "Atlas/1.0 (https://github.com/TheAxiomFoundation/atlas; contact@axiom-foundation.org)"
+                },
                 follow_redirects=True,
                 timeout=60,
             )
@@ -384,7 +387,9 @@ class UKLegislationFetcher:
 
                 response = await client.get(
                     url,
-                    headers={"User-Agent": "Atlas/1.0 (https://github.com/RulesFoundation/atlas; contact@rules.foundation)"},
+                    headers={
+                        "User-Agent": "Atlas/1.0 (https://github.com/TheAxiomFoundation/atlas; contact@axiom-foundation.org)"
+                    },
                     follow_redirects=True,
                     timeout=60,
                 )
@@ -402,7 +407,9 @@ class UKLegislationFetcher:
                         acts.append(act_ref)
 
                 if progress_callback:
-                    progress_callback(f"Page {page}: found {entries_found} entries, total {len(acts)} acts")
+                    progress_callback(
+                        f"Page {page}: found {entries_found} entries, total {len(acts)} acts"
+                    )
 
                 # Check for next page
                 next_link = root.find("atom:link[@rel='next']", ATOM_NS)
@@ -445,7 +452,11 @@ class UKLegislationFetcher:
 
             # Get title
             title_elem = entry.find("atom:title", ATOM_NS)
-            title = title_elem.text if title_elem is not None and title_elem.text else f"ukpga/{year}/{number}"
+            title = (
+                title_elem.text
+                if title_elem is not None and title_elem.text
+                else f"ukpga/{year}/{number}"
+            )
 
             # Get updated timestamp
             updated_elem = entry.find("atom:updated", ATOM_NS)
@@ -491,7 +502,9 @@ class UKLegislationFetcher:
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 url,
-                headers={"User-Agent": "Atlas/1.0 (https://github.com/RulesFoundation/atlas; contact@rules.foundation)"},
+                headers={
+                    "User-Agent": "Atlas/1.0 (https://github.com/TheAxiomFoundation/atlas; contact@axiom-foundation.org)"
+                },
                 follow_redirects=True,
                 timeout=120,  # Longer timeout for full acts
             )
@@ -573,7 +586,9 @@ class UKLegislationFetcher:
                     continue
 
                 try:
-                    log(f"[{i}/{len(act_refs)}] Downloading {act_ref.act_id}: {act_ref.title[:50]}...")
+                    log(
+                        f"[{i}/{len(act_refs)}] Downloading {act_ref.act_id}: {act_ref.title[:50]}..."
+                    )
                     path, section_count = await self.download_act_full_xml(act_ref, output_dir)
                     progress.mark_downloaded(act_ref.act_id, section_count)
                     log(f"  -> Saved to {path} ({section_count} sections)")

@@ -200,8 +200,8 @@ def create_title_akn(title_num: int, articles: dict[str, str]) -> str:
 
     org_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     org_rf.set("eId", "rules-foundation")
-    org_rf.set("href", "https://rules.foundation")
-    org_rf.set("showAs", "Rules Foundation")
+    org_rf.set("href", "https://axiom-foundation.org")
+    org_rf.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -243,9 +243,7 @@ def create_title_akn(title_num: int, articles: dict[str, str]) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Create Indiana Code Akoma Ntoso XML structure"
-    )
+    parser = argparse.ArgumentParser(description="Create Indiana Code Akoma Ntoso XML structure")
     parser.add_argument(
         "--all",
         action="store_true",
@@ -320,9 +318,9 @@ def main():
         files_created += 1
         total_articles += len(articles)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Summary")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Titles processed: {len(articles_by_title)}")
     print(f"Articles included: {total_articles}")
     print(f"Files created: {files_created}")

@@ -91,7 +91,7 @@ def url_to_filename(url: str) -> str:
         filename = f"{url_hash}.html"
 
     # Clean up filename
-    filename = re.sub(r'[^\w\-_\.]', '_', filename)
+    filename = re.sub(r"[^\w\-_\.]", "_", filename)
     return filename
 
 
@@ -172,7 +172,7 @@ def main():
         urls = [u for u in urls if ".pdf" in u.lower()]
 
     if args.limit > 0:
-        urls = urls[:args.limit]
+        urls = urls[: args.limit]
 
     print(f"Downloading {len(urls)} URLs to {args.output_dir}")
 
@@ -183,7 +183,9 @@ def main():
 
     client = httpx.Client(
         timeout=60,
-        headers={"User-Agent": "Atlas/1.0 (policy document archiver; contact@rules.foundation)"},
+        headers={
+            "User-Agent": "Atlas/1.0 (policy document archiver; contact@axiom-foundation.org)"
+        },
         follow_redirects=True,
     )
 

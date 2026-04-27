@@ -40,9 +40,7 @@ class TestDeterministicId:
         assert _deterministic_id(path) == _deterministic_id(path)
 
     def test_different_path_different_id(self):
-        assert _deterministic_id("us/statute/26/32") != _deterministic_id(
-            "us/statute/26/36B"
-        )
+        assert _deterministic_id("us/statute/26/32") != _deterministic_id("us/statute/26/36B")
 
     def test_returns_valid_uuid(self):
         result = _deterministic_id("us/statute/26/32")
@@ -69,7 +67,7 @@ class TestSectionToRulesBasic:
         assert rule["body"] == "Test section text"
         assert rule["parent_id"] is None
         assert rule["citation_path"] == "us/statute/26/32"
-        assert rule["has_rac"] is False
+        assert rule["has_rulespec"] is False
 
     def test_state_section(self):
         section = _make_state_section()
@@ -173,9 +171,7 @@ class TestCitationPathFormat:
 
     def test_custom_doc_type(self):
         section = _make_us_section()
-        rules = list(
-            section_to_rules(section, jurisdiction="us", doc_type="regulation")
-        )
+        rules = list(section_to_rules(section, jurisdiction="us", doc_type="regulation"))
         assert rules[0]["citation_path"] == "us/regulation/26/32"
         assert rules[0]["doc_type"] == "regulation"
 

@@ -277,9 +277,7 @@ class SNAPSUAFetcher:
         self.client = httpx.Client(
             timeout=timeout,
             follow_redirects=True,
-            headers={
-                "User-Agent": "Atlas/1.0 (Policy Research; +https://rules.foundation)"
-            },
+            headers={"User-Agent": "Atlas/1.0 (Policy Research; +https://axiom-foundation.org)"},
         )
 
     def get_sua_url(self, fiscal_year: int) -> str:
@@ -420,9 +418,7 @@ class TANFFetcher:
         self.client = httpx.Client(
             timeout=timeout,
             follow_redirects=True,
-            headers={
-                "User-Agent": "Atlas/1.0 (Policy Research; +https://rules.foundation)"
-            },
+            headers={"User-Agent": "Atlas/1.0 (Policy Research; +https://axiom-foundation.org)"},
         )
 
     def get_table_url(self, table_id: str, year: int) -> str:
@@ -520,9 +516,7 @@ class CCDFFetcher:
         self.client = httpx.Client(
             timeout=timeout,
             follow_redirects=True,
-            headers={
-                "User-Agent": "Atlas/1.0 (Policy Research; +https://rules.foundation)"
-            },
+            headers={"User-Agent": "Atlas/1.0 (Policy Research; +https://axiom-foundation.org)"},
         )
 
     def get_database_url(self) -> str:
@@ -681,9 +675,7 @@ class StateBenefitsFetcher:
 
                     if progress_callback:
                         size_kb = len(content) / 1024
-                        progress_callback(
-                            f"  Saved: {output_path.name} ({size_kb:.1f} KB)"
-                        )
+                        progress_callback(f"  Saved: {output_path.name} ({size_kb:.1f} KB)")
 
                 except httpx.HTTPError as e:
                     if progress_callback:
@@ -794,9 +786,7 @@ class StateBenefitsFetcher:
 
         # Fetch SNAP SUA data
         snap_dir = output_dir / "snap_sua"
-        results["snap_sua"] = self.fetch_snap_sua(
-            snap_fiscal_years, snap_dir, progress_callback
-        )
+        results["snap_sua"] = self.fetch_snap_sua(snap_fiscal_years, snap_dir, progress_callback)
 
         # Fetch TANF databook
         tanf_dir = output_dir / "tanf"

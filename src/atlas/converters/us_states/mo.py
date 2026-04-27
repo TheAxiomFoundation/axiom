@@ -207,7 +207,7 @@ class MOConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -327,9 +327,7 @@ class MOConverter:
 
         # Get chapter title from our registry
         chapter_title = (
-            MO_TAX_CHAPTERS.get(chapter)
-            or MO_WELFARE_CHAPTERS.get(chapter)
-            or f"Chapter {chapter}"
+            MO_TAX_CHAPTERS.get(chapter) or MO_WELFARE_CHAPTERS.get(chapter) or f"Chapter {chapter}"
         )
 
         # Determine title info from chapter number
@@ -341,9 +339,7 @@ class MOConverter:
 
         # Try to find the section title in headings or strong/bold text
         # The title typically appears after the section number
-        title_pattern = re.compile(
-            rf"{re.escape(section_number)}\s+(.+?)(?:\.|$)", re.IGNORECASE
-        )
+        title_pattern = re.compile(rf"{re.escape(section_number)}\s+(.+?)(?:\.|$)", re.IGNORECASE)
 
         # First, try to find it in the page text near the top
         for elem in soup.find_all(["h1", "h2", "h3", "h4", "strong", "b"]):
@@ -361,7 +357,9 @@ class MOConverter:
                 section_title = match.group(1).strip().rstrip(".")
                 # Truncate if too long (title shouldn't be paragraphs)
                 if len(section_title) > 200:
-                    section_title = section_title[:200].rsplit(" ", 1)[0] + "..."  # pragma: no cover
+                    section_title = (
+                        section_title[:200].rsplit(" ", 1)[0] + "..."
+                    )  # pragma: no cover
 
         # Extract effective date
         effective_date = self._parse_effective_date(soup.get_text())
@@ -490,9 +488,7 @@ class MOConverter:
 
         return subsections
 
-    def _get_direct_text(
-        self, content: str, children: list[ParsedMOSubsection]
-    ) -> str:
+    def _get_direct_text(self, content: str, children: list[ParsedMOSubsection]) -> str:
         """Get text before first child subsection."""
         if children:
             # Find where first child starts
@@ -501,9 +497,7 @@ class MOConverter:
                 return content[: first_child_match.start()].strip()
         return content.strip()
 
-    def _get_direct_text_parens(
-        self, content: str, children: list[ParsedMOSubsection]
-    ) -> str:
+    def _get_direct_text_parens(self, content: str, children: list[ParsedMOSubsection]) -> str:
         """Get text before first child subsection in parenthetical format."""
         if children:  # pragma: no cover
             first_child_match = re.search(r"\([a-z]\)", content)  # pragma: no cover

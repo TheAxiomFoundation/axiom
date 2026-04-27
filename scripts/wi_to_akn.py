@@ -89,9 +89,13 @@ def create_akn_xml(chapter_num: int, chapter_title: str, sections: list[Section]
     # FRBRExpression
     expr = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRExpression")
     expr_this = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRthis")
-    expr_this.set("value", f"/akn/us-wi/act/statutes/chapter-{chapter_num}/eng@{date.today().isoformat()}")
+    expr_this.set(
+        "value", f"/akn/us-wi/act/statutes/chapter-{chapter_num}/eng@{date.today().isoformat()}"
+    )
     expr_uri = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRuri")
-    expr_uri.set("value", f"/akn/us-wi/act/statutes/chapter-{chapter_num}/eng@{date.today().isoformat()}")
+    expr_uri.set(
+        "value", f"/akn/us-wi/act/statutes/chapter-{chapter_num}/eng@{date.today().isoformat()}"
+    )
     expr_date = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRdate")
     expr_date.set("date", date.today().isoformat())
     expr_date.set("name", "publication")
@@ -103,9 +107,15 @@ def create_akn_xml(chapter_num: int, chapter_title: str, sections: list[Section]
     # FRBRManifestation
     manif = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRManifestation")
     manif_this = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRthis")
-    manif_this.set("value", f"/akn/us-wi/act/statutes/chapter-{chapter_num}/eng@{date.today().isoformat()}/main.xml")
+    manif_this.set(
+        "value",
+        f"/akn/us-wi/act/statutes/chapter-{chapter_num}/eng@{date.today().isoformat()}/main.xml",
+    )
     manif_uri = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRuri")
-    manif_uri.set("value", f"/akn/us-wi/act/statutes/chapter-{chapter_num}/eng@{date.today().isoformat()}/main.xml")
+    manif_uri.set(
+        "value",
+        f"/akn/us-wi/act/statutes/chapter-{chapter_num}/eng@{date.today().isoformat()}/main.xml",
+    )
     manif_date = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRdate")
     manif_date.set("date", date.today().isoformat())
     manif_date.set("name", "generation")
@@ -119,7 +129,7 @@ def create_akn_xml(chapter_num: int, chapter_title: str, sections: list[Section]
     # TLC references
     arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://rules.foundation")
+    arch_ref.set("href", "https://axiom-foundation.org")
     arch_ref.set("showAs", "Atlas")
 
     wi_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
@@ -253,8 +263,12 @@ def main():
     parser = argparse.ArgumentParser(description="Convert Wisconsin Statutes to Akoma Ntoso XML")
     parser.add_argument("--chapters", type=str, help="Comma-separated chapter numbers")
     parser.add_argument("--all-tax", action="store_true", help="Fetch all tax chapters (71-79)")
-    parser.add_argument("--all-welfare", action="store_true", help="Fetch all welfare chapters (46-52)")
-    parser.add_argument("--rate-limit", type=float, default=0.5, help="Delay between requests in seconds")
+    parser.add_argument(
+        "--all-welfare", action="store_true", help="Fetch all welfare chapters (46-52)"
+    )
+    parser.add_argument(
+        "--rate-limit", type=float, default=0.5, help="Delay between requests in seconds"
+    )
     args = parser.parse_args()
 
     # Determine which chapters to fetch
@@ -263,7 +277,11 @@ def main():
     if args.chapters:
         for ch in args.chapters.split(","):
             ch_num = int(ch.strip())
-            title = WI_TAX_CHAPTERS.get(ch_num) or WI_WELFARE_CHAPTERS.get(ch_num) or f"Chapter {ch_num}"
+            title = (
+                WI_TAX_CHAPTERS.get(ch_num)
+                or WI_WELFARE_CHAPTERS.get(ch_num)
+                or f"Chapter {ch_num}"
+            )
             chapters_to_fetch[ch_num] = title
     elif args.all_tax:
         chapters_to_fetch = dict(WI_TAX_CHAPTERS)

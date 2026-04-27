@@ -187,7 +187,7 @@ class MNConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
                 follow_redirects=True,
             )
         return self._client
@@ -277,11 +277,13 @@ class MNConverter:
             error_pattern = re.compile(
                 rf"(section\s+{re.escape(section_number)}\s+.{{0,30}}(repealed|expired|does not exist)|"
                 rf"this\s+section\s+.{{0,30}}(repealed|expired|does not exist))",
-                re.IGNORECASE
+                re.IGNORECASE,
             )
             error_text = main_content.get_text()
             if error_pattern.search(error_text):
-                raise MNConverterError(f"Section {section_number} has been repealed or expired", url)  # pragma: no cover
+                raise MNConverterError(
+                    f"Section {section_number} has been repealed or expired", url
+                )  # pragma: no cover
 
         chapter = self._extract_chapter_number(section_number)
         chapter_title = self._get_chapter_title(chapter)
@@ -320,7 +322,9 @@ class MNConverter:
 
         if content_elem:
             # Remove navigation and scripts
-            for elem in content_elem.find_all(["nav", "script", "style", "header", "footer"]):  # pragma: no cover
+            for elem in content_elem.find_all(
+                ["nav", "script", "style", "header", "footer"]
+            ):  # pragma: no cover
                 elem.decompose()
             text = content_elem.get_text(separator="\n", strip=True)
             html_content = str(content_elem)
@@ -362,8 +366,7 @@ class MNConverter:
         # Split by subdivision markers
         # Pattern: "Subdivision 1." or "Subd. 1." followed by optional heading
         subd_pattern = re.compile(
-            r"(?:Subdivision|Subd\.?)\s*(\d+)\.?\s*([A-Za-z][^.]*\.)?",
-            re.IGNORECASE
+            r"(?:Subdivision|Subd\.?)\s*(\d+)\.?\s*([A-Za-z][^.]*\.)?", re.IGNORECASE
         )
 
         parts = subd_pattern.split(text)
@@ -382,7 +385,7 @@ class MNConverter:
                     # Find where next subdivision starts
                     next_subd = subd_pattern.search(content)
                     if next_subd:
-                        content = content[:next_subd.start()]  # pragma: no cover
+                        content = content[: next_subd.start()]  # pragma: no cover
 
                     # Parse clauses within this subdivision
                     clauses = self._parse_clauses(content)
@@ -390,7 +393,7 @@ class MNConverter:
                     # Get text before first clause
                     first_clause_match = re.search(r"\([a-z]\)", content)
                     direct_text = (
-                        content[:first_clause_match.start()].strip()
+                        content[: first_clause_match.start()].strip()
                         if first_clause_match
                         else content.strip()
                     )
@@ -423,12 +426,12 @@ class MNConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Find where next subdivision starts and truncate
             next_subd = re.search(r"(?:Subdivision|Subd\.?)\s*\d+", content, re.IGNORECASE)
             if next_subd:
-                content = content[:next_subd.start()]  # pragma: no cover
+                content = content[: next_subd.start()]  # pragma: no cover
 
             # Parse sub-clauses (1), (2), etc.
             children = self._parse_subclauses(content)
@@ -436,7 +439,7 @@ class MNConverter:
             # Get text before first sub-clause
             first_subclause_match = re.search(r"\(\d+\)", content)
             direct_text = (
-                content[:first_subclause_match.start()].strip()
+                content[: first_subclause_match.start()].strip()
                 if first_subclause_match
                 else content.strip()
             )
@@ -463,12 +466,12 @@ class MNConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Limit content - stop at next lettered clause
             next_clause = re.search(r"\([a-z]\)", content)
             if next_clause:
-                content = content[:next_clause.start()]
+                content = content[: next_clause.start()]
 
             subclauses.append(
                 ParsedMNClause(
@@ -573,7 +576,10 @@ class MNConverter:
                 if section_num not in section_numbers:
                     section_numbers.append(section_num)
 
-        return sorted(section_numbers, key=lambda x: [int(p) if p.isdigit() else p for p in re.split(r'[.\-]', x)])
+        return sorted(
+            section_numbers,
+            key=lambda x: [int(p) if p.isdigit() else p for p in re.split(r"[.\-]", x)],
+        )
 
     def iter_chapter(self, chapter: str | int) -> Iterator[Section]:
         """Iterate over all sections in a chapter.

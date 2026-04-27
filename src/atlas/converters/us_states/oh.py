@@ -161,7 +161,7 @@ class OHConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -251,18 +251,14 @@ class OHConverter:
 
         chapter = int(section_number.split(".")[0])
         chapter_title = (
-            OH_TAX_CHAPTERS.get(chapter)
-            or OH_WELFARE_CHAPTERS.get(chapter)
-            or f"Chapter {chapter}"
+            OH_TAX_CHAPTERS.get(chapter) or OH_WELFARE_CHAPTERS.get(chapter) or f"Chapter {chapter}"
         )
 
         title_number, title_name = self._get_title_for_chapter(chapter)
 
         # Extract section title from the heading pattern: "Section 5747.01 | Definitions"
         section_title = ""
-        title_pattern = re.compile(
-            rf"Section\s+{re.escape(section_number)}\s*\|\s*(.+?)(?:\.|$)"
-        )
+        title_pattern = re.compile(rf"Section\s+{re.escape(section_number)}\s*\|\s*(.+?)(?:\.|$)")
 
         # Try to find in the page title or headings
         page_title = soup.find("title")
@@ -282,9 +278,7 @@ class OHConverter:
 
         # Try simpler pattern
         if not section_title:
-            simple_pattern = re.compile(
-                rf"{re.escape(section_number)}\s*\|\s*([^.]+)"
-            )
+            simple_pattern = re.compile(rf"{re.escape(section_number)}\s*\|\s*([^.]+)")
             for text_node in soup.stripped_strings:
                 match = simple_pattern.search(text_node)
                 if match:
@@ -302,9 +296,7 @@ class OHConverter:
 
         if content_elem:
             # Remove navigation and scripts
-            for elem in content_elem.find_all(
-                ["nav", "script", "style", "header", "footer"]
-            ):
+            for elem in content_elem.find_all(["nav", "script", "style", "header", "footer"]):
                 elem.decompose()  # pragma: no cover
             text = content_elem.get_text(separator="\n", strip=True)
             html_content = str(content_elem)
@@ -318,9 +310,7 @@ class OHConverter:
 
         # Extract history note / latest legislation - search the whole page
         history = None
-        history_match = re.search(
-            r"Latest\s+Legislation:\s*(.+?)(?:\n|$)", full_text
-        )
+        history_match = re.search(r"Latest\s+Legislation:\s*(.+?)(?:\n|$)", full_text)
         if history_match:
             history = history_match.group(1).strip()[:500]
 

@@ -88,9 +88,13 @@ def create_akn_xml(section: Section, title_num: int, title_name: str) -> str:
     # FRBRExpression
     expr = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRExpression")
     expr_this = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRthis")
-    expr_this.set("value", f"/akn/us-ok/act/okst/section-{section_id}/eng@{date.today().isoformat()}")
+    expr_this.set(
+        "value", f"/akn/us-ok/act/okst/section-{section_id}/eng@{date.today().isoformat()}"
+    )
     expr_uri = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRuri")
-    expr_uri.set("value", f"/akn/us-ok/act/okst/section-{section_id}/eng@{date.today().isoformat()}")
+    expr_uri.set(
+        "value", f"/akn/us-ok/act/okst/section-{section_id}/eng@{date.today().isoformat()}"
+    )
     expr_date = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRdate")
     expr_date.set("date", date.today().isoformat())
     expr_date.set("name", "publication")
@@ -102,9 +106,13 @@ def create_akn_xml(section: Section, title_num: int, title_name: str) -> str:
     # FRBRManifestation
     manif = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRManifestation")
     manif_this = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRthis")
-    manif_this.set("value", f"/akn/us-ok/act/okst/section-{section_id}/eng@{date.today().isoformat()}/main.xml")
+    manif_this.set(
+        "value", f"/akn/us-ok/act/okst/section-{section_id}/eng@{date.today().isoformat()}/main.xml"
+    )
     manif_uri = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRuri")
-    manif_uri.set("value", f"/akn/us-ok/act/okst/section-{section_id}/eng@{date.today().isoformat()}/main.xml")
+    manif_uri.set(
+        "value", f"/akn/us-ok/act/okst/section-{section_id}/eng@{date.today().isoformat()}/main.xml"
+    )
     manif_date = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRdate")
     manif_date.set("date", date.today().isoformat())
     manif_date.set("name", "generation")
@@ -118,7 +126,7 @@ def create_akn_xml(section: Section, title_num: int, title_name: str) -> str:
     # TLC references
     arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://rules.foundation")
+    arch_ref.set("href", "https://axiom-foundation.org")
     arch_ref.set("showAs", "Atlas")
 
     ok_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")

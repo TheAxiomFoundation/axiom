@@ -305,7 +305,7 @@ def verify_encoding(
     """Verify a DSL encoding against PolicyEngine.
 
     Args:
-        section_dir: Directory containing rules.rac and tests.yaml
+        section_dir: Directory containing rules.yaml and tests.yaml
         pe_variable: PolicyEngine variable name to compare (e.g., "eitc")
         tolerance: Dollar tolerance for matching (default $15)
 

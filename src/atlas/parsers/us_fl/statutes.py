@@ -158,9 +158,7 @@ class FLStatutesClient:
         self._last_request_time = 0.0  # pragma: no cover
         self.client = httpx.Client(
             timeout=60.0,
-            headers={
-                "User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"
-            },
+            headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
         )
 
     def _rate_limit(self) -> None:
@@ -221,7 +219,9 @@ class FLStatutesClient:
 
         # Find section links - they follow pattern like "212.01", "212.02", etc.
         # Links are in format: Sections/0212.01.html
-        section_pattern = re.compile(rf"Sections/{info.padded_number}\.(\d+[A-Za-z]?)\.html")  # pragma: no cover
+        section_pattern = re.compile(
+            rf"Sections/{info.padded_number}\.(\d+[A-Za-z]?)\.html"
+        )  # pragma: no cover
 
         for link in soup.find_all("a", href=section_pattern):  # pragma: no cover
             href = link.get("href", "")  # pragma: no cover
@@ -231,7 +231,9 @@ class FLStatutesClient:
                 # Get title from link text, cleaning up whitespace
                 title = link.get_text(strip=True)  # pragma: no cover
                 # Title often includes section number prefix, remove it
-                title = re.sub(rf"^{re.escape(section_num)}\s*[-:.]?\s*", "", title)  # pragma: no cover
+                title = re.sub(
+                    rf"^{re.escape(section_num)}\s*[-:.]?\s*", "", title
+                )  # pragma: no cover
 
                 # Build full URL
                 section_url = (  # pragma: no cover
@@ -264,14 +266,18 @@ class FLStatutesClient:
         info = self.get_chapter_info(chapter)  # pragma: no cover
 
         # Build URL - section numbers can include letters (e.g., 212.08, 212.0596)
-        section_suffix = section_number.split(".", 1)[1] if "." in section_number else section_number  # pragma: no cover
+        section_suffix = (
+            section_number.split(".", 1)[1] if "." in section_number else section_number
+        )  # pragma: no cover
         url = (  # pragma: no cover
             f"{BASE_URL}/index.cfm?App_mode=Display_Statute"
             f"&URL={info.url_range}/{info.padded_number}/Sections/{info.padded_number}.{section_suffix}.html"
         )
 
         html = self._get(url)  # pragma: no cover
-        return self._parse_section_page(html, section_number, chapter, info.title, url)  # pragma: no cover
+        return self._parse_section_page(
+            html, section_number, chapter, info.title, url
+        )  # pragma: no cover
 
     def _parse_section_page(
         self,
@@ -306,12 +312,16 @@ class FLStatutesClient:
                     title = title_match.group(1).strip()  # pragma: no cover
                 else:
                     # Use full h1 text, removing section number prefix
-                    title = re.sub(rf"^{re.escape(section_number)}\s*[-:.]?\s*", "", h1_text)  # pragma: no cover
+                    title = re.sub(
+                        rf"^{re.escape(section_number)}\s*[-:.]?\s*", "", h1_text
+                    )  # pragma: no cover
 
         # Get full text content
         # Florida statutes are typically in a main content area
         # Look for the statute text - often in a specific div or the main body
-        content_div = soup.find("div", class_="Statute") or soup.find("div", id="statute")  # pragma: no cover
+        content_div = soup.find("div", class_="Statute") or soup.find(
+            "div", id="statute"
+        )  # pragma: no cover
 
         if content_div:  # pragma: no cover
             text = content_div.get_text(separator="\n", strip=True)  # pragma: no cover
@@ -321,7 +331,9 @@ class FLStatutesClient:
             body = soup.find("body")  # pragma: no cover
             if body:  # pragma: no cover
                 # Remove navigation elements
-                for nav in body.find_all(["nav", "header", "footer", "script", "style"]):  # pragma: no cover
+                for nav in body.find_all(
+                    ["nav", "header", "footer", "script", "style"]
+                ):  # pragma: no cover
                     nav.decompose()  # pragma: no cover
                 text = body.get_text(separator="\n", strip=True)  # pragma: no cover
                 section_html = str(body)  # pragma: no cover
@@ -458,7 +470,7 @@ class FLStateCitation:
 
         # Parse subsections like (1)(a)(I) into 1/a/I
         subsection = None  # pragma: no cover
-        remainder = cite[match.end():]  # pragma: no cover
+        remainder = cite[match.end() :]  # pragma: no cover
         sub_pattern = r"\(([^)]+)\)"  # pragma: no cover
         subs = re.findall(sub_pattern, cite)  # pragma: no cover
         if subs:  # pragma: no cover
@@ -559,4 +571,6 @@ def download_fl_welfare_statutes(
     """
     chapters = list(FL_WELFARE_CHAPTERS.keys())  # pragma: no cover
     with FLStatutesClient(rate_limit_delay=rate_limit_delay) as client:  # pragma: no cover
-        yield from (convert_to_section(s) for s in client.iter_chapters(chapters))  # pragma: no cover
+        yield from (
+            convert_to_section(s) for s in client.iter_chapters(chapters)
+        )  # pragma: no cover

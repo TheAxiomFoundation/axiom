@@ -227,7 +227,7 @@ class NDConverter:
             self._client = httpx.Client(
                 timeout=60.0,
                 headers={
-                    "User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)",
+                    "User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)",
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                 },
                 follow_redirects=True,
@@ -311,7 +311,9 @@ class NDConverter:
         """
         parts = section_number.split("-")
         if len(parts) < 3:
-            raise NDConverterError(f"Invalid section number format: {section_number}")  # pragma: no cover
+            raise NDConverterError(
+                f"Invalid section number format: {section_number}"
+            )  # pragma: no cover
 
         title = int(parts[0])
         chapter = f"{parts[0]}-{parts[1]}"
@@ -337,17 +339,15 @@ class NDConverter:
         title_name = ND_TITLES.get(title, f"Title {title}")
 
         # Get chapter title from registry or heading
-        chapter_title = (
-            ND_TAX_CHAPTERS.get(chapter)
-            or ND_WELFARE_CHAPTERS.get(chapter)
-            or None
-        )
+        chapter_title = ND_TAX_CHAPTERS.get(chapter) or ND_WELFARE_CHAPTERS.get(chapter) or None
 
         # Try to extract from page heading if not in registry
         if not chapter_title:
             heading = soup.find("h1")  # pragma: no cover
             if heading:  # pragma: no cover
-                chapter_title = heading.get_text(strip=True).replace(f"Chapter {chapter}", "").strip()  # pragma: no cover
+                chapter_title = (
+                    heading.get_text(strip=True).replace(f"Chapter {chapter}", "").strip()
+                )  # pragma: no cover
 
         # Find section rows in tables
         # Pattern: <td class="no-wrap"><a href="t57c38.pdf#nameddest=57-38-01">57-38-01</a></td>
@@ -385,17 +385,19 @@ class NDConverter:
             # Build PDF URL with anchor
             pdf_url = f"{BASE_URL}/{href}" if not href.startswith("http") else href
 
-            sections.append({
-                "section_number": section_number,
-                "section_title": section_title,
-                "chapter": chapter,
-                "chapter_title": chapter_title,
-                "title_number": title,
-                "title_name": title_name,
-                "pdf_url": pdf_url,
-                "is_repealed": is_repealed,
-                "effective_date_note": effective_note,
-            })
+            sections.append(
+                {
+                    "section_number": section_number,
+                    "section_title": section_title,
+                    "chapter": chapter,
+                    "chapter_title": chapter_title,
+                    "title_number": title,
+                    "title_name": title_name,
+                    "pdf_url": pdf_url,
+                    "is_repealed": is_repealed,
+                    "effective_date_note": effective_note,
+                }
+            )
 
         return sections
 
@@ -442,9 +444,13 @@ class NDConverter:
             if not chapter_name:
                 row_text = row.get_text(strip=True)  # pragma: no cover
                 # Remove the chapter number and "Sections" links
-                row_text = re.sub(rf"{re.escape(chapter_num)}\s*Sections?\s*", "", row_text)  # pragma: no cover
+                row_text = re.sub(
+                    rf"{re.escape(chapter_num)}\s*Sections?\s*", "", row_text
+                )  # pragma: no cover
                 row_text = row_text.replace(chapter_num, "").strip()  # pragma: no cover
-                chapter_name = row_text if row_text else f"Chapter {chapter_num}"  # pragma: no cover
+                chapter_name = (
+                    row_text if row_text else f"Chapter {chapter_num}"
+                )  # pragma: no cover
 
             chapters[chapter_num] = chapter_name
 
@@ -468,7 +474,9 @@ class NDConverter:
         sections = self._parse_chapter_html(html, chapter)
 
         if not sections:
-            raise NDConverterError(f"No sections found in chapter {chapter}", url)  # pragma: no cover
+            raise NDConverterError(
+                f"No sections found in chapter {chapter}", url
+            )  # pragma: no cover
 
         # Cache the result
         self._chapter_cache[chapter] = sections
@@ -547,7 +555,9 @@ class NDConverter:
                 html_url = self._build_chapter_url(chapter)
                 return self._to_section(info, html_url)
 
-        raise NDConverterError(f"Section {section_number} not found in chapter {chapter}")  # pragma: no cover
+        raise NDConverterError(
+            f"Section {section_number} not found in chapter {chapter}"
+        )  # pragma: no cover
 
     def iter_chapter(
         self,

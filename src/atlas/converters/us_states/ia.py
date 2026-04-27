@@ -227,7 +227,7 @@ class IAConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -452,8 +452,7 @@ class IAConverter:
                 # Check if this is a group we want to skip (font table, etc.)
                 lookahead = text[i : i + 20]
                 if any(
-                    kw in lookahead
-                    for kw in ["\\fonttbl", "\\colortbl", "\\stylesheet", "\\info"]
+                    kw in lookahead for kw in ["\\fonttbl", "\\colortbl", "\\stylesheet", "\\info"]
                 ):
                     skip_group = depth
             elif char == "}":
@@ -726,7 +725,9 @@ class IAConverter:
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 raise IAConverterError(f"Section {section_number} not found", rtf_url) from e
-            raise IAConverterError(f"Error fetching {section_number}: {e}", rtf_url) from e  # pragma: no cover
+            raise IAConverterError(
+                f"Error fetching {section_number}: {e}", rtf_url
+            ) from e  # pragma: no cover
 
     def get_chapter_section_numbers(self, chapter: str) -> list[str]:
         """Get list of section numbers in a chapter.

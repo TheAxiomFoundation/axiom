@@ -1,6 +1,5 @@
 """Tests for the statute models module."""
 
-
 import pytest
 
 from atlas.models_statute import (
@@ -122,18 +121,17 @@ class TestStatute:
 
     def test_citation_with_subsection(self):
         s = self._make_statute(
-            jurisdiction="us", code="26", code_name="IRC",
-            section="32", subsection_path="a/1/A"
+            jurisdiction="us", code="26", code_name="IRC", section="32", subsection_path="a/1/A"
         )
         assert "(a)(1)(A)" in s.citation
 
-    def test_rac_path(self):
+    def test_rulespec_path(self):
         s = self._make_statute()
-        assert s.rac_path == "rac-us-oh/statute/ORC/5747.02.rac"
+        assert s.rulespec_path == "rules-us-oh/statute/ORC/5747.02.yaml"
 
-    def test_rac_path_with_subsection(self):
+    def test_rulespec_path_with_subsection(self):
         s = self._make_statute(subsection_path="a/1")
-        assert s.rac_path == "rac-us-oh/statute/ORC/5747.02/a/1.rac"
+        assert s.rulespec_path == "rules-us-oh/statute/ORC/5747.02/a/1.yaml"
 
     def test_db_path(self):
         s = self._make_statute()
@@ -200,7 +198,7 @@ class TestStatuteSearchResult:
             title="Tax rates",
             snippet="rates apply...",
             score=0.85,
-            rac_path="rac-us-oh/statute/ORC/5747.02.rac",
+            rulespec_path="rules-us-oh/statute/ORC/5747.02.yaml",
         )
         assert result.score == 0.85
 

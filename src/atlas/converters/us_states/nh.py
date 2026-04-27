@@ -288,7 +288,7 @@ class NHConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
                 follow_redirects=True,  # Handle gencourt.state.nh.us -> gc.nh.gov redirect
             )
         return self._client
@@ -350,7 +350,9 @@ class NHConverter:
         """
         # Parse section number - format is "chapter:section" e.g., "77-A:1"
         if ":" not in section_number:
-            raise NHConverterError(f"Invalid section format: {section_number}. Expected format: 'chapter:section'")
+            raise NHConverterError(
+                f"Invalid section format: {section_number}. Expected format: 'chapter:section'"
+            )
 
         chapter, section = section_number.split(":", 1)
         title = self._get_title_from_chapter(chapter)
@@ -531,7 +533,7 @@ class NHConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse level 3 children (1), (2), etc.
             children = self._parse_level3(content)
@@ -573,7 +575,7 @@ class NHConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Limit and clean up
             next_num = re.search(r"\(\d+\)", content)
@@ -652,7 +654,9 @@ class NHConverter:
         try:
             html = self._get(url)
         except httpx.HTTPStatusError as e:  # pragma: no cover
-            raise NHConverterError(f"Section {section_number} not found: {e}", url)  # pragma: no cover
+            raise NHConverterError(
+                f"Section {section_number} not found: {e}", url
+            )  # pragma: no cover
 
         parsed = self._parse_section_html(html, section_number, url)
         return self._to_section(parsed)

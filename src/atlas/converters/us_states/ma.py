@@ -47,20 +47,20 @@ MA_PARTS: dict[str, str] = {
 
 # Title IX: Taxation (Chapters 58-65C)
 MA_TAX_CHAPTERS: dict[str, str] = {
-    "58":"General Provisions Relative to Taxation",
-    "59":"Assessment of Local Taxes",
-    "60":"Collection of Local Taxes",
+    "58": "General Provisions Relative to Taxation",
+    "59": "Assessment of Local Taxes",
+    "60": "Collection of Local Taxes",
     "60A": "Excise Tax on Registered Motor Vehicles",
-    "61":"Classification and Taxation of Forest Land",
+    "61": "Classification and Taxation of Forest Land",
     "61A": "Assessment of Agricultural and Horticultural Land",
     "61B": "Classification and Taxation of Recreational Land",
-    "62":"Taxation of Incomes",
+    "62": "Taxation of Incomes",
     "62B": "Withholding of Taxes on Wages and Declaratory Estimated Tax",
     "62C": "Administrative Provisions Relative to State Taxation",
     "62D": "Procedure for Settlement of Disputes with the Department of Revenue",
     "62E": "Access to Financial Records for Tax Administration",
     "62F": "Tax Limitation",
-    "63":"Taxation of Corporations",
+    "63": "Taxation of Corporations",
     "63A": "Taxation of Certain Telephone and Telegraph Companies",
     "63B": "Taxation of Certain Insurance Companies",
     "64A": "Tax on the Sale of Gasoline",
@@ -74,7 +74,7 @@ MA_TAX_CHAPTERS: dict[str, str] = {
     "64L": "Tax on the Sale of Marijuana and Marijuana Products",
     "64M": "Tax on the Operation of Sports Wagering",
     "64N": "Excise on Retail Sales of Cannabis",
-    "65":"Inheritance and Estate Taxes",
+    "65": "Inheritance and Estate Taxes",
     "65A": "Tax on Generation-Skipping Transfers",
     "65B": "Uniform Estate Tax Apportionment Act",
     "65C": "Massachusetts Estate Tax",
@@ -82,22 +82,22 @@ MA_TAX_CHAPTERS: dict[str, str] = {
 
 # Title XVII: Public Welfare (Chapters 115-123B)
 MA_WELFARE_CHAPTERS: dict[str, str] = {
-    "115":"Veterans' Benefits",
-    "116":"Settlement",
-    "117":"Support by Kindred",
+    "115": "Veterans' Benefits",
+    "116": "Settlement",
+    "117": "Support by Kindred",
     "117A": "Old Age Assistance",
-    "118":"Aid to Families with Dependent Children",
+    "118": "Aid to Families with Dependent Children",
     "118A": "Veteran and Servicemen Transitional Housing",
     "118E": "Division of Medical Assistance",
     "118F": "Pilot Programs",
     "118G": "Catastrophic Illness in Children Relief Fund",
     "118H": "Medical Security Trust",
     "118I": "Health Safety Net",
-    "119":"Protection and Care of Children",
+    "119": "Protection and Care of Children",
     "119A": "Child Support Enforcement",
     "119B": "The Simplified Child Support Process",
-    "120":"Delinquent Children and Youthful Offenders",
-    "121":"Powers and Duties of the Department of Transitional Assistance",
+    "120": "Delinquent Children and Youthful Offenders",
+    "121": "Powers and Duties of the Department of Transitional Assistance",
     "121A": "Urban Redevelopment Corporations",
     "121B": "Housing and Urban Renewal",
     "121C": "Economic Development and Industrial Corporations",
@@ -105,8 +105,8 @@ MA_WELFARE_CHAPTERS: dict[str, str] = {
     "121E": "Workforce Housing",
     "121F": "Gateway Municipality Economic Development Trust Fund",
     "121G": "Housing Development Incentive Program",
-    "122":"Employment Security Law",
-    "123":"Mental Health",
+    "122": "Employment Security Law",
+    "123": "Mental Health",
     "123A": "Care, Treatment and Rehabilitation of Sexually Dangerous Persons",
     "123B": "Commitment of Alcoholics",
 }
@@ -182,7 +182,7 @@ class MAConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -235,10 +235,7 @@ class MAConverter:
             Full URL to the section page
         """
         part, title_roman, _ = self._get_chapter_info(chapter)
-        return (
-            f"{BASE_URL}/Part{part}/Title{title_roman}/"
-            f"Chapter{chapter}/Section{section}"
-        )
+        return f"{BASE_URL}/Part{part}/Title{title_roman}/Chapter{chapter}/Section{section}"
 
     def _build_chapter_url(self, chapter: int | str) -> str:
         """Build the URL for a chapter's contents index."""
@@ -357,7 +354,7 @@ class MAConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse second-level children (1), (2), etc.
             children = self._parse_level2(content)
@@ -399,7 +396,7 @@ class MAConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse level 3 children (A), (B), etc.
             children = self._parse_level3(content)
@@ -430,7 +427,7 @@ class MAConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Stop at next numbered or lettered subsection
             next_sub = re.search(r"\([A-Za-z0-9]\)", content)
@@ -555,7 +552,9 @@ class MAConverter:
                 yield self.fetch_section(chapter, section_num)
             except MAConverterError as e:  # pragma: no cover
                 # Log but continue with other sections
-                print(f"Warning: Could not fetch Chapter {chapter} Section {section_num}: {e}")  # pragma: no cover
+                print(
+                    f"Warning: Could not fetch Chapter {chapter} Section {section_num}: {e}"
+                )  # pragma: no cover
                 continue  # pragma: no cover
 
     def iter_chapters(

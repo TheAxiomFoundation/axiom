@@ -130,8 +130,8 @@ def section_to_akn_xml(
 
     org_rf = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     org_rf.set("eId", "rules-foundation")
-    org_rf.set("href", "https://rules.foundation")
-    org_rf.set("showAs", "Rules Foundation")
+    org_rf.set("href", "https://axiom-foundation.org")
+    org_rf.set("showAs", "The Axiom Foundation")
 
     # Body
     body = ET.SubElement(act, f"{{{AKN_NS}}}body")
@@ -302,9 +302,7 @@ def get_chapter_title(chapter: int) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Convert Kansas Statutes to Akoma Ntoso XML"
-    )
+    parser = argparse.ArgumentParser(description="Convert Kansas Statutes to Akoma Ntoso XML")
     parser.add_argument(
         "--chapter",
         type=int,

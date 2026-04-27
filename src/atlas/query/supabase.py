@@ -1,6 +1,6 @@
 """Query statute data from Supabase.
 
-This module provides a simple interface to query the akn.rules table in Supabase,
+This module provides a simple interface to query the arch.rules table in Supabase,
 which contains parsed statute text from US, UK, and Canada.
 
 Usage:
@@ -41,8 +41,8 @@ class Rule:
     repeal_date: Optional[str]
     source_url: Optional[str]
     source_path: Optional[str]
-    rac_path: Optional[str]
-    has_rac: bool
+    rulespec_path: Optional[str]
+    has_rulespec: bool
     citation_path: Optional[str]
 
 
@@ -87,23 +87,22 @@ class SupabaseQuery:
         """Initialize the query client.
 
         Args:
-            url: Supabase project URL. Defaults to COSILICO_SUPABASE_URL env var.
+            url: Supabase project URL. Defaults to AXIOM_SUPABASE_URL env var.
             anon_key: Supabase anon key. Defaults to SUPABASE_ANON_KEY env var.
         """
         self.url = url or os.environ.get(
-            "COSILICO_SUPABASE_URL",
-            "https://nsupqhfchdtqclomlrgs.supabase.co"
+            "AXIOM_SUPABASE_URL", "https://nsupqhfchdtqclomlrgs.supabase.co"
         )
         self.anon_key = anon_key or os.environ.get(
             "SUPABASE_ANON_KEY",
             # Default anon key (safe to include - it's public)
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zdXBxaGZjaGR0cWNsb21scmdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5MzExMDgsImV4cCI6MjA4MjUwNzEwOH0.BPdUadtBCdKfWZrKbfxpBQUqSGZ4hd34Dlor8kMBrVI"
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zdXBxaGZjaGR0cWNsb21scmdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5MzExMDgsImV4cCI6MjA4MjUwNzEwOH0.BPdUadtBCdKfWZrKbfxpBQUqSGZ4hd34Dlor8kMBrVI",
         )
         self.rest_url = f"{self.url}/rest/v1"
         self.headers = {
             "apikey": self.anon_key,
             "Authorization": f"Bearer {self.anon_key}",
-            "Accept-Profile": "akn",  # Query arch schema
+            "Accept-Profile": "arch",  # Query arch schema
         }
 
     def _request(
@@ -138,8 +137,8 @@ class SupabaseQuery:
             repeal_date=data.get("repeal_date"),
             source_url=data.get("source_url"),
             source_path=data.get("source_path"),
-            rac_path=data.get("rac_path"),
-            has_rac=data.get("has_rac", False),
+            rulespec_path=data.get("rulespec_path"),
+            has_rulespec=data.get("has_rulespec", False),
             citation_path=data.get("citation_path"),
         )
 
@@ -257,7 +256,9 @@ class SupabaseQuery:
                 parts.append(f"\n{indent}## {child.source_path}: {child.heading}")
             if child.body:
                 # Indent the body text
-                indented_body = "\n".join(f"{indent}{line}" for line in (child.body or "").split("\n"))
+                indented_body = "\n".join(
+                    f"{indent}{line}" for line in (child.body or "").split("\n")
+                )
                 parts.append(indented_body)
 
         return "\n\n".join(parts)
@@ -327,7 +328,7 @@ class SupabaseQuery:
             headers = {
                 **self.headers,
                 "Prefer": "count=exact",
-                "Accept-Profile": "akn",  # Query arch schema
+                "Accept-Profile": "arch",  # Query arch schema
             }
             with httpx.Client() as client:
                 response = client.head(url, params=params, headers=headers)

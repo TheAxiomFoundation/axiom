@@ -129,9 +129,7 @@ def catalog_document(
 
     if response.status_code == 201:
         version = response.json()[0]
-        print(
-            f"  Created version: {content_hash[:8]}... (ID: {version['id']})"
-        )
+        print(f"  Created version: {content_hash[:8]}... (ID: {version['id']})")
     elif response.status_code == 409:
         # Version already exists
         response = requests.get(
@@ -143,9 +141,7 @@ def catalog_document(
             },
         )
         version = response.json()[0]
-        print(
-            f"  Version already exists: {content_hash[:8]}... (ID: {version['id']})"
-        )
+        print(f"  Version already exists: {content_hash[:8]}... (ID: {version['id']})")
     else:
         print(f"Error creating version: {response.status_code} {response.text}")
         return {"source_id": source_id}
@@ -155,7 +151,7 @@ def catalog_document(
 
 def main():
     """Catalog all SNAP documents."""
-    supabase_url = os.environ["COSILICO_SUPABASE_URL"]
+    supabase_url = os.environ["AXIOM_SUPABASE_URL"]
     service_key = os.environ["COSILICO_SUPABASE_SERVICE_KEY"]
 
     data_dir = Path(__file__).parent.parent / "data" / "snap"
@@ -250,9 +246,7 @@ def main():
     print("\nDocument IDs:")
     for i, result in enumerate(results, 1):
         if result:
-            print(
-                f"{i}. Source: {result['source_id']}, Version: {result.get('version_id', 'N/A')}"
-            )
+            print(f"{i}. Source: {result['source_id']}, Version: {result.get('version_id', 'N/A')}")
 
 
 if __name__ == "__main__":

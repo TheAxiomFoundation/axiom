@@ -4,7 +4,7 @@ The ``TheAxiomFoundation/rules-us-ny`` GitHub repo carries ~37k section
 XML files in Akoma Ntoso 3.0 format, one per NY-law-code section. This
 script clones the repo to a scratch dir (if not already cached), walks
 ``{law_code}/{section}.xml``, and uploads one row per section to
-``akn.rules`` with ``jurisdiction='us-ny'``.
+``arch.rules`` with ``jurisdiction='us-ny'``.
 
 Design
 ------

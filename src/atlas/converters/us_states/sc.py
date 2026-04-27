@@ -218,7 +218,7 @@ class SCConverter:
         if self._client is None:
             self._client = httpx.Client(
                 timeout=60.0,
-                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@rules.foundation)"},
+                headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
             )
         return self._client
 
@@ -317,9 +317,7 @@ class SCConverter:
 
         # Pattern for section headers: SECTION {title}-{chapter}-{number}. Title.
         # Note: section header has format "SECTION 12-6-10. Short title."
-        section_pattern = re.compile(
-            rf"^\s*SECTION\s+({title}-{chapter}-\d+[A-Za-z]?)\.\s*(.+)$"
-        )
+        section_pattern = re.compile(rf"^\s*SECTION\s+({title}-{chapter}-\d+[A-Za-z]?)\.\s*(.+)$")
         history_pattern = re.compile(r"^HISTORY:\s*(.+)$")
 
         current_section: ParsedSCSection | None = None
@@ -338,9 +336,7 @@ class SCConverter:
                 if current_section is not None:
                     current_section.text = "\n".join(current_text_parts)
                     current_section.history = current_history
-                    current_section.subsections = self._parse_subsections(
-                        current_section.text
-                    )
+                    current_section.subsections = self._parse_subsections(current_section.text)
                     sections.append(current_section)
 
                 # Start new section
@@ -405,7 +401,9 @@ class SCConverter:
             title = int(parts[0])  # pragma: no cover
             chapter = int(parts[1])  # pragma: no cover
         else:
-            raise SCConverterError(f"Invalid section number format: {section_number}", url)  # pragma: no cover
+            raise SCConverterError(
+                f"Invalid section number format: {section_number}", url
+            )  # pragma: no cover
 
         soup = BeautifulSoup(html, "html.parser")  # pragma: no cover
 
@@ -456,7 +454,9 @@ class SCConverter:
                     text_parts.append(para_text)  # pragma: no cover
 
         if not found_section:  # pragma: no cover
-            raise SCConverterError(f"Section {section_number} not found in HTML", url)  # pragma: no cover
+            raise SCConverterError(
+                f"Section {section_number} not found in HTML", url
+            )  # pragma: no cover
 
         full_text = "\n".join(text_parts)  # pragma: no cover
 
@@ -493,7 +493,7 @@ class SCConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse second-level children (1), (2), etc.
             children = self._parse_level2(content)
@@ -535,7 +535,7 @@ class SCConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Parse third-level children (a), (b), etc.
             children = self._parse_level3(content)
@@ -577,7 +577,7 @@ class SCConverter:
                 continue  # pragma: no cover
 
             identifier = match.group(1)
-            content = part[match.end():]
+            content = part[match.end() :]
 
             # Stop at next higher-level subsection
             next_num = re.search(r"\(\d+\)", content)
@@ -666,7 +666,9 @@ class SCConverter:
         # Parse the section number to get title and chapter
         parts = section_number.split("-")
         if len(parts) < 3:
-            raise SCConverterError(f"Invalid section number format: {section_number}")  # pragma: no cover
+            raise SCConverterError(
+                f"Invalid section number format: {section_number}"
+            )  # pragma: no cover
 
         title = int(parts[0])
         chapter = int(parts[1])
@@ -736,7 +738,9 @@ class SCConverter:
                 yield from self.iter_chapter(title, chapter)  # pragma: no cover
             except SCConverterError as e:  # pragma: no cover
                 # Log but continue with other chapters
-                print(f"Warning: Could not fetch chapter {title}-{chapter}: {e}")  # pragma: no cover
+                print(
+                    f"Warning: Could not fetch chapter {title}-{chapter}: {e}"
+                )  # pragma: no cover
                 continue  # pragma: no cover
 
     def close(self) -> None:

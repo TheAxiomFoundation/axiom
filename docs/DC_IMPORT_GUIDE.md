@@ -1,6 +1,6 @@
 # DC Law XML Import Guide
 
-This document describes the structure of the DC Council's law-xml repository and how to extract tax provisions for use with RAC.
+This document describes the structure of the DC Council's law-xml repository and how to extract tax provisions for use with RuleSpec.
 
 ## Repository Overview
 
@@ -100,11 +100,11 @@ Title 47 contains all DC tax law. Key chapters for individual income tax:
 | VII | 47-1807.01 - 47-1807.11 | Corporations |
 | VIII | 47-1808.01 - 47-1808.11 | Unincorporated Businesses |
 
-## Key Tax Sections for RAC
+## Key Tax Sections for RuleSpec
 
 ### Individual Income Tax
 
-| Section | Description | RAC Concept |
+| Section | Description | RuleSpec Concept |
 |---------|-------------|------------------|
 | 47-1801.04(26) | Standard deduction definition | `dc_standard_deduction` parameter |
 | 47-1801.04(43) | Personal exemption definition | `dc_personal_exemption` parameter |
@@ -201,11 +201,11 @@ Regex pattern:
 r'\$?([\d,]+)(?:,\s*plus)?\s*([\d.]+)%\s*(?:of the (?:taxable income|excess over \$?([\d,]+)))?'
 ```
 
-## Mapping to RAC Concepts
+## Mapping to RuleSpec Concepts
 
-### XML Element to RAC Mapping
+### XML Element to RuleSpec Mapping
 
-| DC XML | RAC | Notes |
+| DC XML | RuleSpec | Notes |
 |--------|----------|-------|
 | `<section>/@num` | Variable/Parameter name | e.g., "47-1806.03" -> `dc_income_tax_rates` |
 | `<table>` in rate section | Bracket parameter | Parse to threshold/rate arrays |
@@ -213,7 +213,7 @@ r'\$?([\d,]+)(?:,\s*plus)?\s*([\d.]+)%\s*(?:of the (?:taxable income|excess over
 | `<annotation type="History">` | Reference metadata | Legislative history |
 | `<cite path="...">` | Cross-references | Links between sections |
 
-### Example RAC Parameter
+### Example RuleSpec Parameter
 
 From Section 47-1806.03(10):
 
@@ -246,7 +246,7 @@ dc_income_tax_brackets:
         base: 85_025
 ```
 
-### Example RAC Variable
+### Example RuleSpec Variable
 
 From Section 47-1806.04(f):
 
@@ -283,7 +283,7 @@ class dc_eitc(Variable):
 2. Parse income tax rate tables
 3. Extract EITC percentages
 4. Extract standard deduction amounts
-5. Generate RAC parameter files
+5. Generate RuleSpec parameter files
 
 ### Phase 2: Credits and Deductions
 

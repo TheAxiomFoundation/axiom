@@ -2,7 +2,7 @@
 --
 -- The authenticator role (from which PostgREST derives its session)
 -- carries statement_timeout=8s and lock_timeout=8s. REFRESH MATERIALIZED
--- VIEW CONCURRENTLY on akn.jurisdiction_counts takes ~14s on the live
+-- VIEW CONCURRENTLY on arch.jurisdiction_counts takes ~14s on the live
 -- cluster, so the session-level timeout cancels the statement with
 -- SQLSTATE 57014 ("canceling statement due to statement timeout") and
 -- PostgREST surfaces a 500 to the ingest driver.
@@ -12,16 +12,16 @@
 -- timeouts inside the SECURITY DEFINER function is the minimal fix —
 -- it doesn't change defaults for any other role or query path.
 
-CREATE OR REPLACE FUNCTION akn.refresh_jurisdiction_counts()
+CREATE OR REPLACE FUNCTION arch.refresh_jurisdiction_counts()
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = akn, public
+SET search_path = arch, public
 SET statement_timeout = 0
 SET lock_timeout = 0
 AS $$
 BEGIN
-  REFRESH MATERIALIZED VIEW CONCURRENTLY akn.jurisdiction_counts;
+  REFRESH MATERIALIZED VIEW CONCURRENTLY arch.jurisdiction_counts;
 END
 $$;
 

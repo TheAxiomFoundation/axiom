@@ -55,9 +55,7 @@ class AknSubsection(BaseModel):
     identifier: str = Field(..., description="Display identifier (a, 1, A, etc.)")
     text: str = Field(..., description="Text content")
     heading: str | None = Field(None, description="Heading if present")
-    children: list["AknSubsection"] = Field(
-        default_factory=list, description="Nested subsections"
-    )
+    children: list["AknSubsection"] = Field(default_factory=list, description="Nested subsections")
 
     model_config = {"extra": "forbid"}
 
@@ -112,9 +110,7 @@ class AkomaNtoso(BaseModel):
     doc_type: str = Field(..., description="Document type")
     source_format: str = Field(..., description="Original format (uslm, clml, html)")
     source_url: str = Field(..., description="URL to official source")
-    sections: list[AknSection] = Field(
-        default_factory=list, description="Document sections"
-    )
+    sections: list[AknSection] = Field(default_factory=list, description="Document sections")
 
     # Metadata
     title: str | None = Field(None, description="Document title")
@@ -201,7 +197,7 @@ class LegalDocConverter(ABC):
     - doc_type: Document type (e.g., "statute", "regulation", "guidance")
 
     The convert() method chains fetch -> parse for convenience.
-    The to_rules() method converts AkomaNtoso to akn.rules dicts for DB insert.
+    The to_rules() method converts AkomaNtoso to arch.rules dicts for DB insert.
     """
 
     # Subclasses must set these
@@ -248,10 +244,10 @@ class LegalDocConverter(ABC):
         return self.parse(raw)
 
     def to_rules(self, akn: AkomaNtoso) -> Iterator[dict]:
-        """Convert AkomaNtoso to akn.rules dictionaries for DB insert.
+        """Convert AkomaNtoso to arch.rules dictionaries for DB insert.
 
         Default implementation flattens sections and subsections into
-        rule records matching the akn.rules schema.
+        rule records matching the arch.rules schema.
 
         Subclasses can override for custom conversion logic.
 
@@ -259,7 +255,7 @@ class LegalDocConverter(ABC):
             akn: Parsed AkomaNtoso document
 
         Yields:
-            Dictionaries matching akn.rules table schema
+            Dictionaries matching arch.rules table schema
         """
         for section in akn.sections:
             yield from self._section_to_rules(section)
@@ -297,8 +293,8 @@ class LegalDocConverter(ABC):
             "source_url": section.source_url,
             "source_path": None,
             "citation_path": citation_path,
-            "rac_path": None,
-            "has_rac": False,
+            "rulespec_path": None,
+            "has_rulespec": False,
         }
 
         # Recursively yield subsections
@@ -350,8 +346,8 @@ class LegalDocConverter(ABC):
                 "source_url": None,
                 "source_path": None,
                 "citation_path": citation_path,
-                "rac_path": None,
-                "has_rac": False,
+                "rulespec_path": None,
+                "has_rulespec": False,
             }
 
             # Recurse for children

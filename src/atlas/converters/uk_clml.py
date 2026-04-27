@@ -156,7 +156,9 @@ class UKCLMLConverter:
         async with httpx.AsyncClient() as client:  # pragma: no cover
             response = await client.get(  # pragma: no cover
                 url,
-                headers={"User-Agent": "Atlas/1.0 (https://github.com/RulesFoundation/atlas; contact@rules.foundation)"},
+                headers={
+                    "User-Agent": "Atlas/1.0 (https://github.com/TheAxiomFoundation/atlas; contact@axiom-foundation.org)"
+                },
                 follow_redirects=True,
                 timeout=60,
             )
