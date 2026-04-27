@@ -36,7 +36,7 @@ arch search "earned income" --title 26  # Full-text search
 arch serve                 # Start REST API at localhost:8000
 
 # AI encoding pipeline
-arch encode "26 USC 32"    # Encode statute into RuleSpec (Rules as Code)
+arch encode "26 USC 32"    # Encode statute into RuleSpec
 arch validate ~/.yaml/workspace/federal/statute/26/32
 arch verify ~/.yaml/workspace/federal/statute/26/32 -v eitc
 
@@ -80,7 +80,7 @@ mypy src/arch/                   # Type check
 - **`models_guidance.py`** - IRS guidance document models (Rev. Procs, Rulings)
 - **`parsers/uslm.py`** - USLM XML parser for US Code
 - **`storage/sqlite.py`** - SQLite backend with FTS5 full-text search
-- **`encoder.py`** - AI pipeline: statute -> RuleSpec (Rules as Code)
+- **`encoder.py`** - AI pipeline: statute -> RuleSpec
 - **`verifier.py`** - Compare DSL outputs vs PolicyEngine
 - **`cli.py`** - Click CLI commands
 
