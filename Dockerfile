@@ -1,6 +1,6 @@
 # Dockerfile for Atlas REST API
-# Build: docker build -t cosilico-atlas .
-# Run:   docker run -p 8000:8000 -v $(pwd)/atlas.db:/app/atlas.db cosilico-atlas
+# Build: docker build -t axiom-atlas .
+# Run:   docker run -p 8000:8000 -v $(pwd)/atlas.db:/app/atlas.db axiom-atlas
 
 FROM python:3.14-slim
 

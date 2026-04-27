@@ -162,9 +162,10 @@ existing scraper.
   across multiple items (not yet wired into `ARCHIVE_ORG_STATES` in
   `src/atlas/crawl.py`).
 
-## Rules repositories
+## RuleSpec source repositories
 
-Akoma Ntoso XML files pushed to GitHub:
+RuleSpec repos should hold manifests, registry metadata, and YAML source
+materials. Do not push generated Akoma Ntoso/XML payloads to GitHub.
 
 ### Complete repositories
 
