@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from atlas.sources.api import APISource, LegiScanSource, NYLegislationSource
-from atlas.sources.base import SourceConfig
+from axiom.sources.api import APISource, LegiScanSource, NYLegislationSource
+from axiom.sources.base import SourceConfig
 
 
 class TestAPISource:

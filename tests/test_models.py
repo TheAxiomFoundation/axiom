@@ -2,7 +2,7 @@
 
 import pytest
 
-from atlas.models import Citation
+from axiom.models import Citation
 
 
 class TestCitation:
@@ -73,14 +73,14 @@ class TestSubsectionFullText:
 
     def test_leaf_returns_own_text(self):
         """Leaf subsection returns its own text."""
-        from atlas.models import Subsection
+        from axiom.models import Subsection
 
         sub = Subsection(identifier="a", text="The credit shall be allowed.")
         assert sub.full_text() == "The credit shall be allowed."
 
     def test_leaf_with_heading(self):
         """Leaf with heading includes heading prefix."""
-        from atlas.models import Subsection
+        from axiom.models import Subsection
 
         sub = Subsection(
             identifier="a", heading="Allowance of credit", text="The credit shall be allowed."
@@ -90,7 +90,7 @@ class TestSubsectionFullText:
 
     def test_nested_aggregates_descendants(self):
         """Nested subsection aggregates all descendants in order."""
-        from atlas.models import Subsection
+        from axiom.models import Subsection
 
         child1 = Subsection(identifier="1", text="First child text.")
         child2 = Subsection(identifier="2", text="Second child text.")
@@ -114,7 +114,7 @@ class TestSubsectionFullText:
 
     def test_empty_text_with_children(self):
         """Subsection with empty text but children still works."""
-        from atlas.models import Subsection
+        from axiom.models import Subsection
 
         child = Subsection(identifier="1", text="Child text.")
         parent = Subsection(identifier="c", text="", children=[child])
@@ -123,7 +123,7 @@ class TestSubsectionFullText:
 
     def test_deeply_nested(self):
         """Three levels deep aggregates correctly."""
-        from atlas.models import Subsection
+        from axiom.models import Subsection
 
         grandchild = Subsection(identifier="A", text="Grandchild.")
         child = Subsection(identifier="1", text="Child.", children=[grandchild])
@@ -141,7 +141,7 @@ class TestSectionGetSubsection:
 
     def _make_section(self):
         """Build a test section with known subsection tree."""
-        from atlas.models import Citation, Section, Subsection
+        from axiom.models import Citation, Section, Subsection
 
         return Section(
             citation=Citation(title=26, section="32"),

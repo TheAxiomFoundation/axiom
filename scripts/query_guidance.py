@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Query IRS guidance documents from the atlas database.
+"""Query IRS guidance documents from the axiom database.
 
 This script demonstrates querying Rev. Procs and other guidance documents.
 
@@ -13,15 +13,15 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.storage.guidance import GuidanceStorage
+from axiom.storage.guidance import GuidanceStorage
 
 
 def main():
     """Query and display guidance documents."""
-    storage = GuidanceStorage("atlas.db")
+    storage = GuidanceStorage("axiom.db")
 
     print("="*70)
-    print("IRS GUIDANCE DOCUMENTS IN LAWARCHIVE")
+    print("IRS GUIDANCE DOCUMENTS IN AXIOM")
     print("="*70)
 
     # Get all documents

@@ -1,18 +1,16 @@
 """Tests for the CLI module.
 
 Tests cover Click command group and individual commands using CliRunner.
-All external dependencies (Arch, database, APIs) are mocked.
+All external dependencies (AxiomArchive, database, APIs) are mocked.
 """
 
 from datetime import date
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from click.testing import CliRunner
 
-from atlas.cli import main
-from atlas.models import Citation, SearchResult, Section, TitleInfo
+from axiom.cli import main
+from axiom.models import Citation, SearchResult, Section, TitleInfo
 
 
 def _make_section(**kwargs):
@@ -34,36 +32,36 @@ class TestMainGroup:
         runner = CliRunner()
         result = runner.invoke(main, ["--help"])
         assert result.exit_code == 0
-        assert "Atlas" in result.output or "atlas" in result.output.lower()
+        assert "Axiom" in result.output or "axiom" in result.output.lower()
 
 
 class TestGetCommand:
-    @patch("atlas.cli.Arch")
-    def test_get_found(self, mock_arch_cls):
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.get.return_value = _make_section()
+    @patch("axiom.cli.AxiomArchive")
+    def test_get_found(self, mock_archive_cls):
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.get.return_value = _make_section()
 
         runner = CliRunner()
         result = runner.invoke(main, ["get", "26 USC 32"])
         assert result.exit_code == 0
         assert "Earned income" in result.output or "26" in result.output
 
-    @patch("atlas.cli.Arch")
-    def test_get_not_found(self, mock_arch_cls):
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.get.return_value = None
+    @patch("axiom.cli.AxiomArchive")
+    def test_get_not_found(self, mock_archive_cls):
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.get.return_value = None
 
         runner = CliRunner()
         result = runner.invoke(main, ["get", "99 USC 999"])
         assert result.exit_code == 1
 
-    @patch("atlas.cli.Arch")
-    def test_get_json(self, mock_arch_cls):
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.get.return_value = _make_section()
+    @patch("axiom.cli.AxiomArchive")
+    def test_get_json(self, mock_archive_cls):
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.get.return_value = _make_section()
 
         runner = CliRunner()
         result = runner.invoke(main, ["get", "26 USC 32", "--json"])
@@ -71,11 +69,11 @@ class TestGetCommand:
 
 
 class TestSearchCommand:
-    @patch("atlas.cli.Arch")
-    def test_search_with_results(self, mock_arch_cls):
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.search.return_value = [
+    @patch("axiom.cli.AxiomArchive")
+    def test_search_with_results(self, mock_archive_cls):
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.search.return_value = [
             SearchResult(
                 citation=Citation(title=26, section="32"),
                 section_title="Earned income tax credit",
@@ -88,35 +86,35 @@ class TestSearchCommand:
         result = runner.invoke(main, ["search", "earned income"])
         assert result.exit_code == 0
 
-    @patch("atlas.cli.Arch")
-    def test_search_no_results(self, mock_arch_cls):
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.search.return_value = []
+    @patch("axiom.cli.AxiomArchive")
+    def test_search_no_results(self, mock_archive_cls):
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.search.return_value = []
 
         runner = CliRunner()
         result = runner.invoke(main, ["search", "nonexistent query"])
         assert result.exit_code == 0
         assert "No results" in result.output
 
-    @patch("atlas.cli.Arch")
-    def test_search_with_title_filter(self, mock_arch_cls):
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.search.return_value = []
+    @patch("axiom.cli.AxiomArchive")
+    def test_search_with_title_filter(self, mock_archive_cls):
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.search.return_value = []
 
         runner = CliRunner()
         result = runner.invoke(main, ["search", "credit", "--title", "26"])
         assert result.exit_code == 0
-        mock_arch.search.assert_called_once_with("credit", title=26, limit=10)
+        mock_archive.search.assert_called_once_with("credit", title=26, limit=10)
 
 
 class TestTitlesCommand:
-    @patch("atlas.cli.Arch")
-    def test_titles_with_data(self, mock_arch_cls):
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.list_titles.return_value = [
+    @patch("axiom.cli.AxiomArchive")
+    def test_titles_with_data(self, mock_archive_cls):
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.list_titles.return_value = [
             TitleInfo(
                 number=26,
                 name="Internal Revenue Code",
@@ -131,11 +129,11 @@ class TestTitlesCommand:
         assert result.exit_code == 0
         assert "26" in result.output or "Internal Revenue" in result.output
 
-    @patch("atlas.cli.Arch")
-    def test_titles_empty(self, mock_arch_cls):
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.list_titles.return_value = []
+    @patch("axiom.cli.AxiomArchive")
+    def test_titles_empty(self, mock_archive_cls):
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.list_titles.return_value = []
 
         runner = CliRunner()
         result = runner.invoke(main, ["titles"])
@@ -144,11 +142,11 @@ class TestTitlesCommand:
 
 
 class TestRefsCommand:
-    @patch("atlas.cli.Arch")
-    def test_refs(self, mock_arch_cls):
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.get_references.return_value = {
+    @patch("axiom.cli.AxiomArchive")
+    def test_refs(self, mock_archive_cls):
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.get_references.return_value = {
             "references_to": ["26 USC 24"],
             "referenced_by": ["26 USC 1"],
         }
@@ -238,13 +236,13 @@ class TestValidateCommand:
 
 
 class TestDbOption:
-    @patch("atlas.cli.Arch")
-    def test_custom_db(self, mock_arch_cls):
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.list_titles.return_value = []
+    @patch("axiom.cli.AxiomArchive")
+    def test_custom_db(self, mock_archive_cls):
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.list_titles.return_value = []
 
         runner = CliRunner()
         result = runner.invoke(main, ["--db", "custom.db", "titles"])
         assert result.exit_code == 0
-        mock_arch_cls.assert_called_once_with(db_path="custom.db")
+        mock_archive_cls.assert_called_once_with(db_path="custom.db")

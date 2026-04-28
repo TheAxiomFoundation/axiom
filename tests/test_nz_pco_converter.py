@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from atlas.converters.nz_pco import (
+from axiom.converters.nz_pco import (
     NZLegislation,
     NZPCOConverter,
 )
@@ -295,7 +295,7 @@ class TestContextManager:
 
 class TestClientProperty:
     def test_lazy_client(self):
-        with patch("atlas.converters.nz_pco.httpx.Client") as mock_cls:
+        with patch("axiom.converters.nz_pco.httpx.Client") as mock_cls:
             converter = NZPCOConverter(timeout=15)
             _ = converter.client
             mock_cls.assert_called_once()

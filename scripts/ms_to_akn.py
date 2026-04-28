@@ -20,8 +20,8 @@ from xml.etree import ElementTree as ET
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.converters.us_states.ms import MSConverter, MS_TITLES
-from atlas.models import Section
+from axiom.converters.us_states.ms import MSConverter, MS_TITLES
+from axiom.models import Section
 
 # Akoma Ntoso namespace
 AKN_NS = "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"

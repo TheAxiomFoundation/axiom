@@ -1,7 +1,7 @@
 """Tests for state spec loader."""
 
 
-from atlas.sources.specs import (
+from axiom.sources.specs import (
     StateSpec,
     get_crawler_type,
     get_section_pattern,
@@ -84,7 +84,7 @@ class TestLoadSpec:
     def test_spec_caching(self):
         """Specs are cached after first load."""
         # Clear cache first
-        from atlas.sources.specs import _specs_cache
+        from axiom.sources.specs import _specs_cache
         _specs_cache.clear()
 
         spec1 = load_spec("us-or")

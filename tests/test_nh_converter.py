@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from atlas.converters.us_states.nh import (
+from axiom.converters.us_states.nh import (
     NH_TAX_CHAPTERS,
     NH_WELFARE_CHAPTERS,
     NHConverter,
@@ -17,7 +17,7 @@ from atlas.converters.us_states.nh import (
     download_nh_chapter,
     fetch_nh_section,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 # Sample HTML from gc.nh.gov for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

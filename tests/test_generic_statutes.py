@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from atlas.parsers.generic.statutes import (
+from axiom.parsers.generic.statutes import (
     GEORGIA_CONFIG,
     ILLINOIS_CONFIG,
     MICHIGAN_CONFIG,
@@ -105,19 +105,19 @@ class TestStateParsersRegistry:
 
 
 class TestGenericStateParser:
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_init(self, mock_client_cls):
         parser = GenericStateParser(OHIO_CONFIG)
         assert parser.config.state_code == "OH"
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_build_section_url_relative(self, mock_client_cls):
         parser = GenericStateParser(OHIO_CONFIG)
         url = parser._build_section_url("5747.02")
         assert url.startswith("https://codes.ohio.gov")
         assert "5747.02" in url
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_build_section_url_absolute(self, mock_client_cls):
         config = StateConfig(
             state_code="X",
@@ -131,28 +131,28 @@ class TestGenericStateParser:
         url = parser._build_section_url("123")
         assert url == "https://other.com/section-123"
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_build_toc_url(self, mock_client_cls):
         parser = GenericStateParser(OHIO_CONFIG)
         url = parser._build_toc_url(title="57")
         assert "57" in url
         assert url.startswith("https://codes.ohio.gov")
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_infer_code_from_section_match(self, mock_client_cls):
         parser = GenericStateParser(OHIO_CONFIG)
         code_id, code_name = parser._infer_code_from_section("5747.02")
         assert code_id == "57"
         assert code_name == "Taxation"
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_infer_code_from_section_no_match(self, mock_client_cls):
         parser = GenericStateParser(OHIO_CONFIG)
         code_id, code_name = parser._infer_code_from_section("9999.99")
         # Falls back to first code
         assert code_id != ""
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_infer_code_from_section_empty_codes(self, mock_client_cls):
         config = StateConfig(
             state_code="X",
@@ -168,7 +168,7 @@ class TestGenericStateParser:
         assert code_id == ""
         assert code_name == "Unknown"
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_parse_subsections(self, mock_client_cls):
         from bs4 import BeautifulSoup
 
@@ -179,7 +179,7 @@ class TestGenericStateParser:
         subs = parser._parse_subsections(div)
         assert len(subs) >= 2
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_get_section_with_custom_parser(self, mock_client_cls):
         custom_result = StateSection(
             state="X",
@@ -212,7 +212,7 @@ class TestGenericStateParser:
         result = parser.get_section("1")
         assert result == custom_result
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_get_section_custom_parser_http_error(self, mock_client_cls):
         import httpx
 
@@ -235,7 +235,7 @@ class TestGenericStateParser:
         result = parser.get_section("1")
         assert result is None
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_get_section_default_parsing(self, mock_client_cls):
         parser = GenericStateParser(OHIO_CONFIG)
         html = """<html><body><main>
@@ -248,7 +248,7 @@ class TestGenericStateParser:
         assert result.section_num == "5747.02"
         assert result.state == "OH"
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_get_section_no_content(self, mock_client_cls):
         config = StateConfig(
             state_code="X",
@@ -263,7 +263,7 @@ class TestGenericStateParser:
         result = parser.get_section("1")
         assert result is None
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_get_section_http_error(self, mock_client_cls):
         import httpx
 
@@ -272,7 +272,7 @@ class TestGenericStateParser:
         result = parser.get_section("5747.02")
         assert result is None
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_get_section_with_history_selector(self, mock_client_cls):
         config = StateConfig(
             state_code="X",
@@ -293,7 +293,7 @@ class TestGenericStateParser:
         assert result is not None
         assert result.history == "Acts 2020"
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_list_sections_from_toc(self, mock_client_cls):
         parser = GenericStateParser(OHIO_CONFIG)
         html = """<html><body>
@@ -306,7 +306,7 @@ class TestGenericStateParser:
         assert len(sections) >= 2
         assert "5747.02" in sections
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_list_sections_from_toc_http_error(self, mock_client_cls):
         import httpx
 
@@ -315,7 +315,7 @@ class TestGenericStateParser:
         sections = list(parser.list_sections_from_toc(title="57"))
         assert sections == []
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_download_code(self, mock_client_cls):
         parser = GenericStateParser(OHIO_CONFIG)
 
@@ -341,7 +341,7 @@ class TestGenericStateParser:
         sections = list(parser.download_code("57", max_sections=1))
         assert len(sections) == 1
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_del_closes_client(self, mock_client_cls):
         parser = GenericStateParser(OHIO_CONFIG)
         del parser
@@ -349,45 +349,45 @@ class TestGenericStateParser:
 
 
 class TestConvenienceFunctions:
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_get_ohio_parser(self, mock_client_cls):
         p = get_ohio_parser()
         assert p.config.state_code == "OH"
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_get_pennsylvania_parser(self, mock_client_cls):
         p = get_pennsylvania_parser()
         assert p.config.state_code == "PA"
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_get_illinois_parser(self, mock_client_cls):
         p = get_illinois_parser()
         assert p.config.state_code == "IL"
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_get_north_carolina_parser(self, mock_client_cls):
         p = get_north_carolina_parser()
         assert p.config.state_code == "NC"
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_get_michigan_parser(self, mock_client_cls):
         p = get_michigan_parser()
         assert p.config.state_code == "MI"
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_get_georgia_parser(self, mock_client_cls):
         p = get_georgia_parser()
         assert p.config.state_code == "GA"
 
 
 class TestGetParserForState:
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_known_state(self, mock_client_cls):
         p = get_parser_for_state("OH")
         assert p is not None
         assert p.config.state_code == "OH"
 
-    @patch("atlas.parsers.generic.statutes.httpx.Client")
+    @patch("axiom.parsers.generic.statutes.httpx.Client")
     def test_case_insensitive(self, mock_client_cls):
         p = get_parser_for_state("oh")
         assert p is not None

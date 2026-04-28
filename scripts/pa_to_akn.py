@@ -124,7 +124,7 @@ def fetch_title_html(title: int) -> str:
 
     client = httpx.Client(
         timeout=60.0,
-        headers={"User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)"},
+        headers={"User-Agent": "Axiom/1.0 (Statute Research; contact@axiom-foundation.org)"},
     )
 
     try:
@@ -389,7 +389,7 @@ def create_akn_xml(title_num: int, title_name: str, sections: list[dict]) -> str
 
     # Identification
     identification = ET.SubElement(meta, f"{{{AKN_NS}}}identification")
-    identification.set("source", "#arch")
+    identification.set("source", "#axiom")
 
     # FRBRWork
     work = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRWork")
@@ -419,7 +419,7 @@ def create_akn_xml(title_num: int, title_name: str, sections: list[dict]) -> str
     expr_date.set("date", date.today().isoformat())
     expr_date.set("name", "publication")
     expr_author = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRauthor")
-    expr_author.set("href", "#arch")
+    expr_author.set("href", "#axiom")
     expr_lang = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRlanguage")
     expr_lang.set("language", "eng")
 
@@ -437,17 +437,17 @@ def create_akn_xml(title_num: int, title_name: str, sections: list[dict]) -> str
     manif_date.set("date", date.today().isoformat())
     manif_date.set("name", "generation")
     manif_author = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRauthor")
-    manif_author.set("href", "#arch")
+    manif_author.set("href", "#axiom")
 
     # References
     refs = ET.SubElement(meta, f"{{{AKN_NS}}}references")
-    refs.set("source", "#arch")
+    refs.set("source", "#axiom")
 
     # TLC references
-    arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
-    arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://axiom-foundation.org")
-    arch_ref.set("showAs", "Atlas")
+    axiom_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
+    axiom_ref.set("eId", "axiom")
+    axiom_ref.set("href", "https://axiom-foundation.org")
+    axiom_ref.set("showAs", "Axiom")
 
     pa_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     pa_leg.set("eId", "pennsylvania-legislature")

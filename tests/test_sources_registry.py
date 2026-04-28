@@ -2,8 +2,8 @@
 
 
 
-from atlas.sources.base import SourceConfig
-from atlas.sources.registry import (
+from axiom.sources.base import SourceConfig
+from axiom.sources.registry import (
     _get_builtin_configs,
     _load_yaml_configs,
     get_all_configs,
@@ -85,7 +85,7 @@ codes:
   LAB: Labor Law
 rate_limit: 1.5
 max_retries: 5
-custom_parser: atlas.parsers.us_ny
+custom_parser: axiom.parsers.us_ny
 """
         yaml_file = tmp_path / "us-ny.yaml"
         yaml_file.write_text(yaml_content)
@@ -94,7 +94,7 @@ custom_parser: atlas.parsers.us_ny
         config = configs["us-ny"]
         assert config.api_key == "test-key"
         assert config.max_retries == 5
-        assert config.custom_parser == "atlas.parsers.us_ny"
+        assert config.custom_parser == "axiom.parsers.us_ny"
 
     def test_load_multiple_yaml_files(self, tmp_path):
         for state in ["us-ca", "us-ny", "us-oh"]:
@@ -122,7 +122,7 @@ class TestGetBuiltinConfigs:
 
 class TestGetAllConfigs:
     def test_returns_configs(self):
-        import atlas.sources.registry as registry_module
+        import axiom.sources.registry as registry_module
 
         old = registry_module._SOURCE_CONFIGS
         registry_module._SOURCE_CONFIGS = {}
@@ -134,7 +134,7 @@ class TestGetAllConfigs:
             registry_module._SOURCE_CONFIGS = old
 
     def test_caches_configs(self):
-        import atlas.sources.registry as registry_module
+        import axiom.sources.registry as registry_module
 
         old = registry_module._SOURCE_CONFIGS
         registry_module._SOURCE_CONFIGS = {}
@@ -148,7 +148,7 @@ class TestGetAllConfigs:
 
 class TestGetConfigForJurisdiction:
     def test_known_jurisdiction(self):
-        import atlas.sources.registry as registry_module
+        import axiom.sources.registry as registry_module
 
         old = registry_module._SOURCE_CONFIGS
         registry_module._SOURCE_CONFIGS = {}
@@ -160,7 +160,7 @@ class TestGetConfigForJurisdiction:
             registry_module._SOURCE_CONFIGS = old
 
     def test_unknown_jurisdiction(self):
-        import atlas.sources.registry as registry_module
+        import axiom.sources.registry as registry_module
 
         old = registry_module._SOURCE_CONFIGS
         registry_module._SOURCE_CONFIGS = {}
@@ -173,7 +173,7 @@ class TestGetConfigForJurisdiction:
 
 class TestGetSourceForJurisdiction:
     def test_uslm_source(self):
-        import atlas.sources.registry as registry_module
+        import axiom.sources.registry as registry_module
 
         old = registry_module._SOURCE_CONFIGS
         registry_module._SOURCE_CONFIGS = {}
@@ -184,7 +184,7 @@ class TestGetSourceForJurisdiction:
             registry_module._SOURCE_CONFIGS = old
 
     def test_unknown_jurisdiction(self):
-        import atlas.sources.registry as registry_module
+        import axiom.sources.registry as registry_module
 
         old = registry_module._SOURCE_CONFIGS
         registry_module._SOURCE_CONFIGS = {}
@@ -195,7 +195,7 @@ class TestGetSourceForJurisdiction:
             registry_module._SOURCE_CONFIGS = old
 
     def test_html_source(self):
-        import atlas.sources.registry as registry_module
+        import axiom.sources.registry as registry_module
 
         old = registry_module._SOURCE_CONFIGS
         registry_module._SOURCE_CONFIGS = {}
@@ -206,7 +206,7 @@ class TestGetSourceForJurisdiction:
             registry_module._SOURCE_CONFIGS = old
 
     def test_api_source(self):
-        import atlas.sources.registry as registry_module
+        import axiom.sources.registry as registry_module
 
         old = registry_module._SOURCE_CONFIGS
         registry_module._SOURCE_CONFIGS = {}
@@ -225,7 +225,7 @@ class TestGetSourceForJurisdiction:
             registry_module._SOURCE_CONFIGS = old
 
     def test_ny_api_source(self):
-        import atlas.sources.registry as registry_module
+        import axiom.sources.registry as registry_module
 
         old = registry_module._SOURCE_CONFIGS
         registry_module._SOURCE_CONFIGS = {}
@@ -247,7 +247,7 @@ class TestGetSourceForJurisdiction:
 
 class TestListSupportedJurisdictions:
     def test_returns_list(self):
-        import atlas.sources.registry as registry_module
+        import axiom.sources.registry as registry_module
 
         old = registry_module._SOURCE_CONFIGS
         registry_module._SOURCE_CONFIGS = {}
@@ -266,7 +266,7 @@ class TestListSupportedJurisdictions:
 
 class TestRegisterSource:
     def test_register_new_source(self):
-        import atlas.sources.registry as registry_module
+        import axiom.sources.registry as registry_module
 
         old = registry_module._SOURCE_CONFIGS
         registry_module._SOURCE_CONFIGS = dict(old)
@@ -283,7 +283,7 @@ class TestRegisterSource:
             registry_module._SOURCE_CONFIGS = old
 
     def test_register_case_insensitive(self):
-        import atlas.sources.registry as registry_module
+        import axiom.sources.registry as registry_module
 
         old = registry_module._SOURCE_CONFIGS
         registry_module._SOURCE_CONFIGS = dict(old)

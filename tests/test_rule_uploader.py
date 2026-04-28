@@ -1,9 +1,11 @@
 """Tests for rule_uploader — batched Supabase upsert with retry."""
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import httpx
-from atlas.ingest.rule_uploader import RuleUploader
+import pytest
+
+from axiom.ingest.rule_uploader import RuleUploader
 
 
 @pytest.fixture
@@ -50,7 +52,7 @@ class TestUpsertBatchHeaders:
             headers = call_kwargs.kwargs.get("headers") or call_kwargs[1].get("headers")
             assert headers["apikey"] == "test-service-key"
             assert headers["Authorization"] == "Bearer test-service-key"
-            assert headers["Content-Profile"] == "arch"
+            assert headers["Content-Profile"] == "corpus"
             assert headers["Prefer"] == "resolution=ignore-duplicates,return=minimal"
 
 
@@ -93,7 +95,7 @@ class TestUpsertAllBatches:
     def test_batches_correctly(self, uploader):
         rules = [{"id": str(i), "body": "text", "citation_path": f"path/{i}"} for i in range(120)]
         with patch.object(uploader, "upsert_batch", return_value=50) as mock_batch:
-            total = uploader.upsert_all(rules, batch_size=50)
+            uploader.upsert_all(rules, batch_size=50)
             assert mock_batch.call_count == 3
             batch_sizes = [len(call.args[0]) for call in mock_batch.call_args_list]
             assert batch_sizes == [50, 50, 20]

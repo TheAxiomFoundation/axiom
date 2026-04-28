@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add IRS Revenue Procedure metadata to the atlas database.
+"""Add IRS Revenue Procedure metadata to the axiom database.
 
 This script adds Rev. Proc. metadata records that can be populated with full text later.
 The metadata includes document numbers, IRB citations, and links to source documents.
@@ -15,8 +15,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.models_guidance import GuidanceType, RevenueProcedure
-from atlas.storage.guidance import GuidanceStorage
+from axiom.models_guidance import GuidanceType, RevenueProcedure
+from axiom.storage.guidance import GuidanceStorage
 
 
 # EITC-related Revenue Procedures with metadata
@@ -90,7 +90,7 @@ See https://www.irs.gov/pub/irs-drop/rp-22-38.pdf for complete tables.
 ]
 
 
-def add_rev_proc_metadata(db_path: str = "atlas.db") -> None:
+def add_rev_proc_metadata(db_path: str = "axiom.db") -> None:
     """Add Revenue Procedure metadata to the database."""
     storage = GuidanceStorage(db_path)
 
@@ -137,7 +137,7 @@ def add_rev_proc_metadata(db_path: str = "atlas.db") -> None:
 
 def main():
     """Main entry point."""
-    db_path = "atlas.db"
+    db_path = "axiom.db"
 
     print("="*60)
     print("Adding EITC Revenue Procedure Metadata")

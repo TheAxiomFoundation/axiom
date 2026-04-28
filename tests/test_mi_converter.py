@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from atlas.converters.us_states.mi import (
+from axiom.converters.us_states.mi import (
     MCLChapter,
     MCLCitation,
     MCLHistory,
@@ -310,15 +310,15 @@ class TestMichiganConverterIntegration:
 
 
 class TestMCLToArchSection:
-    """Test conversion from MCL models to Arch Section model."""
+    """Test conversion from MCL models to Axiom section model."""
 
     def test_convert_to_arch_section(self):
-        """Convert MCL section to Arch Section model."""
+        """Convert MCL section to Axiom section model."""
 
         converter = MichiganConverter()
         chapter = converter.parse_chapter_xml(SAMPLE_CHAPTER_XML)
 
-        # Convert to Arch sections
+        # Convert to Axiom sections
         arch_sections = list(converter.to_arch_sections(chapter))
 
         assert len(arch_sections) >= 2

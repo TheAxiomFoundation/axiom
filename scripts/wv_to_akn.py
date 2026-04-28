@@ -21,7 +21,7 @@ from xml.dom import minidom
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.converters.us_states.wv import (
+from axiom.converters.us_states.wv import (
     WVConverter,
     WV_CHAPTERS,
     WV_TAX_CHAPTERS,
@@ -29,7 +29,7 @@ from atlas.converters.us_states.wv import (
     WV_TAX_ARTICLES,
     WV_WELFARE_ARTICLES,
 )
-from atlas.models import Section, Subsection
+from axiom.models import Section, Subsection
 
 
 # Akoma Ntoso namespace
@@ -40,7 +40,7 @@ OUTPUT_DIR = Path("/tmp/rules-us-wv-akn")
 
 
 def section_to_akn_xml(section: Section) -> str:
-    """Convert an arch Section to Akoma Ntoso XML.
+    """Convert an Axiom section to Akoma Ntoso XML.
 
     Args:
         section: Section model from WVConverter

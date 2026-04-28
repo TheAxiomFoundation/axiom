@@ -7,18 +7,18 @@
 -- refresh_jurisdiction_counts reverts to refreshing just the counts
 -- MV (its form before 20260418040000).
 
-DROP FUNCTION IF EXISTS arch.get_jurisdiction_flows();
+DROP FUNCTION IF EXISTS corpus.get_jurisdiction_flows();
 
-DROP MATERIALIZED VIEW IF EXISTS arch.jurisdiction_flows;
+DROP MATERIALIZED VIEW IF EXISTS corpus.jurisdiction_flows;
 
-CREATE OR REPLACE FUNCTION arch.refresh_jurisdiction_counts()
+CREATE OR REPLACE FUNCTION corpus.refresh_jurisdiction_counts()
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = arch, public
+SET search_path = corpus, public
 AS $$
 BEGIN
-  REFRESH MATERIALIZED VIEW CONCURRENTLY arch.jurisdiction_counts;
+  REFRESH MATERIALIZED VIEW CONCURRENTLY corpus.jurisdiction_counts;
 END
 $$;
 

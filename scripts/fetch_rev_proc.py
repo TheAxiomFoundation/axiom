@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Fetch and store IRS Revenue Procedures in the atlas database.
+"""Fetch and store IRS Revenue Procedures in the axiom database.
 
-This script downloads Rev. Procs from IRS.gov and stores them in the atlas
+This script downloads Rev. Procs from IRS.gov and stores them in the axiom
 database with full-text search and structured sections.
 
 Usage:
@@ -15,11 +15,11 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.fetchers.irs_guidance import IRSGuidanceFetcher
-from atlas.storage.guidance import GuidanceStorage
+from axiom.fetchers.irs_guidance import IRSGuidanceFetcher
+from axiom.storage.guidance import GuidanceStorage
 
 
-def fetch_and_store_rev_proc(doc_number: str, db_path: str = "atlas.db") -> None:
+def fetch_and_store_rev_proc(doc_number: str, db_path: str = "axiom.db") -> None:
     """Fetch a Revenue Procedure and store it in the database.
 
     Args:
@@ -93,7 +93,7 @@ def main():
         sys.exit(1)
 
     doc_numbers = sys.argv[1:]
-    db_path = "atlas.db"
+    db_path = "axiom.db"
 
     print(f"Database: {db_path}")
     print(f"Documents to fetch: {len(doc_numbers)}")

@@ -1,17 +1,17 @@
-"""Backfill the citation graph in ``arch.rule_references``.
+"""Backfill the citation graph in ``corpus.provision_references``.
 
-For every rule with a non-empty body, run the citation extractors and
-upsert one row per extracted ref. Target rule ids are resolved against
-``arch.rules.citation_path`` — unresolved targets are stored anyway so a
+For every provision with a non-empty body, run the citation extractors and
+upsert one row per extracted ref. Target provision ids are resolved against
+``corpus.provisions.citation_path`` — unresolved targets are stored anyway so a
 later ingestion (or a later re-run) activates the link.
 
 Semantics
 ---------
-* Idempotent per source rule. Before inserting, we DELETE all existing
-  refs for each source rule in this batch, so changing the extractor
+* Idempotent per source provision. Before inserting, we DELETE all existing
+  refs for each source provision in this batch, so changing the extractor
   and re-running produces a clean result rather than stacking duplicates
   next to stale offsets.
-* Batched by source rule. 100 source rules per delete + bulk insert
+* Batched by source provision. 100 source provisions per delete + bulk insert
   round trip — tuned for Supabase's REST API throughput.
 * Resumable. The ``--since-citation-path`` flag lets you pick up where a
   prior run left off (lexicographic order).
@@ -27,7 +27,7 @@ Usage
         --doc-type regulation
 
     # Dry-run — print what would be inserted without writing.
-    uv run python scripts/extract_references.py --dry-run --limit 50
+    SUPABASE_ANON_KEY=... uv run python scripts/extract_references.py --dry-run --limit 50
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ from ingest_cfr_parts import (  # noqa: E402
 )
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from atlas.citations import extract_all  # noqa: E402
+from axiom.citations import extract_all  # noqa: E402
 
 PAGE_SIZE = 500
 
@@ -114,12 +114,12 @@ def fetch_rules_page(
         params.append(f"citation_path=lt.{urllib.parse.quote(_prefix_upper_bound(prefix))}")
     elif since_citation_path:
         params.append(f"citation_path=gt.{urllib.parse.quote(since_citation_path)}")
-    url = f"{REST_URL}/rules?{'&'.join(params)}"
+    url = f"{REST_URL}/provisions?{'&'.join(params)}"
     req = urllib.request.Request(
         url,
         headers={
             **_auth_headers(service_key),
-            "Accept-Profile": "arch",
+            "Accept-Profile": "corpus",
         },
     )
     return json.loads(_retrying_urlopen(req, timeout=60))
@@ -142,7 +142,7 @@ def resolve_target_ids(service_key: str, citation_paths: set[str]) -> dict[str, 
         # Commas in values must be quoted in PostgREST's in.() filter.
         quoted = ",".join(f'"{p}"' for p in batch)
         url = (
-            f"{REST_URL}/rules?select=id,citation_path"
+            f"{REST_URL}/provisions?select=id,citation_path"
             f"&citation_path=in.({urllib.parse.quote(quoted)})"
             f"&limit={len(batch)}"
         )
@@ -150,7 +150,7 @@ def resolve_target_ids(service_key: str, citation_paths: set[str]) -> dict[str, 
             url,
             headers={
                 **_auth_headers(service_key),
-                "Accept-Profile": "arch",
+                "Accept-Profile": "corpus",
             },
         )
         try:
@@ -210,12 +210,12 @@ def delete_existing(service_key: str, source_ids: list[str]) -> None:
     if not source_ids:
         return
     quoted = ",".join(f'"{sid}"' for sid in source_ids)
-    url = f"{REST_URL}/rule_references?source_rule_id=in.({urllib.parse.quote(quoted)})"
+    url = f"{REST_URL}/provision_references?source_provision_id=in.({urllib.parse.quote(quoted)})"
     req = urllib.request.Request(
         url,
         headers={
             **_auth_headers(service_key),
-            "Content-Profile": "arch",
+            "Content-Profile": "corpus",
         },
         method="DELETE",
     )
@@ -225,14 +225,14 @@ def delete_existing(service_key: str, source_ids: list[str]) -> None:
 def insert_rows(service_key: str, rows: list[dict]) -> None:
     if not rows:
         return
-    url = f"{REST_URL}/rule_references"
+    url = f"{REST_URL}/provision_references"
     req = urllib.request.Request(
         url,
         data=json.dumps(rows).encode(),
         headers={
             **_auth_headers(service_key),
             "Content-Type": "application/json",
-            "Content-Profile": "arch",
+            "Content-Profile": "corpus",
             "Prefer": "return=minimal",
         },
         method="POST",
@@ -245,7 +245,7 @@ def process_batch(
     rules: list[dict],
     dry_run: bool,
 ) -> tuple[int, int, int]:
-    """Returns (source_rules_processed, refs_extracted, refs_resolved)."""
+    """Returns (source_provisions_processed, refs_extracted, refs_resolved)."""
     all_refs: list[tuple[dict, list]] = []  # (rule, refs)
     all_targets: set[str] = set()
     for rule in rules:
@@ -279,9 +279,9 @@ def process_batch(
         for ref in refs:
             rows.append(
                 {
-                    "source_rule_id": rule["id"],
+                    "source_provision_id": rule["id"],
                     "target_citation_path": ref.target_citation_path,
-                    "target_rule_id": target_map.get(ref.target_citation_path),
+                    "target_provision_id": target_map.get(ref.target_citation_path),
                     "citation_text": ref.raw_text,
                     "pattern_kind": ref.pattern_kind,
                     "start_offset": ref.start_offset,
@@ -290,7 +290,7 @@ def process_batch(
                 }
             )
 
-    # DELETE then INSERT per batch (idempotent for rules seen in this run).
+    # DELETE then INSERT per batch (idempotent for provisions seen in this run).
     source_ids = [rule["id"] for rule, _ in all_refs]
     delete_existing(service_key, source_ids)
     for chunk in chunked(rows, size=500):
@@ -312,7 +312,7 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
-        "--limit", type=int, default=None, help="Stop after N source rules (for testing)"
+        "--limit", type=int, default=None, help="Stop after N source provisions (for testing)"
     )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
@@ -323,7 +323,7 @@ def main(argv: list[str] | None = None) -> int:
     service_key = None if args.dry_run else get_service_key()
 
     started = time.time()
-    total_rules = 0
+    total_provisions = 0
     total_refs = 0
     total_resolved = 0
     last_path = args.since_citation_path
@@ -347,24 +347,24 @@ def main(argv: list[str] | None = None) -> int:
         rules_processed, refs_extracted, refs_resolved = process_batch(
             service_key, page, args.dry_run
         )
-        total_rules += rules_processed
+        total_provisions += rules_processed
         total_refs += refs_extracted
         total_resolved += refs_resolved
 
         last_path = page[-1]["citation_path"]
         elapsed = time.time() - started
         print(
-            f"  through {last_path}: {total_rules} rules, "
+            f"  through {last_path}: {total_provisions} provisions, "
             f"{total_refs} refs extracted, {total_resolved} resolved, "
             f"{elapsed / 60:.1f} min",
             flush=True,
         )
 
-        if args.limit and total_rules >= args.limit:
+        if args.limit and total_provisions >= args.limit:
             break
 
     print(
-        f"\nDONE — {total_rules} rules processed, {total_refs} refs extracted, "
+        f"\nDONE — {total_provisions} provisions processed, {total_refs} refs extracted, "
         f"{total_resolved} resolved, {(time.time() - started) / 60:.1f} min",
         flush=True,
     )
@@ -376,7 +376,9 @@ def _dry_run_page(args: argparse.Namespace) -> list[dict]:
     token can still see what the extractor produces.
     """
 
-    anon_key = os.environ.get("SUPABASE_ANON_KEY") or _fallback_anon_key()
+    anon_key = os.environ.get("SUPABASE_ANON_KEY")
+    if not anon_key:
+        raise ValueError("SUPABASE_ANON_KEY env var required for --dry-run")
     params = [
         "select=id,citation_path,body,jurisdiction",
         "body=not.is.null",
@@ -388,34 +390,18 @@ def _dry_run_page(args: argparse.Namespace) -> list[dict]:
     if args.prefix:
         params.append(f"citation_path=gte.{urllib.parse.quote(args.prefix)}")
         params.append(f"citation_path=lt.{urllib.parse.quote(_prefix_upper_bound(args.prefix))}")
-    url = f"{REST_URL}/rules?{'&'.join(params)}"
+    url = f"{REST_URL}/provisions?{'&'.join(params)}"
     req = urllib.request.Request(
         url,
         headers={
             "apikey": anon_key,
             "Authorization": f"Bearer {anon_key}",
             "User-Agent": USER_AGENT,
-            "Accept-Profile": "arch",
+            "Accept-Profile": "corpus",
         },
     )
     with urllib.request.urlopen(req, timeout=60) as resp:
         return json.loads(resp.read())
-
-
-def _fallback_anon_key() -> str:
-    """The public anon key for the shared Supabase project.
-
-    Hard-coded to keep ``--dry-run`` usable without env setup. This key
-    is already exposed in the website bundle, so documenting it here
-    adds no attack surface.
-    """
-    return (
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-        "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5zdXBxaGZjaGR0cWNsb21scmdzIiwi"
-        "cm9sZSI6ImFub24iLCJpYXQiOjE3NjY5MzExMDgsImV4cCI6MjA4MjUwNzEwOH0."
-        "BPdUadtBCdKfWZrKbfxpBQUqSGZ4hd34Dlor8kMBrVI"
-    )
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

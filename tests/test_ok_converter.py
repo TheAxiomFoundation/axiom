@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from atlas.converters.us_states.ok import (
+from axiom.converters.us_states.ok import (
     OK_SECTIONS,
     OK_TAX_SECTIONS,
     OK_TITLES,
@@ -19,7 +19,7 @@ from atlas.converters.us_states.ok import (
     download_ok_title,
     fetch_ok_section,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 # Sample HTML from OSCN for testing - Tax Code definition section
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

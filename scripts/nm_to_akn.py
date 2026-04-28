@@ -34,7 +34,7 @@ from xml.dom import minidom
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.converters.us_states.nm import (
+from axiom.converters.us_states.nm import (
     NM_CHAPTERS,
     NM_TAX_CHAPTERS,
     NM_TAX_ARTICLES,

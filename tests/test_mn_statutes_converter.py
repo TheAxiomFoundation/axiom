@@ -4,7 +4,7 @@ from xml.etree import ElementTree as ET
 
 import pytest
 
-from atlas.converters.mn_statutes import MNSection, MNStatutesToAKN, MNSubsection
+from axiom.converters.mn_statutes import MNSection, MNStatutesToAKN, MNSubsection
 
 SAMPLE_MN_HTML = """\
 <html>

@@ -7,10 +7,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from atlas.models import Subsection
+from axiom.models import Subsection
 
 try:
-    from atlas.storage.postgres import POSTGRES_AVAILABLE, PostgresStorage, get_engine
+    from axiom.storage.postgres import POSTGRES_AVAILABLE, PostgresStorage, get_engine
     _IMPORT_OK = True
 except ImportError:
     _IMPORT_OK = False
@@ -27,13 +27,13 @@ class TestGetEngine:
                 get_engine()
 
     @pytest.mark.skipif(not POSTGRES_AVAILABLE, reason="SQLAlchemy not installed")
-    @patch("atlas.storage.postgres.create_engine")
+    @patch("axiom.storage.postgres.create_engine")
     def test_url_from_param(self, mock_create):
         get_engine("postgresql://localhost/test")
         mock_create.assert_called_once_with("postgresql://localhost/test")
 
     @pytest.mark.skipif(not POSTGRES_AVAILABLE, reason="SQLAlchemy not installed")
-    @patch("atlas.storage.postgres.create_engine")
+    @patch("axiom.storage.postgres.create_engine")
     def test_url_from_env(self, mock_create):
         with patch.dict("os.environ", {"DATABASE_URL": "postgresql://localhost/test"}):
             get_engine()

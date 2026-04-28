@@ -3,13 +3,13 @@
 import sys
 from pathlib import Path
 
-# Add src to path for direct import without triggering full arch package
+# Add src to path for direct import without triggering full axiom package
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import pytest
 
 # Import directly from the module to avoid full package import
-from atlas.converters.base import (
+from axiom.converters.base import (
     CONVERTERS,
     AknSection,
     AknSubsection,

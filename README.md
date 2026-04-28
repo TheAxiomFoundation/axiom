@@ -1,8 +1,8 @@
-# Atlas
+# Axiom Source Archive
 
 **Comprehensive map of government legal sources.**
 
-Atlas is the unified source of truth for statutes, regulations, and IRS guidance that powers the The Axiom Foundation ecosystem.
+Axiom is the unified source of truth for statutes, regulations, and IRS guidance that powers The Axiom Foundation ecosystem.
 
 ## Features
 
@@ -18,39 +18,39 @@ Atlas is the unified source of truth for statutes, regulations, and IRS guidance
 
 ```bash
 # Install
-pip install atlas-archive
+pip install -e .
 
 # Run the API server
-atlas serve
+axiom serve
 
 # Or use the CLI
-atlas get "26 USC 32"        # Get IRC § 32 (EITC)
-atlas search "earned income" # Search across documents
+axiom get "26 USC 32"        # Get IRC § 32 (EITC)
+axiom search "earned income" # Search across documents
 ```
 
 ## CLI Usage
 
 ```bash
 # Download sources
-atlas download 26                    # Download Title 26 (IRC) from uscode.gov
-atlas download-state ny              # Download NY state laws
-atlas irs-guidance --year 2024       # Fetch IRS guidance for 2024
+axiom download 26                    # Download Title 26 (IRC) from uscode.gov
+axiom download-state ny              # Download NY state laws
+axiom irs-guidance --year 2024       # Fetch IRS guidance for 2024
 
 # Query
-atlas get "26 USC 32"                # Get specific section
-atlas search "child tax credit"      # Full-text search
-atlas stats                          # Show database stats
+axiom get "26 USC 32"                # Get specific section
+axiom search "child tax credit"      # Full-text search
+axiom stats                          # Show database stats
 
 # API
-atlas serve                          # Start REST API at localhost:8000
+axiom serve                          # Start REST API at localhost:8000
 ```
 
 ## Python API
 
 ```python
-from atlas import Atlas
+from axiom import AxiomArchive
 
-archive = Atlas()
+archive = AxiomArchive()
 
 # Get a specific section
 eitc = archive.get("26 USC 32")
@@ -102,10 +102,10 @@ curl "http://localhost:8000/v1/sections/26/32?as_of=2020-01-01"
 ## Architecture
 
 ```
-atlas/
-├── src/atlas/
+axiom/
+├── src/axiom/
 │   ├── __init__.py
-│   ├── archive.py        # Main Atlas class
+│   ├── archive.py        # Main Axiom archive class
 │   ├── models.py         # Pydantic models for statutes
 │   ├── models_guidance.py # Models for IRS guidance
 │   ├── parsers/
@@ -131,7 +131,7 @@ atlas/
 
 ## Storage
 
-Atlas uses SQLite + FTS5 for local development. For production deployments:
+Axiom uses SQLite + FTS5 for local development. For production deployments:
 
 - **Cloudflare R2** — Raw files (PDFs, XML)
 - **PostgreSQL** — Parsed content, metadata, full-text search
@@ -143,15 +143,15 @@ Atlas uses SQLite + FTS5 for local development. For production deployments:
 ```bash
 # Build and run
 pip install -e .
-atlas serve
+axiom serve
 ```
 
 ### Docker
 
 ```bash
 # Build and run
-docker build -t atlas .
-docker run -p 8000:8000 -v $(pwd)/atlas.db:/app/atlas.db atlas
+docker build -t axiom .
+docker run -p 8000:8000 -v $(pwd)/axiom.db:/app/axiom.db axiom
 ```
 
 ## License

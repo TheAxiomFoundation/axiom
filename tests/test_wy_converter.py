@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from atlas.converters.us_states.wy import (
+from axiom.converters.us_states.wy import (
     WY_TAX_CHAPTERS,
     WY_TITLES,
     WY_WELFARE_CHAPTERS,
@@ -18,7 +18,7 @@ from atlas.converters.us_states.wy import (
     download_wy_chapter,
     fetch_wy_section,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 # Sample HTML from wyoleg.gov for testing (simulated NXT gateway response)
 # Note: Wyoming statutes use (a), (b), (c) for top level; (i), (ii), (iii) for second level

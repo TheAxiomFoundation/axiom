@@ -138,7 +138,7 @@ def main():
     )
     parser.add_argument(
         "--output-dir",
-        default=str(Path.home() / ".arch" / "policyengine-us"),
+        default=str(Path.home() / ".axiom" / "policyengine-us"),
         help="Output directory",
     )
     parser.add_argument(
@@ -184,7 +184,7 @@ def main():
     client = httpx.Client(
         timeout=60,
         headers={
-            "User-Agent": "Atlas/1.0 (policy document archiver; contact@axiom-foundation.org)"
+            "User-Agent": "Axiom/1.0 (policy document archiver; contact@axiom-foundation.org)"
         },
         follow_redirects=True,
     )

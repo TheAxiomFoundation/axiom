@@ -3,7 +3,7 @@
 
 import pytest
 
-from atlas.converters.state_to_uslm import (
+from axiom.converters.state_to_uslm import (
     USLM_NS,
     ParsedSection,
     ParsedSubsection,

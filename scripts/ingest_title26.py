@@ -7,8 +7,8 @@ Usage:
 
 from pathlib import Path
 
-from atlas.archive import LawArchive
-from atlas.parsers.uslm import download_title
+from axiom.archive import AxiomArchive
+from axiom.parsers.us.statutes import download_title
 
 
 def main():
@@ -24,9 +24,9 @@ def main():
         print(f"Using existing {xml_path}")
 
     # Ingest into database
-    archive = LawArchive(db_path="atlas.db")
+    archive = AxiomArchive(db_path="axiom.db")
     count = archive.ingest_title(xml_path)
-    print(f"\nDone! Ingested {count} sections into atlas.db")
+    print(f"\nDone! Ingested {count} sections into axiom.db")
 
     # Test a lookup
     print("\nTest lookup: 26 USC 32 (EITC)")

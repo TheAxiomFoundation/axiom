@@ -1,7 +1,7 @@
 """Tests for the Minnesota statutes converter module."""
 
 
-from atlas.converters.mn_statutes import (
+from axiom.converters.mn_statutes import (
     AKN_NS,
     MNSection,
     MNStatutesToAKN,

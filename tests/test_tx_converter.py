@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from atlas.converters.us_states.tx import (
+from axiom.converters.us_states.tx import (
     TX_CODES,
     TX_TAX_CHAPTERS,
     TX_WELFARE_CHAPTERS,
@@ -18,7 +18,7 @@ from atlas.converters.us_states.tx import (
     download_tx_chapter,
     fetch_tx_section,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 # Sample HTML from texas.public.law for testing
 SAMPLE_TAX_SECTION_HTML = """<!DOCTYPE html>

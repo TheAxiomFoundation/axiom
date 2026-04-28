@@ -30,13 +30,13 @@ from xml.dom import minidom
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 try:
-    from atlas.converters.us_states.ny import NYStateConverter, NYFetchResult, NY_LAW_CODES
+    from axiom.converters.us_states.ny import NYStateConverter, NYFetchResult, NY_LAW_CODES
 except ImportError:
     # Try direct import for standalone use
     import importlib.util
 
     spec = importlib.util.spec_from_file_location(
-        "ny", Path(__file__).parent.parent / "src" / "arch" / "converters" / "us_states" / "ny.py"
+        "ny", Path(__file__).parent.parent / "src" / "axiom" / "converters" / "us_states" / "ny.py"
     )
     ny_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ny_module)
@@ -122,7 +122,7 @@ def section_to_akn(result: NYFetchResult, converter: NYStateConverter) -> str:
     expr_date.set("date", date.today().isoformat())
     expr_date.set("name", "publication")
     expr_author = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRauthor")
-    expr_author.set("href", "#arch")
+    expr_author.set("href", "#axiom")
     expr_lang = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRlanguage")
     expr_lang.set("language", "eng")
 
@@ -136,17 +136,17 @@ def section_to_akn(result: NYFetchResult, converter: NYStateConverter) -> str:
     manif_date.set("date", date.today().isoformat())
     manif_date.set("name", "generation")
     manif_author = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRauthor")
-    manif_author.set("href", "#arch")
+    manif_author.set("href", "#axiom")
 
     # References
     refs = ET.SubElement(meta, f"{{{AKN_NS}}}references")
-    refs.set("source", "#arch")
+    refs.set("source", "#axiom")
 
     # TLC references
-    arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
-    arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://axiom-foundation.org")
-    arch_ref.set("showAs", "Atlas")
+    axiom_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
+    axiom_ref.set("eId", "axiom")
+    axiom_ref.set("href", "https://axiom-foundation.org")
+    axiom_ref.set("showAs", "Axiom")
 
     ny_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     ny_leg.set("eId", "ny-legislature")

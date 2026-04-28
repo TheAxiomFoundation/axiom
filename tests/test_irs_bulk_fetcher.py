@@ -4,12 +4,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from atlas.fetchers.irs_bulk import (
+from axiom.fetchers.irs_bulk import (
     IRSBulkFetcher,
     IRSDropDocument,
     parse_irs_drop_listing,
 )
-from atlas.models_guidance import GuidanceType
+from axiom.models_guidance import GuidanceType
 
 
 class TestParseIrsDropListing:
@@ -195,13 +195,13 @@ class TestBulkDownloadWithExtraction:
             # Mock PDF extraction since we're using a fake PDF
             # The imports are local in fetch_and_extract, so patch at the source modules
             with patch(
-                "atlas.fetchers.pdf_extractor.PDFTextExtractor"
+                "axiom.fetchers.pdf_extractor.PDFTextExtractor"
             ) as mock_extractor_class:
                 mock_extractor = MagicMock()
                 mock_extractor.extract_text.return_value = "Rev. Proc. 2024-40\nSECTION 1. PURPOSE\nTest content"
                 mock_extractor_class.return_value = mock_extractor
 
-                with patch("atlas.fetchers.irs_parser.IRSDocumentParser") as mock_parser_class:
+                with patch("axiom.fetchers.irs_parser.IRSDocumentParser") as mock_parser_class:
                     mock_parser = MagicMock()
                     mock_parser.parse.return_value = MagicMock(
                         sections=[],
@@ -209,7 +209,7 @@ class TestBulkDownloadWithExtraction:
                     )
                     mock_parser_class.return_value = mock_parser
 
-                    with patch("atlas.fetchers.irs_parser.IRSParameterExtractor") as mock_param_class:
+                    with patch("axiom.fetchers.irs_parser.IRSParameterExtractor") as mock_param_class:
                         mock_param = MagicMock()
                         mock_param.extract.return_value = {}
                         mock_param_class.return_value = mock_param

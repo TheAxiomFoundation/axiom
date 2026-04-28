@@ -3,7 +3,7 @@
 Extract DC tax provisions from DC Law XML.
 
 This script parses the DC Council's law-xml repository to extract
-individual income tax provisions for use with Atlas.
+individual income tax provisions for use with Axiom.
 
 Usage:
     python scripts/extract_dc_tax.py

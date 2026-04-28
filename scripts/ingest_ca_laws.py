@@ -3,7 +3,7 @@
 The ``TheAxiomFoundation/rules-us-ca`` GitHub repo carries section XML
 files in Akoma Ntoso 3.0 format under ``statutes/{code}/{code}-{section}.xml``.
 This script clones the repo to a scratch dir (if not already cached),
-walks those files, and uploads one row per section to ``arch.rules``
+walks those files, and uploads one row per section to ``corpus.provisions``
 with ``jurisdiction='us-ca'``.
 
 Design
@@ -48,8 +48,7 @@ from ingest_cfr_parts import (  # noqa: E402, F401
 )
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from atlas.ingest.rule_uploader import RuleUploader  # noqa: E402
-
+from axiom.ingest.rule_uploader import RuleUploader  # noqa: E402
 
 AKN_NS = {"akn": "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"}
 REPO_URL = "https://github.com/TheAxiomFoundation/rules-us-ca.git"
@@ -57,7 +56,7 @@ DEFAULT_CACHE = Path("/tmp/rules-us-ca-ingest")
 
 
 def deterministic_id(citation_path: str) -> str:
-    return str(uuid5(NAMESPACE_URL, f"atlas:{citation_path}"))
+    return str(uuid5(NAMESPACE_URL, f"axiom:{citation_path}"))
 
 
 def ensure_repo(target: Path, update: bool) -> Path:

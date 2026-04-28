@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from atlas.models_guidance import (
+from axiom.models_guidance import (
     GuidanceSearchResult,
     GuidanceSection,
     GuidanceType,

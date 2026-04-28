@@ -8,11 +8,11 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from atlas.converters.us_states.ca import (
+from axiom.converters.us_states.ca import (
     CA_CODES,
     CAStateConverter,
 )
-from atlas.models_statute import Statute
+from axiom.models_statute import Statute
 
 # Sample HTML from leginfo for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

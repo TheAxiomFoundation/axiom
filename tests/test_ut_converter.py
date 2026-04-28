@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from atlas.converters.us_states.ut import (
+from axiom.converters.us_states.ut import (
     UT_ALPHA_TITLES,
     UT_TAX_CHAPTERS,
     UT_TITLES,
@@ -19,7 +19,7 @@ from atlas.converters.us_states.ut import (
     download_ut_chapter,
     fetch_ut_section,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 # Sample wrapper HTML that contains version info
 SAMPLE_WRAPPER_HTML = """<!DOCTYPE html>

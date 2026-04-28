@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from atlas.converters.nz_pco import (
+from axiom.converters.nz_pco import (
     NZLabeledParagraph,
     NZLegislation,
     NZProvision,

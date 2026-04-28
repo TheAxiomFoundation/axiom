@@ -1,4 +1,4 @@
-"""Ingest axiom-scrapers ``rulemaking/`` trees into Atlas.
+"""Ingest axiom-scrapers ``rulemaking/`` trees into Axiom.
 
 Rulemaking documents (Federal Register Rules + Proposed Rules at
 present) follow a different layout and doc_type from codified
@@ -45,14 +45,14 @@ from ingest_cfr_parts import (  # noqa: E402
 sys.path.insert(
     0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src")
 )
-from atlas.ingest.rule_uploader import RuleUploader  # noqa: E402
+from axiom.ingest.rule_uploader import RuleUploader  # noqa: E402
 
 
 AKN_NS = {"akn": "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"}
 
 
 def deterministic_id(citation_path: str) -> str:
-    return str(uuid5(NAMESPACE_URL, f"atlas:{citation_path}"))
+    return str(uuid5(NAMESPACE_URL, f"axiom:{citation_path}"))
 
 
 def extract_text(elem: ET.Element) -> str:

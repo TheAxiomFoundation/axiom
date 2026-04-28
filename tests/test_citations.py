@@ -1,10 +1,10 @@
-"""Tests for atlas.citations.extractor."""
+"""Tests for axiom.citations.extractor."""
 
 from __future__ import annotations
 
 import pytest
 
-from atlas.citations import (
+from axiom.citations import (
     CAExtractor,
     CFRExtractor,
     DCExtractor,
@@ -434,7 +434,7 @@ class TestCAExtractorIntraCode:
 
 class TestAllExtractorsJurisdictionRouting:
     def test_state_extractor_requires_law_codes(self) -> None:
-        from atlas.citations.extractor import _StateSectionExtractor
+        from axiom.citations.extractor import _StateSectionExtractor
 
         with pytest.raises(TypeError, match="must define a non-empty"):
             type(
@@ -572,7 +572,7 @@ class TestExtractAll:
         # Hypothetically, two extractors could fire on the same span. We
         # construct that case by forcing an overlap via a raw ref list
         # and running it through the dedup helper.
-        from atlas.citations.extractor import _dedupe
+        from axiom.citations.extractor import _dedupe
 
         low_conf = ExtractedRef(
             raw_text="x",

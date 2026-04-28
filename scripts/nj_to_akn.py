@@ -65,7 +65,7 @@ def fetch_title_toc(title: str) -> list[dict]:
     client = httpx.Client(
         timeout=60.0,
         headers={
-            "User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)",
+            "User-Agent": "Axiom/1.0 (Statute Research; contact@axiom-foundation.org)",
             "Accept": "text/html,application/xhtml+xml",
         },
         follow_redirects=True,
@@ -150,7 +150,7 @@ def fetch_section_content(url: str, section_number: str) -> dict:
     client = httpx.Client(
         timeout=60.0,
         headers={
-            "User-Agent": "Arch/1.0 (Statute Research; contact@axiom-foundation.org)",
+            "User-Agent": "Axiom/1.0 (Statute Research; contact@axiom-foundation.org)",
             "Accept": "text/html,application/xhtml+xml",
         },
         follow_redirects=True,

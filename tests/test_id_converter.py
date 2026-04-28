@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from atlas.converters.us_states.id_ import (
+from axiom.converters.us_states.id_ import (
     ID_TAX_CHAPTERS,
     ID_TITLES,
     ID_WELFARE_CHAPTERS,
@@ -18,7 +18,7 @@ from atlas.converters.us_states.id_ import (
     download_id_chapter,
     fetch_id_section,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 # Sample HTML from legislature.idaho.gov for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

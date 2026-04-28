@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from atlas.models_statute import Statute
-from atlas.sources.base import SourceConfig, StatuteSource, load_source
+from axiom.models_statute import Statute
+from axiom.sources.base import SourceConfig, StatuteSource, load_source
 
 
 class TestSourceConfig:
@@ -39,7 +39,7 @@ class TestSourceConfig:
             codes={"TAX": "Tax Law", "EDN": "Education"},
             rate_limit=1.0,
             max_retries=5,
-            custom_parser="atlas.parsers.us_ny.statutes",
+            custom_parser="axiom.parsers.us_ny.statutes",
         )
         assert config.api_key == "test-key"
         assert config.rate_limit == 1.0
@@ -328,14 +328,14 @@ class TestStatuteSource:
 
 
 class TestLoadSource:
-    @patch("atlas.sources.registry.get_source_for_jurisdiction")
+    @patch("axiom.sources.registry.get_source_for_jurisdiction")
     def test_load_existing(self, mock_get):
         mock_source = MagicMock()
         mock_get.return_value = mock_source
         result = load_source("us-oh")
         assert result is mock_source
 
-    @patch("atlas.sources.registry.get_source_for_jurisdiction")
+    @patch("axiom.sources.registry.get_source_for_jurisdiction")
     def test_load_nonexistent_raises(self, mock_get):
         mock_get.return_value = None
         with pytest.raises(ValueError, match="No source configured"):

@@ -1,4 +1,4 @@
--- Document Archive Schema for Atlas Document Archive
+-- Document Archive Schema for Axiom Document Archive
 -- Stores raw legal documents (PDFs, HTML) with version tracking
 --
 -- Architecture:

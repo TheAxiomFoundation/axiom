@@ -7,12 +7,11 @@ Uses structured <ref href="/us/usc/t26/s151"> tags instead of regex parsing.
 import os
 import re
 import xml.etree.ElementTree as ET
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 import psycopg2
 from psycopg2.extras import execute_values
-
 
 # Namespace for USLM XML
 NS = {"uslm": "http://xml.house.gov/schemas/uslm/1.0"}
@@ -117,10 +116,9 @@ def process_xml_file(xml_path: Path) -> Iterator[tuple[str, str, str, str]]:
 
 def main():
     """Extract cross-references from all USC XML files."""
-    # Database connection - use pooler URL
     db_url = os.environ.get("DATABASE_URL")
     if not db_url:
-        db_url = "postgresql://postgres.nsupqhfchdtqclomlrgs:YlpJXpBsy0NzLqxV@aws-0-us-west-2.pooler.supabase.com:5432/postgres"
+        raise ValueError("DATABASE_URL env var required")
 
     # USC XML directory
     usc_dir = Path(__file__).parent.parent / "data" / "uscode"
@@ -153,7 +151,7 @@ def main():
             cur.execute(
                 """
                 SELECT id, citation_path
-                FROM arch.rules
+                FROM corpus.provisions
                 WHERE citation_path LIKE 'us/statute/26/%'
             """
             )

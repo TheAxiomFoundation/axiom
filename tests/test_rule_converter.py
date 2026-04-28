@@ -3,8 +3,8 @@
 import pytest
 from uuid import UUID
 
-from atlas.ingest.rule_converter import section_to_rules, _deterministic_id
-from atlas.models import Section, Subsection, Citation
+from axiom.ingest.rule_converter import section_to_rules, _deterministic_id
+from axiom.models import Section, Subsection, Citation
 from datetime import date
 
 
@@ -46,11 +46,11 @@ class TestDeterministicId:
         result = _deterministic_id("us/statute/26/32")
         UUID(result)
 
-    def test_uses_atlas_namespace(self):
+    def test_uses_axiom_namespace(self):
         from uuid import uuid5, NAMESPACE_URL
 
         path = "us/statute/26/32"
-        expected = str(uuid5(NAMESPACE_URL, f"atlas:{path}"))
+        expected = str(uuid5(NAMESPACE_URL, f"axiom:{path}"))
         assert _deterministic_id(path) == expected
 
 

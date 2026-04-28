@@ -2,7 +2,7 @@
 
 Walks the structure JSON for each title, extracts every ``(chapter,
 subchapter, part)`` triple, and reuses :mod:`scripts.ingest_cfr_parts` to
-fetch the XML, build rows, and upsert into Supabase ``arch.rules``.
+fetch the XML, build rows, and upsert into Supabase ``corpus.provisions``.
 
 Design
 ------

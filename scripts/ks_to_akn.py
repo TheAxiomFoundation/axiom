@@ -31,12 +31,12 @@ from xml.dom import minidom
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.converters.us_states.ks import (
+from axiom.converters.us_states.ks import (
     KSConverter,
     KS_TAX_ARTICLES,
     KS_WELFARE_ARTICLES,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 
 # Akoma Ntoso namespace

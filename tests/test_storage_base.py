@@ -2,7 +2,7 @@
 
 import pytest
 
-from atlas.storage.base import StorageBackend
+from axiom.storage.base import StorageBackend
 
 
 class TestStorageBackend:

@@ -45,7 +45,7 @@ from ingest_cfr_parts import (  # noqa: E402
 )
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from atlas.ingest.rule_uploader import RuleUploader  # noqa: E402
+from axiom.ingest.rule_uploader import RuleUploader  # noqa: E402
 
 
 AKN_NS = {"akn": "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"}
@@ -53,7 +53,7 @@ REPO_URL_TEMPLATE = "https://github.com/TheAxiomFoundation/rules-us-{state}.git"
 
 
 def deterministic_id(citation_path: str) -> str:
-    return str(uuid5(NAMESPACE_URL, f"atlas:{citation_path}"))
+    return str(uuid5(NAMESPACE_URL, f"axiom:{citation_path}"))
 
 
 def ensure_repo(

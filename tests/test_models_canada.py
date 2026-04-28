@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from atlas.models_canada import CanadaAct, CanadaCitation, CanadaSection, CanadaSubsection
+from axiom.models_canada import CanadaAct, CanadaCitation, CanadaSection, CanadaSubsection
 
 
 class TestCanadaCitation:

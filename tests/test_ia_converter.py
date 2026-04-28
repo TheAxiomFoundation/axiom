@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from atlas.converters.us_states.ia import (
+from axiom.converters.us_states.ia import (
     IA_TAX_CHAPTERS,
     IA_TITLES,
     IA_WELFARE_CHAPTERS,
@@ -18,7 +18,7 @@ from atlas.converters.us_states.ia import (
     download_ia_chapter,
     fetch_ia_section,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 # Sample RTF content for testing (simplified RTF format)
 SAMPLE_RTF_CONTENT = rb"""{\\rtf1\\ansi\\deff0

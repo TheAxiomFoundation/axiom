@@ -2,12 +2,12 @@
 
 from datetime import date
 
-from atlas.models_guidance import (
+from axiom.models_guidance import (
     GuidanceSection,
     GuidanceType,
     RevenueProcedure,
 )
-from atlas.storage.guidance import GuidanceStorage
+from axiom.storage.guidance import GuidanceStorage
 
 
 def _make_rev_proc(**kwargs):

@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from atlas.converters.us_states.or_ import (
+from axiom.converters.us_states.or_ import (
     OR_TAX_CHAPTERS,
     OR_WELFARE_CHAPTERS,
     ORConverter,
@@ -17,7 +17,7 @@ from atlas.converters.us_states.or_ import (
     download_or_chapter,
     fetch_or_section,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 # Sample HTML from oregonlegislature.gov for testing
 # This mimics the actual structure: MsoNormal paragraphs with bold section headers

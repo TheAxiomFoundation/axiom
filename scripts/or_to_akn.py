@@ -23,12 +23,12 @@ from xml.dom import minidom
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.converters.us_states.or_ import (
+from axiom.converters.us_states.or_ import (
     ORConverter,
     OR_TAX_CHAPTERS,
     OR_WELFARE_CHAPTERS,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 
 # Akoma Ntoso namespace
@@ -39,7 +39,7 @@ OUTPUT_DIR = Path("/tmp/rules-us-or-akn")
 
 
 def section_to_akn_dict(section: Section) -> dict:
-    """Convert arch Section model to dict for AKN conversion."""
+    """Convert Axiom section model to dict for AKN conversion."""
     return {
         "section_number": section.citation.section.replace("OR-", ""),
         "title": section.section_title,
@@ -50,7 +50,7 @@ def section_to_akn_dict(section: Section) -> dict:
 
 
 def subsection_to_dict(sub) -> dict:
-    """Convert arch Subsection to dict."""
+    """Convert Axiom subsection to dict."""
     return {
         "identifier": sub.identifier,
         "text": sub.text,
@@ -85,7 +85,7 @@ def create_akn_xml(chapter_num: str, chapter_title: str, sections: list[dict]) -
 
     # Identification
     identification = ET.SubElement(meta, f"{{{AKN_NS}}}identification")
-    identification.set("source", "#arch")
+    identification.set("source", "#axiom")
 
     # FRBRWork
     work = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRWork")
@@ -119,7 +119,7 @@ def create_akn_xml(chapter_num: str, chapter_title: str, sections: list[dict]) -
     expr_date.set("date", date.today().isoformat())
     expr_date.set("name", "publication")
     expr_author = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRauthor")
-    expr_author.set("href", "#arch")
+    expr_author.set("href", "#axiom")
     expr_lang = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRlanguage")
     expr_lang.set("language", "eng")
 
@@ -137,17 +137,17 @@ def create_akn_xml(chapter_num: str, chapter_title: str, sections: list[dict]) -
     manif_date.set("date", date.today().isoformat())
     manif_date.set("name", "generation")
     manif_author = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRauthor")
-    manif_author.set("href", "#arch")
+    manif_author.set("href", "#axiom")
 
     # References
     refs = ET.SubElement(meta, f"{{{AKN_NS}}}references")
-    refs.set("source", "#arch")
+    refs.set("source", "#axiom")
 
     # TLC references
-    arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
-    arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://axiom-foundation.org")
-    arch_ref.set("showAs", "Atlas")
+    axiom_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
+    axiom_ref.set("eId", "axiom")
+    axiom_ref.set("href", "https://axiom-foundation.org")
+    axiom_ref.set("showAs", "Axiom")
 
     or_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     or_leg.set("eId", "oregon-legislature")

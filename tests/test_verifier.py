@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 from unittest.mock import patch
 
-from atlas.verifier import (
+from axiom.verifier import (
     FILING_STATUS_MAP,
     INPUT_MAPPINGS,
     OUTPUT_MAPPINGS,
@@ -284,7 +284,7 @@ class TestBuildPolicyEngineSituation:
 
 
 class TestVerifyEncoding:
-    @patch("atlas.verifier.call_policyengine")
+    @patch("axiom.verifier.call_policyengine")
     def test_verify_with_tests(self, mock_call, tmp_path):
         # Create test files
         tests_yaml = """
@@ -305,7 +305,7 @@ class TestVerifyEncoding:
         assert report.total_count == 1
         assert report.results[0].matches is True
 
-    @patch("atlas.verifier.call_policyengine")
+    @patch("axiom.verifier.call_policyengine")
     def test_verify_no_metadata(self, mock_call, tmp_path):
         tests_yaml = """
 - name: test1
@@ -320,7 +320,7 @@ class TestVerifyEncoding:
         report = verify_encoding(tmp_path, "eitc")
         assert report.citation == "Unknown"
 
-    @patch("atlas.verifier.call_policyengine")
+    @patch("axiom.verifier.call_policyengine")
     def test_verify_api_error(self, mock_call, tmp_path):
         tests_yaml = """
 - name: test1
@@ -336,7 +336,7 @@ class TestVerifyEncoding:
         assert report.results[0].matches is False
         assert report.results[0].error == "API error"
 
-    @patch("atlas.verifier.call_policyengine")
+    @patch("axiom.verifier.call_policyengine")
     def test_verify_empty_expected(self, mock_call, tmp_path):
         tests_yaml = """
 - name: test1

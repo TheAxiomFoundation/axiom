@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 """Ingest all Canada federal acts into Supabase with robust error handling."""
 
-import sys
 import os
+import sys
 import time
 from pathlib import Path
 from uuid import uuid4
+
 import httpx
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.parsers.canada import CanadaStatuteParser
-from atlas.models_canada import CanadaSection, CanadaSubsection
+from axiom.models_canada import CanadaSection
+from axiom.parsers.canada import CanadaStatuteParser
 
 # Configuration
-SUPABASE_URL = "https://nsupqhfchdtqclomlrgs.supabase.co"
-ARCH_PATH = Path.home() / ".arch"
+DEFAULT_AXIOM_SUPABASE_URL = "https://swocpijqqahhuwtuahwc.supabase.co"
+SUPABASE_URL = os.environ.get("AXIOM_SUPABASE_URL", DEFAULT_AXIOM_SUPABASE_URL)
+AXIOM_PATH = Path.home() / ".axiom"
 BATCH_SIZE = 50  # Smaller batch for reliability
 MAX_RETRIES = 5
 
@@ -29,8 +31,9 @@ def get_service_key():
     for attempt in range(3):
         try:
             with httpx.Client(timeout=60.0) as client:
+                project_ref = SUPABASE_URL.split("//", 1)[1].split(".", 1)[0]
                 response = client.get(
-                    "https://api.supabase.com/v1/projects/nsupqhfchdtqclomlrgs/api-keys",
+                    f"https://api.supabase.com/v1/projects/{project_ref}/api-keys",
                     headers={"Authorization": f"Bearer {access_token}"},
                 )
                 response.raise_for_status()
@@ -108,7 +111,7 @@ def insert_rules(rules, client, key, rest_url):
     for attempt in range(MAX_RETRIES):
         try:
             response = client.post(
-                f"{rest_url}/rules",
+                f"{rest_url}/provisions",
                 headers={
                     "apikey": key,
                     "Authorization": f"Bearer {key}",
@@ -134,7 +137,7 @@ def insert_rules(rules, client, key, rest_url):
 
 def ingest_act(cons_num, client, key, rest_url):
     """Ingest a single Canada act."""
-    xml_path = ARCH_PATH / "canada" / f"{cons_num}.xml"
+    xml_path = AXIOM_PATH / "canada" / f"{cons_num}.xml"
     if not xml_path.exists():
         return 0
 
@@ -170,7 +173,7 @@ def main():
     print("Got API key!", flush=True)
 
     # Get all Canada XML files
-    canada_path = ARCH_PATH / "canada"
+    canada_path = AXIOM_PATH / "canada"
     xml_files = sorted(canada_path.glob("*.xml"))
     total_files = len(xml_files)
 

@@ -8,14 +8,14 @@ import json
 from datetime import date, datetime
 from unittest.mock import MagicMock, patch
 
-from atlas.encoder import (
+from axiom.encoder import (
     SYSTEM_PROMPT,
     Encoding,
     _extract_code_block,
     encode_and_save,
     encode_section,
 )
-from atlas.models import Citation, Section, Subsection
+from axiom.models import Citation, Section, Subsection
 
 # =============================================================================
 # Helpers
@@ -93,7 +93,7 @@ And some more text.
 
 
 class TestEncodeSection:
-    @patch("atlas.encoder.Anthropic")
+    @patch("axiom.encoder.Anthropic")
     def test_encode_section(self, mock_anthropic_cls):
         mock_client = MagicMock()
         mock_anthropic_cls.return_value = mock_client
@@ -134,7 +134,7 @@ variable earned_income_credit {
         assert result.prompt_tokens == 500
         assert result.completion_tokens == 800
 
-    @patch("atlas.encoder.Anthropic")
+    @patch("axiom.encoder.Anthropic")
     def test_encode_section_no_tests(self, mock_anthropic_cls):
         mock_client = MagicMock()
         mock_anthropic_cls.return_value = mock_client
@@ -152,7 +152,7 @@ variable earned_income_credit {
 
 
 class TestEncodeAndSave:
-    @patch("atlas.encoder.encode_section")
+    @patch("axiom.encoder.encode_section")
     def test_encode_and_save(self, mock_encode, tmp_path):
         mock_encode.return_value = Encoding(
             citation="26 USC 32",
@@ -185,7 +185,7 @@ class TestEncodeAndSave:
         assert metadata["citation"] == "26 USC 32"
         assert metadata["prompt_tokens"] == 500
 
-    @patch("atlas.encoder.encode_section")
+    @patch("axiom.encoder.encode_section")
     def test_encode_and_save_no_tests(self, mock_encode, tmp_path):
         mock_encode.return_value = Encoding(
             citation="26 USC 32",

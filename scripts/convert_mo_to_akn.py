@@ -21,13 +21,13 @@ from xml.etree import ElementTree as ET
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.converters.us_states.mo import (
+from axiom.converters.us_states.mo import (
     MOConverter,
     MOConverterError,
     MO_TAX_CHAPTERS,
     MO_WELFARE_CHAPTERS,
 )
-from atlas.models import Section, Subsection
+from axiom.models import Section, Subsection
 
 # Akoma Ntoso namespace
 AKN_NS = "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"

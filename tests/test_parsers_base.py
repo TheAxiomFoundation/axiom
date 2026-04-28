@@ -6,7 +6,7 @@ and helper functions.
 
 import pytest
 
-from atlas.parsers.base import (
+from axiom.parsers.base import (
     STATE_REGISTRY,
     BaseStateParser,
     StateCode,

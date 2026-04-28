@@ -1,7 +1,7 @@
-"""Tests for the legacy converters module (converters.py at atlas package root).
+"""Tests for the legacy converters module (converters.py at axiom package root).
 
 Tests cover conversion functions from state-specific models to unified Statute model.
-Note: converters.py at atlas root is shadowed by converters/ package, so we load it
+Note: converters.py at axiom root is shadowed by converters/ package, so we load it
 directly from the file path using importlib.
 """
 
@@ -12,12 +12,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from atlas.models import Citation, Section, Subsection
+from axiom.models import Citation, Section, Subsection
 
 # Load the shadowed converters.py module directly
 _spec = importlib.util.spec_from_file_location(
-    "atlas_converters_legacy",
-    Path(__file__).parent.parent / "src" / "atlas" / "converters.py",
+    "axiom_converters_legacy",
+    Path(__file__).parent.parent / "src" / "axiom" / "converters.py",
 )
 if _spec and _spec.loader:
     _mod = importlib.util.module_from_spec(_spec)

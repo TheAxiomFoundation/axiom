@@ -10,7 +10,7 @@ class TestCFRCitation:
 
     def test_parse_simple_citation(self):
         """Parse simple CFR citation like '26 CFR 1.32'."""
-        from atlas.models_regulation import CFRCitation
+        from axiom.models_regulation import CFRCitation
 
         cite = CFRCitation.from_string("26 CFR 1.32")
         assert cite.title == 26
@@ -20,7 +20,7 @@ class TestCFRCitation:
 
     def test_parse_citation_with_hyphen(self):
         """Parse CFR citation with hyphenated section like '26 CFR 1.32-1'."""
-        from atlas.models_regulation import CFRCitation
+        from axiom.models_regulation import CFRCitation
 
         cite = CFRCitation.from_string("26 CFR 1.32-1")
         assert cite.title == 26
@@ -29,7 +29,7 @@ class TestCFRCitation:
 
     def test_parse_citation_with_subsection(self):
         """Parse CFR citation with subsection like '26 CFR 1.32-1(a)'."""
-        from atlas.models_regulation import CFRCitation
+        from axiom.models_regulation import CFRCitation
 
         cite = CFRCitation.from_string("26 CFR 1.32-1(a)")
         assert cite.title == 26
@@ -39,7 +39,7 @@ class TestCFRCitation:
 
     def test_parse_citation_with_nested_subsections(self):
         """Parse CFR citation with nested subsections like '26 CFR 1.32-1(a)(1)(i)'."""
-        from atlas.models_regulation import CFRCitation
+        from axiom.models_regulation import CFRCitation
 
         cite = CFRCitation.from_string("26 CFR 1.32-1(a)(1)(i)")
         assert cite.title == 26
@@ -48,7 +48,7 @@ class TestCFRCitation:
 
     def test_parse_citation_with_periods(self):
         """Parse CFR citation with C.F.R. format."""
-        from atlas.models_regulation import CFRCitation
+        from axiom.models_regulation import CFRCitation
 
         cite = CFRCitation.from_string("26 C.F.R. 1.32-1")
         assert cite.title == 26
@@ -57,7 +57,7 @@ class TestCFRCitation:
 
     def test_parse_citation_with_section_symbol(self):
         """Parse CFR citation with section symbol."""
-        from atlas.models_regulation import CFRCitation
+        from axiom.models_regulation import CFRCitation
 
         cite = CFRCitation.from_string("26 CFR § 1.32-1")
         assert cite.title == 26
@@ -65,35 +65,35 @@ class TestCFRCitation:
 
     def test_cfr_cite_format(self):
         """Test CFR citation string output."""
-        from atlas.models_regulation import CFRCitation
+        from axiom.models_regulation import CFRCitation
 
         cite = CFRCitation(title=26, part=1, section="32-1", subsection="a/1")
         assert cite.cfr_cite == "26 CFR 1.32-1(a)(1)"
 
     def test_path_format(self):
         """Test filesystem path format."""
-        from atlas.models_regulation import CFRCitation
+        from axiom.models_regulation import CFRCitation
 
         cite = CFRCitation(title=26, part=1, section="32-1", subsection="a/1")
         assert cite.path == "regulation/26/1/32-1/a/1"
 
     def test_path_format_no_subsection(self):
         """Test path format without subsection."""
-        from atlas.models_regulation import CFRCitation
+        from axiom.models_regulation import CFRCitation
 
         cite = CFRCitation(title=26, part=1, section="32-1")
         assert cite.path == "regulation/26/1/32-1"
 
     def test_invalid_citation_raises(self):
         """Invalid CFR citation string raises ValueError."""
-        from atlas.models_regulation import CFRCitation
+        from axiom.models_regulation import CFRCitation
 
         with pytest.raises(ValueError):
             CFRCitation.from_string("not a citation")
 
     def test_part_only_citation(self):
         """Parse CFR citation with just part number like '26 CFR 1'."""
-        from atlas.models_regulation import CFRCitation
+        from axiom.models_regulation import CFRCitation
 
         cite = CFRCitation.from_string("26 CFR 1")
         assert cite.title == 26
@@ -106,7 +106,7 @@ class TestRegulationSubsection:
 
     def test_create_subsection(self):
         """Create a regulation subsection."""
-        from atlas.models_regulation import RegulationSubsection
+        from axiom.models_regulation import RegulationSubsection
 
         subsec = RegulationSubsection(
             id="a",
@@ -119,7 +119,7 @@ class TestRegulationSubsection:
 
     def test_nested_subsections(self):
         """Subsections can have children."""
-        from atlas.models_regulation import RegulationSubsection
+        from axiom.models_regulation import RegulationSubsection
 
         child = RegulationSubsection(id="1", text="First sub-requirement")
         parent = RegulationSubsection(
@@ -137,7 +137,7 @@ class TestRegulation:
 
     def test_create_regulation(self):
         """Create a basic regulation."""
-        from atlas.models_regulation import CFRCitation, Regulation
+        from axiom.models_regulation import CFRCitation, Regulation
 
         reg = Regulation(
             citation=CFRCitation(title=26, part=1, section="32-1"),
@@ -153,7 +153,7 @@ class TestRegulation:
 
     def test_regulation_with_source_statutes(self):
         """Regulation can reference source statutes."""
-        from atlas.models_regulation import CFRCitation, Regulation
+        from axiom.models_regulation import CFRCitation, Regulation
 
         reg = Regulation(
             citation=CFRCitation(title=26, part=1, section="32-1"),
@@ -169,7 +169,7 @@ class TestRegulation:
 
     def test_regulation_with_subsections(self):
         """Regulation can have structured subsections."""
-        from atlas.models_regulation import CFRCitation, Regulation, RegulationSubsection
+        from axiom.models_regulation import CFRCitation, Regulation, RegulationSubsection
 
         subsec = RegulationSubsection(id="a", text="General rule text")
         reg = Regulation(
@@ -186,7 +186,7 @@ class TestRegulation:
 
     def test_regulation_path(self):
         """Regulation has path property."""
-        from atlas.models_regulation import CFRCitation, Regulation
+        from axiom.models_regulation import CFRCitation, Regulation
 
         reg = Regulation(
             citation=CFRCitation(title=26, part=1, section="32-1"),
@@ -200,7 +200,7 @@ class TestRegulation:
 
     def test_regulation_cfr_cite(self):
         """Regulation has cfr_cite property."""
-        from atlas.models_regulation import CFRCitation, Regulation
+        from axiom.models_regulation import CFRCitation, Regulation
 
         reg = Regulation(
             citation=CFRCitation(title=26, part=1, section="32-1"),
@@ -218,7 +218,7 @@ class TestRegulationSearchResult:
 
     def test_create_search_result(self):
         """Create a regulation search result."""
-        from atlas.models_regulation import RegulationSearchResult
+        from axiom.models_regulation import RegulationSearchResult
 
         result = RegulationSearchResult(
             cfr_cite="26 CFR 1.32-1",
@@ -236,7 +236,7 @@ class TestAmendment:
 
     def test_create_amendment(self):
         """Create an amendment record."""
-        from atlas.models_regulation import Amendment
+        from axiom.models_regulation import Amendment
 
         amendment = Amendment(
             document="T.D. 9954",

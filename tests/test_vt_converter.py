@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from atlas.converters.us_states.vt import (
+from axiom.converters.us_states.vt import (
     VT_HUMAN_SERVICES_CHAPTERS,
     VT_TAX_CHAPTERS,
     VT_TITLES,
@@ -17,7 +17,7 @@ from atlas.converters.us_states.vt import (
     download_vt_chapter,
     fetch_vt_section,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 # Sample HTML from legislature.vermont.gov for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

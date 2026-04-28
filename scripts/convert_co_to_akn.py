@@ -19,9 +19,9 @@ from xml.etree import ElementTree as ET
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.converters.us_states.co import COConverter, CO_TAX_ARTICLES, CO_HUMAN_SERVICES_ARTICLES
-from atlas.models import Section as ArchSection
-from atlas.models_akoma_ntoso import (
+from axiom.converters.us_states.co import COConverter, CO_TAX_ARTICLES, CO_HUMAN_SERVICES_ARTICLES
+from axiom.models import Section as ArchSection
+from axiom.models_akoma_ntoso import (
     AKN_NAMESPACE,
     Act,
     Chapter,
@@ -48,7 +48,7 @@ def prettify_xml(elem: ET.Element, indent: str = "  ") -> str:
 
 
 def section_to_akn(arch_section: ArchSection, title_num: int, article_num: int) -> Section:
-    """Convert an arch Section to an Akoma Ntoso Section."""
+    """Convert an Axiom section to an Akoma Ntoso Section."""
     # Parse section number from citation (e.g., "CO-39-22-104" -> "39-22-104")
     section_id = arch_section.citation.section
     if section_id.startswith("CO-"):
@@ -258,7 +258,7 @@ def main():
 
             if sections:
                 # Get title name
-                from atlas.converters.us_states.co import CO_TITLES
+                from axiom.converters.us_states.co import CO_TITLES
                 title_name = CO_TITLES.get(title_num, f"Title {title_num}")
 
                 doc = create_akn_document(
@@ -283,7 +283,7 @@ def main():
             articles = fetch_title(converter, args.title)
 
             if articles:
-                from atlas.converters.us_states.co import CO_TITLES
+                from axiom.converters.us_states.co import CO_TITLES
                 title_name = CO_TITLES.get(args.title, f"Title {args.title}")
 
                 doc = create_akn_document(
@@ -317,7 +317,7 @@ def main():
                     articles[article_num] = sections
 
             if articles:
-                from atlas.converters.us_states.co import CO_TITLES
+                from axiom.converters.us_states.co import CO_TITLES
                 title_name = CO_TITLES.get(39, "Taxation")
 
                 doc = create_akn_document(

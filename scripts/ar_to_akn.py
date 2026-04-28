@@ -24,7 +24,7 @@ from xml.etree import ElementTree as ET
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.converters.us_states.ar import (
+from axiom.converters.us_states.ar import (
     ARConverter,
     AR_TAX_CHAPTERS,
     AR_WELFARE_CHAPTERS,
@@ -36,7 +36,7 @@ AKN_NS = "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"
 
 
 def section_to_akn_xml(section, title_num: int, chapter_num: int) -> str:
-    """Convert an arch Section model to Akoma Ntoso XML.
+    """Convert an Axiom section model to Akoma Ntoso XML.
 
     Args:
         section: Section model from ARConverter

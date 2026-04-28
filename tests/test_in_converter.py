@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from atlas.converters.us_states.in_ import (
+from axiom.converters.us_states.in_ import (
     IN_TAX_ARTICLES,
     IN_TITLES,
     IN_WELFARE_ARTICLES,
@@ -18,7 +18,7 @@ from atlas.converters.us_states.in_ import (
     download_in_article,
     fetch_in_section,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 # Sample HTML from Justia for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

@@ -152,7 +152,7 @@ def catalog_document(
 def main():
     """Catalog all SNAP documents."""
     supabase_url = os.environ["AXIOM_SUPABASE_URL"]
-    service_key = os.environ["COSILICO_SUPABASE_SERVICE_KEY"]
+    service_key = os.environ["AXIOM_SUPABASE_SERVICE_KEY"]
 
     data_dir = Path(__file__).parent.parent / "data" / "snap"
 

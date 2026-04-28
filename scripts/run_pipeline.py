@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the full statute pipeline: fetch → R2 atlas → convert.
+"""Run the full statute pipeline: fetch → R2 axiom → convert.
 
 Usage:
     python scripts/run_pipeline.py --state ak
@@ -11,8 +11,8 @@ import argparse
 import time
 from datetime import datetime, timezone
 
-from atlas.ingest.state_orchestrator import STATE_CONVERTER_MODULES as STATE_CONVERTERS
-from atlas.storage.r2 import get_r2_atlas
+from axiom.ingest.state_orchestrator import STATE_CONVERTER_MODULES as STATE_CONVERTERS
+from axiom.storage.r2 import get_r2_axiom
 
 
 def section_to_akn_xml(section, state: str) -> str:
@@ -136,7 +136,7 @@ class StatePipeline:
     def __init__(self, state: str, dry_run: bool = False):
         self.state = state.lower()
         self.dry_run = dry_run
-        self.r2_atlas = get_r2_atlas()
+        self.r2_axiom = get_r2_axiom()
         self.converter = None
         self.stats = {
             "sections_found": 0,
@@ -177,11 +177,11 @@ class StatePipeline:
         safe_id = section_id.replace("/", "-").replace(".", "-")
 
         try:
-            # 1. Upload raw HTML to atlas bucket
+            # 1. Upload raw HTML to axiom bucket
             raw_key = f"us/statutes/states/{self.state}/raw/{safe_id}.html"
 
             if not self.dry_run:
-                self.r2_atlas.upload_raw(
+                self.r2_axiom.upload_raw(
                     raw_key,
                     raw_html,
                     metadata={
@@ -319,12 +319,12 @@ class StatePipeline:
                 url = self._get_chapter_url(chapter_num, title_or_code)
                 raw_html = self._fetch_raw_html(url)
 
-                # 2. Archive raw HTML to R2 atlas bucket (chapter level)
+                # 2. Archive raw HTML to R2 axiom bucket (chapter level)
                 safe_chapter = display_name.replace("/", "-").replace(".", "-")
                 raw_key = f"us/statutes/states/{self.state}/raw/chapter-{safe_chapter}.html"
 
                 if not self.dry_run:
-                    self.r2_atlas.upload_raw(
+                    self.r2_axiom.upload_raw(
                         raw_key,
                         raw_html,
                         metadata={
@@ -386,7 +386,7 @@ class StatePipeline:
 
 def run_supabase_ingestion(state: str | None = None, all_states: bool = False):
     """Ingest state statutes from local HTML into Supabase."""
-    from atlas.ingest.state_orchestrator import StateOrchestrator
+    from axiom.ingest.state_orchestrator import StateOrchestrator
 
     orch = StateOrchestrator()
 

@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from atlas.converters.us_states.md import (
+from axiom.converters.us_states.md import (
     MD_ARTICLES,
     MD_TAX_ARTICLES,
     MD_WELFARE_ARTICLES,
@@ -17,7 +17,7 @@ from atlas.converters.us_states.md import (
     download_md_article,
     fetch_md_section,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 # Sample HTML from mgaleg.maryland.gov for testing
 # Based on actual structure: StatuteText div with HTML-encoded content

@@ -6,7 +6,7 @@ Network calls are NOT made.
 
 from datetime import date
 
-from atlas.converters.ecfr import (
+from axiom.converters.ecfr import (
     ECFR_API_BASE,
     PRIORITY_TITLES,
     ECFRConverter,

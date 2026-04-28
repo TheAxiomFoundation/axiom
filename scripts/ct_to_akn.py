@@ -17,13 +17,13 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 from xml.dom import minidom
 
-from atlas.converters.us_states.ct import (
+from axiom.converters.us_states.ct import (
     CTConverter,
     CT_TAX_CHAPTERS,
     CT_WELFARE_CHAPTERS,
     CT_TITLES,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 
 # Akoma Ntoso namespace
@@ -34,10 +34,10 @@ OUTPUT_DIR = Path("/tmp/rules-us-ct-akn")
 
 
 def section_to_akn_xml(section: Section, chapter_num: str, chapter_title: str) -> str:
-    """Convert an arch Section model to Akoma Ntoso XML.
+    """Convert an Axiom section model to Akoma Ntoso XML.
 
     Args:
-        section: The arch Section model
+        section: The Axiom section model
         chapter_num: Connecticut chapter number
         chapter_title: Connecticut chapter title
 
@@ -92,7 +92,7 @@ def section_to_akn_xml(section: Section, chapter_num: str, chapter_title: str) -
     expr_date.set("date", str(date.today()))
     expr_date.set("name", "publication")
     expr_author = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRauthor")
-    expr_author.set("href", "#arch")
+    expr_author.set("href", "#axiom")
     expr_lang = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRlanguage")
     expr_lang.set("language", "eng")
 
@@ -110,16 +110,16 @@ def section_to_akn_xml(section: Section, chapter_num: str, chapter_title: str) -
     manif_date.set("date", str(date.today()))
     manif_date.set("name", "generation")
     manif_author = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRauthor")
-    manif_author.set("href", "#arch")
+    manif_author.set("href", "#axiom")
 
     # References
     references = ET.SubElement(meta, f"{{{AKN_NS}}}references")
-    references.set("source", "#arch")
+    references.set("source", "#axiom")
 
-    org_arch = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
-    org_arch.set("eId", "arch")
-    org_arch.set("href", "https://axiom-foundation.org")
-    org_arch.set("showAs", "Atlas")
+    org_axiom = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
+    org_axiom.set("eId", "axiom")
+    org_axiom.set("href", "https://axiom-foundation.org")
+    org_axiom.set("showAs", "Axiom")
 
     org_ct = ET.SubElement(references, f"{{{AKN_NS}}}TLCOrganization")
     org_ct.set("eId", "ct-legislature")

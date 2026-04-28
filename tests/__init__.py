@@ -1,1 +1,1 @@
-"""Tests for Atlas."""
+"""Tests for Axiom."""

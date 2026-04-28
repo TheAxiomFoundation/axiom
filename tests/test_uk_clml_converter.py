@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from atlas.converters.uk_clml import UKCLMLConverter
-from atlas.models_uk import UKAct, UKSection
+from axiom.converters.uk_clml import UKCLMLConverter
+from axiom.models_uk import UKAct, UKSection
 
 # Sample CLML XML for testing (Finance Act 2024 section 1)
 SAMPLE_SECTION_XML = """<?xml version="1.0" encoding="UTF-8"?>

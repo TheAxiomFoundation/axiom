@@ -37,22 +37,22 @@ class TestUKLegislationFetcher:
 
     def test_fetcher_init(self):
         """Initialize fetcher with default settings."""
-        from atlas.fetchers.legislation_uk import UKLegislationFetcher
+        from axiom.fetchers.legislation_uk import UKLegislationFetcher
 
         fetcher = UKLegislationFetcher()
         assert fetcher.base_url == "https://www.legislation.gov.uk"
 
     def test_fetcher_custom_data_dir(self, tmp_path):
         """Initialize fetcher with custom data directory."""
-        from atlas.fetchers.legislation_uk import UKLegislationFetcher
+        from axiom.fetchers.legislation_uk import UKLegislationFetcher
 
         fetcher = UKLegislationFetcher(data_dir=tmp_path)
         assert fetcher.data_dir == tmp_path
 
     def test_build_section_url(self):
         """Build URL for fetching a section."""
-        from atlas.fetchers.legislation_uk import UKLegislationFetcher
-        from atlas.models_uk import UKCitation
+        from axiom.fetchers.legislation_uk import UKLegislationFetcher
+        from axiom.models_uk import UKCitation
 
         fetcher = UKLegislationFetcher()
         citation = UKCitation(type="ukpga", year=2003, number=1, section="62")
@@ -61,8 +61,8 @@ class TestUKLegislationFetcher:
 
     def test_build_act_url(self):
         """Build URL for fetching an entire Act."""
-        from atlas.fetchers.legislation_uk import UKLegislationFetcher
-        from atlas.models_uk import UKCitation
+        from axiom.fetchers.legislation_uk import UKLegislationFetcher
+        from axiom.models_uk import UKCitation
 
         fetcher = UKLegislationFetcher()
         citation = UKCitation(type="ukpga", year=2003, number=1)
@@ -76,8 +76,8 @@ class TestUKLegislationDownload:
     @pytest.mark.asyncio
     async def test_fetch_section(self, tmp_path):
         """Fetch a single section."""
-        from atlas.fetchers.legislation_uk import UKLegislationFetcher
-        from atlas.models_uk import UKCitation
+        from axiom.fetchers.legislation_uk import UKLegislationFetcher
+        from axiom.models_uk import UKCitation
 
         fetcher = UKLegislationFetcher(data_dir=tmp_path)
 
@@ -94,8 +94,8 @@ class TestUKLegislationDownload:
     @pytest.mark.asyncio
     async def test_fetch_with_caching(self, tmp_path):
         """Fetched XML is cached to disk."""
-        from atlas.fetchers.legislation_uk import UKLegislationFetcher
-        from atlas.models_uk import UKCitation
+        from axiom.fetchers.legislation_uk import UKLegislationFetcher
+        from axiom.models_uk import UKCitation
 
         fetcher = UKLegislationFetcher(data_dir=tmp_path)
 
@@ -115,7 +115,7 @@ class TestUKLegislationSearch:
 
     def test_build_search_url(self):
         """Build search API URL."""
-        from atlas.fetchers.legislation_uk import UKLegislationFetcher
+        from axiom.fetchers.legislation_uk import UKLegislationFetcher
 
         fetcher = UKLegislationFetcher()
         url = fetcher.build_search_url("earnings", type="ukpga", year=2003)
@@ -129,7 +129,7 @@ class TestPriorityActs:
 
     def test_priority_acts_defined(self):
         """Priority Acts are defined for PolicyEngine."""
-        from atlas.fetchers.legislation_uk import UK_PRIORITY_ACTS
+        from axiom.fetchers.legislation_uk import UK_PRIORITY_ACTS
 
         # Should include key tax/benefits legislation
         assert any("2003/1" in act for act in UK_PRIORITY_ACTS)  # ITEPA
@@ -141,7 +141,7 @@ class TestRateLimiting:
 
     def test_rate_limit_delay(self):
         """Fetcher respects rate limit delay."""
-        from atlas.fetchers.legislation_uk import UKLegislationFetcher
+        from axiom.fetchers.legislation_uk import UKLegislationFetcher
 
         # Default should be reasonable (legislation.gov.uk allows 3000/5min = 10/sec)
         fetcher = UKLegislationFetcher()

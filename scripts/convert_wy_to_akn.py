@@ -18,7 +18,7 @@ from xml.etree import ElementTree as ET
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.models_akoma_ntoso import (
+from axiom.models_akoma_ntoso import (
     AKN_NAMESPACE,
     Act,
     Article,

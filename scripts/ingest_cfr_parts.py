@@ -1,4 +1,4 @@
-"""Ingest CFR parts from eCFR into Supabase ``arch.rules``.
+"""Ingest CFR parts from eCFR into Supabase ``corpus.provisions``.
 
 Downloads the eCFR Versioner XML for a given (title, part), parses the
 DIV5/DIV6/DIV8 hierarchy, and upserts Part / Subpart / Section rows with
@@ -31,8 +31,9 @@ Environment
 
 Design notes
 ------------
-* Deterministic IDs (``uuid5(NAMESPACE_URL, "atlas:" + citation_path)``) match
-  :mod:`atlas.ingest.supabase` so re-runs upsert cleanly instead of producing
+* Deterministic IDs use the legacy ``uuid5(NAMESPACE_URL, "axiom:" + citation_path)``
+  namespace used by :mod:`axiom.ingest.supabase`, so re-runs upsert cleanly
+  instead of producing
   duplicates.
 * ``doc_type`` is ``"regulation"`` for all rows.
 * Not every CFR part uses subparts; when none are present, sections become
@@ -57,17 +58,18 @@ from collections.abc import Iterable, Iterator
 from uuid import NAMESPACE_URL, uuid5
 from xml.etree import ElementTree as ET
 
-SUPABASE_URL = "https://nsupqhfchdtqclomlrgs.supabase.co"
+DEFAULT_AXIOM_SUPABASE_URL = "https://swocpijqqahhuwtuahwc.supabase.co"
+SUPABASE_URL = os.environ.get("AXIOM_SUPABASE_URL", DEFAULT_AXIOM_SUPABASE_URL)
 REST_URL = f"{SUPABASE_URL}/rest/v1"
 DEFAULT_AS_OF = "2024-04-16"
-USER_AGENT = "atlas-ingest/0.1"
+USER_AGENT = "axiom-ingest/0.1"
 
 
 # --- Helpers ---------------------------------------------------------------
 
 
 def deterministic_id(citation_path: str) -> str:
-    return str(uuid5(NAMESPACE_URL, f"atlas:{citation_path}"))
+    return str(uuid5(NAMESPACE_URL, f"axiom:{citation_path}"))
 
 
 def clean_text(s: str) -> str:
@@ -274,7 +276,7 @@ def chunked(rows: list[dict], size: int = 100) -> Iterator[list[dict]]:
 def upsert_rows(rows: list[dict], service_key: str) -> None:
     if not rows:
         return
-    url = f"{REST_URL}/rules?on_conflict=id"
+    url = f"{REST_URL}/provisions?on_conflict=id"
     payload = json.dumps(rows).encode()
     req = urllib.request.Request(
         url,
@@ -284,7 +286,7 @@ def upsert_rows(rows: list[dict], service_key: str) -> None:
             "Authorization": f"Bearer {service_key}",
             "Content-Type": "application/json",
             "Prefer": "resolution=merge-duplicates,return=minimal",
-            "Content-Profile": "arch",
+            "Content-Profile": "corpus",
             "User-Agent": USER_AGENT,
         },
         method="POST",
@@ -324,9 +326,9 @@ def get_service_key() -> str:
 
 
 def refresh_jurisdiction_counts(service_key: str) -> None:
-    """Refresh the akn.jurisdiction_counts materialized view.
+    """Refresh the corpus.jurisdiction_counts materialized view.
 
-    The MV backs the per-jurisdiction pills on the Atlas landing page.
+    The MV backs the per-jurisdiction pills in the Axiom app.
     Ingest drivers call this at end-of-run so the stat block picks up
     newly-added rows without a manual ``REFRESH MATERIALIZED VIEW``.
     CONCURRENTLY refresh — readers on the landing page don't block.
@@ -341,7 +343,7 @@ def refresh_jurisdiction_counts(service_key: str) -> None:
             "apikey": service_key,
             "Authorization": f"Bearer {service_key}",
             "Content-Type": "application/json",
-            "Content-Profile": "arch",
+            "Content-Profile": "corpus",
             "User-Agent": USER_AGENT,
         },
         method="POST",

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from atlas.writer import (
+from axiom.writer import (
     CanonicalDocument,
     DocumentWriter,
     LocalBackend,

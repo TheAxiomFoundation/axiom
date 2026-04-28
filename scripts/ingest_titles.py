@@ -3,9 +3,9 @@
 
 import sys
 
-sys.path.insert(0, "/Users/maxghenis/TheAxiomFoundation/atlas/src")
+sys.path.insert(0, "/Users/maxghenis/TheAxiomFoundation/axiom/src")
 
-from atlas.ingest.supabase import SupabaseIngestor
+from axiom.ingest.supabase import SupabaseIngestor
 
 
 def main():

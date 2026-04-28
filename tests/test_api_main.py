@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from atlas.api.main import (
+from axiom.api.main import (
     ReferencesResponse,
     SearchResponse,
     SearchResultResponse,
@@ -13,7 +13,7 @@ from atlas.api.main import (
     TitleResponse,
     create_app,
 )
-from atlas.models import Citation, SearchResult, Section, Subsection, TitleInfo
+from axiom.models import Citation, SearchResult, Section, Subsection, TitleInfo
 
 
 @pytest.fixture
@@ -97,14 +97,14 @@ class TestReferencesResponse:
 
 
 class TestCreateApp:
-    @patch("atlas.api.main.Arch")
-    def test_create_app(self, mock_arch):
+    @patch("axiom.api.main.AxiomArchive")
+    def test_create_app(self, mock_archive):
         app = create_app(db_path=":memory:")
         assert app is not None
-        assert app.title == "Atlas"
+        assert app.title == "Axiom"
 
-    @patch("atlas.api.main.Arch")
-    def test_app_has_routes(self, mock_arch):
+    @patch("axiom.api.main.AxiomArchive")
+    def test_app_has_routes(self, mock_archive):
         app = create_app(db_path=":memory:")
         routes = [r.path for r in app.routes]
         assert "/" in routes
@@ -112,8 +112,8 @@ class TestCreateApp:
 
 
 class TestAppEndpoints:
-    @patch("atlas.api.main.Arch")
-    def test_root(self, mock_arch):
+    @patch("axiom.api.main.AxiomArchive")
+    def test_root(self, mock_archive):
         from fastapi.testclient import TestClient
 
         app = create_app(db_path=":memory:")
@@ -121,15 +121,15 @@ class TestAppEndpoints:
         response = client.get("/")
         assert response.status_code == 200
         data = response.json()
-        assert data["name"] == "Atlas"
+        assert data["name"] == "Axiom"
 
-    @patch("atlas.api.main.Arch")
-    def test_search(self, mock_arch_cls):
+    @patch("axiom.api.main.AxiomArchive")
+    def test_search(self, mock_archive_cls):
         from fastapi.testclient import TestClient
 
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.search.return_value = [
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.search.return_value = [
             SearchResult(
                 citation=Citation(title=26, section="32"),
                 section_title="EITC",
@@ -146,91 +146,91 @@ class TestAppEndpoints:
         assert data["query"] == "earned income"
         assert data["total"] == 1
 
-    @patch("atlas.api.main.Arch")
-    def test_get_section_found(self, mock_arch_cls, section):
+    @patch("axiom.api.main.AxiomArchive")
+    def test_get_section_found(self, mock_archive_cls, section):
         from fastapi.testclient import TestClient
 
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.get.return_value = section
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.get.return_value = section
 
         app = create_app(db_path=":memory:")
         client = TestClient(app)
         response = client.get("/v1/sections/26/32")
         assert response.status_code == 200
 
-    @patch("atlas.api.main.Arch")
-    def test_get_section_not_found(self, mock_arch_cls):
+    @patch("axiom.api.main.AxiomArchive")
+    def test_get_section_not_found(self, mock_archive_cls):
         from fastapi.testclient import TestClient
 
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.get.return_value = None
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.get.return_value = None
 
         app = create_app(db_path=":memory:")
         client = TestClient(app)
         response = client.get("/v1/sections/99/999")
         assert response.status_code == 404
 
-    @patch("atlas.api.main.Arch")
-    def test_get_subsection(self, mock_arch_cls, section):
+    @patch("axiom.api.main.AxiomArchive")
+    def test_get_subsection(self, mock_archive_cls, section):
         from fastapi.testclient import TestClient
 
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.get.return_value = section
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.get.return_value = section
 
         app = create_app(db_path=":memory:")
         client = TestClient(app)
         response = client.get("/v1/sections/26/32/a/1")
         assert response.status_code == 200
 
-    @patch("atlas.api.main.Arch")
-    def test_get_subsection_not_found(self, mock_arch_cls):
+    @patch("axiom.api.main.AxiomArchive")
+    def test_get_subsection_not_found(self, mock_archive_cls):
         from fastapi.testclient import TestClient
 
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.get.return_value = None
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.get.return_value = None
 
         app = create_app(db_path=":memory:")
         client = TestClient(app)
         response = client.get("/v1/sections/99/999/a")
         assert response.status_code == 404
 
-    @patch("atlas.api.main.Arch")
-    def test_get_by_citation(self, mock_arch_cls, section):
+    @patch("axiom.api.main.AxiomArchive")
+    def test_get_by_citation(self, mock_archive_cls, section):
         from fastapi.testclient import TestClient
 
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.get.return_value = section
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.get.return_value = section
 
         app = create_app(db_path=":memory:")
         client = TestClient(app)
         response = client.get("/v1/citation/26 USC 32")
         assert response.status_code == 200
 
-    @patch("atlas.api.main.Arch")
-    def test_get_by_citation_not_found(self, mock_arch_cls):
+    @patch("axiom.api.main.AxiomArchive")
+    def test_get_by_citation_not_found(self, mock_archive_cls):
         from fastapi.testclient import TestClient
 
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.get.return_value = None
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.get.return_value = None
 
         app = create_app(db_path=":memory:")
         client = TestClient(app)
         response = client.get("/v1/citation/26 USC 32")
         assert response.status_code == 404
 
-    @patch("atlas.api.main.Arch")
-    def test_get_references(self, mock_arch_cls):
+    @patch("axiom.api.main.AxiomArchive")
+    def test_get_references(self, mock_archive_cls):
         from fastapi.testclient import TestClient
 
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.get_references.return_value = {
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.get_references.return_value = {
             "references_to": ["26 USC 24"],
             "referenced_by": ["26 USC 1"],
         }
@@ -242,13 +242,13 @@ class TestAppEndpoints:
         data = response.json()
         assert data["citation"] == "26 USC 32"
 
-    @patch("atlas.api.main.Arch")
-    def test_list_titles(self, mock_arch_cls):
+    @patch("axiom.api.main.AxiomArchive")
+    def test_list_titles(self, mock_archive_cls):
         from fastapi.testclient import TestClient
 
-        mock_arch = MagicMock()
-        mock_arch_cls.return_value = mock_arch
-        mock_arch.list_titles.return_value = [
+        mock_archive = MagicMock()
+        mock_archive_cls.return_value = mock_archive
+        mock_archive.list_titles.return_value = [
             TitleInfo(
                 number=26,
                 name="Internal Revenue Code",

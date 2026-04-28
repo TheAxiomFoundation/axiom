@@ -9,14 +9,14 @@ from unittest.mock import patch
 
 import pytest
 
-from atlas.converters.us_states.sd import (
+from axiom.converters.us_states.sd import (
     SD_TAX_CHAPTERS,
     SD_WELFARE_CHAPTERS,
     SDConverter,
     download_sd_chapter,
     fetch_sd_section,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 # Sample HTML from sdlegislature.gov for testing (modern format)
 SAMPLE_SECTION_HTML = """<html xmlns="http://www.w3.org/1999/xhtml"><head>

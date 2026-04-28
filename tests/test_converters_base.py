@@ -7,7 +7,7 @@ from datetime import date
 
 import pytest
 
-from atlas.converters.base import (
+from axiom.converters.base import (
     CONVERTERS,
     AknSection,
     AknSubsection,

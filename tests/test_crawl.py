@@ -7,7 +7,7 @@ All HTTP and R2 calls are mocked.
 
 import pytest
 
-from atlas.crawl import (
+from axiom.crawl import (
     ARCHIVE_ORG_STATES,
     R2_BUCKET,
     R2_ENDPOINT,
@@ -20,7 +20,7 @@ class TestConstants:
         assert "r2.cloudflarestorage.com" in R2_ENDPOINT
 
     def test_r2_bucket(self):
-        assert R2_BUCKET == "atlas"
+        assert R2_BUCKET == "axiom"
 
 
 class TestSectionPatterns:

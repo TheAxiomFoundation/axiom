@@ -17,14 +17,14 @@ from xml.etree import ElementTree as ET
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.converters.us_states.sd import (
+from axiom.converters.us_states.sd import (
     SDConverter,
     SD_TITLES,
     SD_TAX_CHAPTERS,
     SD_WELFARE_CHAPTERS,
 )
-from atlas.models import Section as ArchSection
-from atlas.models_akoma_ntoso import (
+from axiom.models import Section as ArchSection
+from axiom.models_akoma_ntoso import (
     AKN_NAMESPACE,
     Act,
     Chapter,
@@ -46,7 +46,7 @@ from atlas.models_akoma_ntoso import (
 
 
 def section_to_akn(arch_section: ArchSection) -> Section:
-    """Convert arch Section model to AKN Section element."""
+    """Convert Axiom section model to AKN Section element."""
     # Extract section number from citation
     section_num = arch_section.citation.section  # e.g., "SD-10-1-1"
     clean_num = section_num.replace("SD-", "")

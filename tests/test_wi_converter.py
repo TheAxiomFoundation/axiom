@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from atlas.converters.us_states.wi import (
+from axiom.converters.us_states.wi import (
     WI_TAX_CHAPTERS,
     WI_WELFARE_CHAPTERS,
     WIConverter,
@@ -17,7 +17,7 @@ from atlas.converters.us_states.wi import (
     download_wi_chapter,
     fetch_wi_section,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 # Sample HTML from docs.legis.wisconsin.gov for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

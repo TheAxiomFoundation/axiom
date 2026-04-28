@@ -20,12 +20,12 @@ from xml.dom import minidom
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from atlas.converters.us_states.ok import (
+from axiom.converters.us_states.ok import (
     OKConverter,
     OK_TITLES,
     OK_SECTIONS,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 
 # Akoma Ntoso namespace
@@ -65,7 +65,7 @@ def create_akn_xml(section: Section, title_num: int, title_name: str) -> str:
 
     # Identification
     identification = ET.SubElement(meta, f"{{{AKN_NS}}}identification")
-    identification.set("source", "#arch")
+    identification.set("source", "#axiom")
 
     # FRBRWork
     work = ET.SubElement(identification, f"{{{AKN_NS}}}FRBRWork")
@@ -99,7 +99,7 @@ def create_akn_xml(section: Section, title_num: int, title_name: str) -> str:
     expr_date.set("date", date.today().isoformat())
     expr_date.set("name", "publication")
     expr_author = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRauthor")
-    expr_author.set("href", "#arch")
+    expr_author.set("href", "#axiom")
     expr_lang = ET.SubElement(expr, f"{{{AKN_NS}}}FRBRlanguage")
     expr_lang.set("language", "eng")
 
@@ -117,17 +117,17 @@ def create_akn_xml(section: Section, title_num: int, title_name: str) -> str:
     manif_date.set("date", date.today().isoformat())
     manif_date.set("name", "generation")
     manif_author = ET.SubElement(manif, f"{{{AKN_NS}}}FRBRauthor")
-    manif_author.set("href", "#arch")
+    manif_author.set("href", "#axiom")
 
     # References
     refs = ET.SubElement(meta, f"{{{AKN_NS}}}references")
-    refs.set("source", "#arch")
+    refs.set("source", "#axiom")
 
     # TLC references
-    arch_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
-    arch_ref.set("eId", "arch")
-    arch_ref.set("href", "https://axiom-foundation.org")
-    arch_ref.set("showAs", "Atlas")
+    axiom_ref = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
+    axiom_ref.set("eId", "axiom")
+    axiom_ref.set("href", "https://axiom-foundation.org")
+    axiom_ref.set("showAs", "Axiom")
 
     ok_leg = ET.SubElement(refs, f"{{{AKN_NS}}}TLCOrganization")
     ok_leg.set("eId", "oklahoma-legislature")

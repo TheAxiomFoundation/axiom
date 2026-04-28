@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from atlas.converters.us_states.wa import (
+from axiom.converters.us_states.wa import (
     WA_EXCISE_TAX_CHAPTERS,
     WA_PUBLIC_ASSISTANCE_CHAPTERS,
     WA_TITLES,
@@ -18,7 +18,7 @@ from atlas.converters.us_states.wa import (
     download_wa_chapter,
     fetch_wa_section,
 )
-from atlas.models import Section
+from axiom.models import Section
 
 # Sample HTML from app.leg.wa.gov for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

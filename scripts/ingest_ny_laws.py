@@ -4,14 +4,14 @@ The ``TheAxiomFoundation/rules-us-ny`` GitHub repo carries ~37k section
 XML files in Akoma Ntoso 3.0 format, one per NY-law-code section. This
 script clones the repo to a scratch dir (if not already cached), walks
 ``{law_code}/{section}.xml``, and uploads one row per section to
-``arch.rules`` with ``jurisdiction='us-ny'``.
+``corpus.provisions`` with ``jurisdiction='us-ny'``.
 
 Design
 ------
 * Self-contained parser. AKN 3.0 is well-specified enough that we don't
   need the state_orchestrator plumbing — just ElementTree.
 * ``citation_path`` = ``us-ny/statute/{law_code}/{section_number}``.
-  Matches the Atlas viewer's expected shape for a state jurisdiction
+  Matches the Axiom viewer's expected shape for a state jurisdiction
   with doc_type = "statute".
 * Body text = concatenated ``<content>`` inner text in document order,
   preserving paragraph breaks. Good enough for search + reading; the
@@ -54,8 +54,7 @@ from ingest_cfr_parts import (  # noqa: E402
 )
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from atlas.ingest.rule_uploader import RuleUploader  # noqa: E402
-
+from axiom.ingest.rule_uploader import RuleUploader  # noqa: E402
 
 AKN_NS = {"akn": "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"}
 REPO_URL = "https://github.com/TheAxiomFoundation/rules-us-ny.git"
@@ -68,7 +67,7 @@ NON_LAW_DIRS = {"README.md", "regulations", "statutes"}
 
 
 def deterministic_id(citation_path: str) -> str:
-    return str(uuid5(NAMESPACE_URL, f"atlas:{citation_path}"))
+    return str(uuid5(NAMESPACE_URL, f"axiom:{citation_path}"))
 
 
 def ensure_repo(target: Path, update: bool) -> Path:

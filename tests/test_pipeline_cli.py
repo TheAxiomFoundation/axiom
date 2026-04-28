@@ -1,6 +1,6 @@
 """Tests for the pipeline CLI module.
 
-Note: The pipeline module has an import dependency on get_r2_atlas which
+Note: The pipeline module has an import dependency on get_r2_axiom which
 may not exist. Tests handle import failures gracefully.
 """
 
@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 try:
-    from atlas.pipeline.cli import main as pipeline_main
+    from axiom.pipeline.cli import main as pipeline_main
     _IMPORT_OK = True
 except ImportError:
     _IMPORT_OK = False
@@ -18,8 +18,8 @@ pytestmark = pytest.mark.skipif(not _IMPORT_OK, reason="Pipeline CLI not importa
 
 
 class TestPipelineCLI:
-    @patch("atlas.pipeline.cli.StatePipeline")
-    @patch("atlas.pipeline.cli.STATE_CONVERTERS", {"ak": "atlas.converters.us_states.ak"})
+    @patch("axiom.pipeline.cli.StatePipeline")
+    @patch("axiom.pipeline.cli.STATE_CONVERTERS", {"ak": "axiom.converters.us_states.ak"})
     def test_main_with_state(self, mock_pipeline_cls):
         mock_pipeline = MagicMock()
         mock_pipeline_cls.return_value = mock_pipeline
@@ -35,8 +35,8 @@ class TestPipelineCLI:
 
         mock_pipeline_cls.assert_called_once_with("ak", dry_run=False)
 
-    @patch("atlas.pipeline.cli.StatePipeline")
-    @patch("atlas.pipeline.cli.STATE_CONVERTERS", {"ak": "a", "oh": "b"})
+    @patch("axiom.pipeline.cli.StatePipeline")
+    @patch("axiom.pipeline.cli.STATE_CONVERTERS", {"ak": "a", "oh": "b"})
     def test_main_all_states(self, mock_pipeline_cls):
         mock_pipeline = MagicMock()
         mock_pipeline_cls.return_value = mock_pipeline
@@ -52,8 +52,8 @@ class TestPipelineCLI:
 
         assert mock_pipeline_cls.call_count == 2
 
-    @patch("atlas.pipeline.cli.StatePipeline")
-    @patch("atlas.pipeline.cli.STATE_CONVERTERS", {"ak": "a"})
+    @patch("axiom.pipeline.cli.StatePipeline")
+    @patch("axiom.pipeline.cli.STATE_CONVERTERS", {"ak": "a"})
     def test_main_dry_run(self, mock_pipeline_cls):
         mock_pipeline = MagicMock()
         mock_pipeline_cls.return_value = mock_pipeline

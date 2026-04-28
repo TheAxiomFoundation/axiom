@@ -4,7 +4,7 @@ from datetime import date
 
 import pytest
 
-from atlas.models_regulation import (
+from axiom.models_regulation import (
     CFR_CITATION_PATTERN,
     Amendment,
     CFRCitation,

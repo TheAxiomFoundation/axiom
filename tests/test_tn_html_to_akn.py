@@ -4,7 +4,7 @@ from xml.etree import ElementTree as ET
 
 import pytest
 
-from atlas.converters.tn_html_to_akn import (
+from axiom.converters.tn_html_to_akn import (
     ParsedChapter,
     ParsedPart,
     ParsedSection,

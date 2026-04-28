@@ -22,7 +22,7 @@ STATE_MODULES = [
 def _try_import(module_name):
     """Try importing a state converter module."""
     try:
-        return importlib.import_module(f"atlas.converters.us_states.{module_name}")
+        return importlib.import_module(f"axiom.converters.us_states.{module_name}")
     except (ImportError, Exception):
         return None
 

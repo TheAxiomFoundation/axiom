@@ -7,7 +7,7 @@ HTTP calls are mocked.
 import os
 from unittest.mock import patch
 
-from atlas.query.supabase import Rule, Section, SupabaseQuery
+from axiom.query.supabase import Rule, Section, SupabaseQuery
 
 
 def _make_rule(**kwargs):
@@ -26,7 +26,7 @@ def _make_rule(**kwargs):
         "source_path": "26/32",
         "rulespec_path": "rules-us/statute/26/32.yaml",
         "has_rulespec": True,
-        "citation_path": "26/32",
+        "citation_path": "us/statute/26/32",
     }
     defaults.update(kwargs)
     return Rule(**defaults)
@@ -95,7 +95,7 @@ class TestSection:
     def test_citation_with_source_path(self):
         rule = _make_rule(source_path="26/32")
         section = Section(rule=rule, children=[])
-        assert section.citation == "26/32"
+        assert section.citation == "us/statute/26/32"
 
     def test_citation_without_source_path(self):
         rule = _make_rule(source_path=None)
@@ -105,10 +105,18 @@ class TestSection:
 
 class TestSupabaseQuery:
     def test_init_defaults(self):
-        query = SupabaseQuery()
+        with patch.dict(os.environ, {"SUPABASE_ANON_KEY": "test-key"}):
+            query = SupabaseQuery()
         assert query.url is not None
         assert query.anon_key is not None
         assert "rest/v1" in query.rest_url
+
+    def test_init_has_public_anon_key_fallback(self):
+        with patch.dict(os.environ, {}, clear=True):
+            query = SupabaseQuery()
+        assert query.url is not None
+        assert query.anon_key
+        assert query.headers["Accept-Profile"] == "corpus"
 
     def test_init_with_explicit_url(self):
         query = SupabaseQuery(
@@ -121,6 +129,71 @@ class TestSupabaseQuery:
         assert query.headers["apikey"] == "test-key"
 
     def test_init_from_env(self):
-        with patch.dict(os.environ, {"AXIOM_SUPABASE_URL": "https://env.supabase.co"}):
+        with patch.dict(
+            os.environ,
+            {"AXIOM_SUPABASE_URL": "https://env.supabase.co", "SUPABASE_ANON_KEY": "env-key"},
+        ):
             query = SupabaseQuery()
             assert query.url == "https://env.supabase.co"
+
+    def test_normalizes_us_code_shorthand(self):
+        assert SupabaseQuery._normalize_citation_path("26/32") == "us/statute/26/32"
+        assert SupabaseQuery._normalize_citation_path("usc/26/32") == "us/statute/26/32"
+
+    def test_normalizes_full_citation_path(self):
+        assert (
+            SupabaseQuery._normalize_citation_path("us/statute/26/32")
+            == "us/statute/26/32"
+        )
+        assert (
+            SupabaseQuery._normalize_citation_path("statute/tax/606", jurisdiction="us-ny")
+            == "us-ny/statute/tax/606"
+        )
+
+    def test_get_section_queries_citation_path(self):
+        query = SupabaseQuery(url="https://test.supabase.co", anon_key="test-key")
+        data = _make_rule().__dict__
+
+        with patch.object(query, "_request", return_value=[data]) as request:
+            result = query.get_section("26/32")
+
+        assert result is not None
+        assert result.citation_path == "us/statute/26/32"
+        request.assert_called_once()
+        _, params = request.call_args.args
+        assert params["citation_path"] == "eq.us/statute/26/32"
+        assert params["jurisdiction"] == "eq.us"
+        assert "source_path" not in params
+
+    def test_get_section_deep_queries_descendants_by_citation_path(self):
+        query = SupabaseQuery(url="https://test.supabase.co", anon_key="test-key")
+        parent = _make_rule().__dict__
+        child = _make_rule(
+            id="us/statute/26/32/a",
+            citation_path="us/statute/26/32/a",
+            parent_id=parent["id"],
+        ).__dict__
+
+        with patch.object(query, "_request", side_effect=[[parent], [child]]) as request:
+            section = query.get_section_with_children("26/32", deep=True)
+
+        assert section is not None
+        assert [c.citation_path for c in section.children] == ["us/statute/26/32/a"]
+        _, child_params = request.call_args_list[1].args
+        assert child_params == [
+            ("citation_path", "gte.us/statute/26/32/"),
+            ("citation_path", "lt.us/statute/26/320"),
+            ("jurisdiction", "eq.us"),
+            ("order", "citation_path"),
+            ("limit", "1000"),
+        ]
+        assert all(name != "source_path" for name, _ in child_params)
+
+    def test_search_orders_by_citation_path(self):
+        query = SupabaseQuery(url="https://test.supabase.co", anon_key="test-key")
+
+        with patch.object(query, "_request", return_value=[]) as request:
+            query.search("earned income", jurisdiction="us")
+
+        _, params = request.call_args.args
+        assert params["order"] == "jurisdiction,citation_path"

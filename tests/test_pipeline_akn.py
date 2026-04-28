@@ -6,12 +6,12 @@ from runner.py which has unresolved R2 deps. We import directly.
 
 import pytest
 
-from atlas.models import Citation, Section
+from axiom.models import Citation, Section
 
 # Direct import to avoid pipeline.__init__ which may fail
 try:
     import importlib
-    _akn_mod = importlib.import_module("atlas.pipeline.akn")
+    _akn_mod = importlib.import_module("axiom.pipeline.akn")
     section_to_akn_xml = _akn_mod.section_to_akn_xml
     AKN_NS = _akn_mod.AKN_NS
     _IMPORT_OK = True

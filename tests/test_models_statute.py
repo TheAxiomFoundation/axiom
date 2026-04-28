@@ -2,7 +2,7 @@
 
 import pytest
 
-from atlas.models_statute import (
+from axiom.models_statute import (
     JURISDICTIONS,
     CodeType,
     JurisdictionInfo,

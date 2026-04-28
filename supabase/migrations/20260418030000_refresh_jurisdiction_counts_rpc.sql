@@ -10,17 +10,17 @@
 -- The underlying MV has a UNIQUE index on ``jurisdiction`` so
 -- CONCURRENTLY is safe: readers on the stats page aren't blocked.
 
-CREATE OR REPLACE FUNCTION arch.refresh_jurisdiction_counts()
+CREATE OR REPLACE FUNCTION corpus.refresh_jurisdiction_counts()
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = arch, public
+SET search_path = corpus, public
 AS $$
 BEGIN
-  REFRESH MATERIALIZED VIEW CONCURRENTLY arch.jurisdiction_counts;
+  REFRESH MATERIALIZED VIEW CONCURRENTLY corpus.jurisdiction_counts;
 END
 $$;
 
-GRANT EXECUTE ON FUNCTION arch.refresh_jurisdiction_counts() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION corpus.refresh_jurisdiction_counts() TO anon, authenticated;
 
 NOTIFY pgrst, 'reload schema';
