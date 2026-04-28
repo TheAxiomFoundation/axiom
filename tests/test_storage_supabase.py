@@ -10,7 +10,7 @@ import pytest
 
 # Import with graceful handling since psycopg may not be installed
 try:
-    from axiom.storage.supabase import HAS_PSYCOPG, SupabaseStorage, get_db_url
+    from axiom_corpus.storage.supabase import HAS_PSYCOPG, SupabaseStorage, get_db_url
     _IMPORT_OK = True
 except ImportError:
     _IMPORT_OK = False
@@ -34,7 +34,7 @@ class TestGetDbUrl:
 class TestSupabaseStorageInit:
     @pytest.mark.skipif(not HAS_PSYCOPG, reason="psycopg not installed")
     def test_init_with_url(self):
-        with patch("axiom.storage.supabase.psycopg"):
+        with patch("axiom_corpus.storage.supabase.psycopg"):
             storage = SupabaseStorage(db_url="postgresql://test")
             assert storage.db_url == "postgresql://test"
             assert storage._conn is None
@@ -42,7 +42,7 @@ class TestSupabaseStorageInit:
     @pytest.mark.skipif(not HAS_PSYCOPG, reason="psycopg not installed")
     def test_init_from_env(self):
         with patch.dict(os.environ, {"AXIOM_SUPABASE_DB_URL": "postgresql://env-test"}):
-            with patch("axiom.storage.supabase.psycopg"):
+            with patch("axiom_corpus.storage.supabase.psycopg"):
                 storage = SupabaseStorage()
                 assert storage.db_url == "postgresql://env-test"
 

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
-from axiom.ingest.rule_uploader import RuleUploader
+from axiom_corpus.ingest.rule_uploader import RuleUploader
 
 
 @pytest.fixture

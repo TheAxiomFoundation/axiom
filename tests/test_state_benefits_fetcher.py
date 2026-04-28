@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.fetchers.state_benefits import (
+from axiom_corpus.fetchers.state_benefits import (
     CCDFFetcher,
     CCDFPolicyData,
     SNAPSUAFetcher,
@@ -184,7 +184,7 @@ class TestFIPSCodes:
 
     def test_state_name_to_fips(self):
         """Test converting state names to FIPS codes."""
-        from axiom.fetchers.state_benefits import state_name_to_fips
+        from axiom_corpus.fetchers.state_benefits import state_name_to_fips
 
         assert state_name_to_fips("Alabama") == "01"
         assert state_name_to_fips("California") == "06"
@@ -193,7 +193,7 @@ class TestFIPSCodes:
 
     def test_state_abbrev_to_fips(self):
         """Test converting state abbreviations to FIPS codes."""
-        from axiom.fetchers.state_benefits import state_abbrev_to_fips
+        from axiom_corpus.fetchers.state_benefits import state_abbrev_to_fips
 
         assert state_abbrev_to_fips("AL") == "01"
         assert state_abbrev_to_fips("CA") == "06"

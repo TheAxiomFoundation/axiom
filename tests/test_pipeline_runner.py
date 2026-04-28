@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from axiom.models import Citation, Section
-from axiom.pipeline.runner import STATE_CONVERTERS, StatePipeline
+from axiom_corpus.models import Citation, Section
+from axiom_corpus.pipeline.runner import STATE_CONVERTERS, StatePipeline
 
 
 def _make_section(section_id="AK-43.05.010", **kwargs):
@@ -35,7 +35,7 @@ class TestStateConvertersRegistry:
 
     def test_all_are_axiom_module_paths(self):
         for state, path in STATE_CONVERTERS.items():
-            assert "axiom.converters.us_states" in path, f"{state}: {path}"
+            assert "axiom_corpus.converters.us_states" in path, f"{state}: {path}"
 
     def test_all_states_two_letter(self):
         for state in STATE_CONVERTERS:
@@ -43,14 +43,14 @@ class TestStateConvertersRegistry:
 
 
 class TestStatePipelineInit:
-    @patch("axiom.pipeline.runner.get_r2_axiom")
+    @patch("axiom_corpus.pipeline.runner.get_r2_axiom")
     def test_init_defaults(self, mock_axiom):
         mock_axiom.return_value = MagicMock()
         pipeline = StatePipeline("ak")
         assert pipeline.state == "ak"
         assert pipeline.dry_run is False
 
-    @patch("axiom.pipeline.runner.get_r2_axiom")
+    @patch("axiom_corpus.pipeline.runner.get_r2_axiom")
     def test_init_dry_run(self, mock_axiom):
         mock_axiom.return_value = MagicMock()
         pipeline = StatePipeline("ny", dry_run=True)
@@ -83,7 +83,7 @@ class TestStatePipelineLoadConverter:
         with pytest.raises(ValueError, match="No converter for state"):
             pipeline._load_converter()
 
-    @patch("axiom.pipeline.runner.importlib")
+    @patch("axiom_corpus.pipeline.runner.importlib")
     def test_load_converter_success(self, mock_importlib):
         mock_module = MagicMock()
         mock_converter_cls = MagicMock()
@@ -96,7 +96,7 @@ class TestStatePipelineLoadConverter:
 
         mock_converter_cls.assert_called_once()
 
-    @patch("axiom.pipeline.runner.importlib")
+    @patch("axiom_corpus.pipeline.runner.importlib")
     def test_load_converter_alternate_naming(self, mock_importlib):
         mock_module = MagicMock(spec=[])
         # No AKConverter attribute, but has a SomethingConverter
@@ -127,7 +127,7 @@ class TestStatePipelineGetChapterUrl:
             inspect.Parameter("title", inspect.Parameter.POSITIONAL_OR_KEYWORD),
             inspect.Parameter("chapter", inspect.Parameter.POSITIONAL_OR_KEYWORD),
         ])
-        with patch("axiom.pipeline.runner.inspect.signature", return_value=sig):
+        with patch("axiom_corpus.pipeline.runner.inspect.signature", return_value=sig):
             url = pipeline._get_chapter_url("05", 43)
             assert url == "https://example.com/ch1"
 
@@ -201,7 +201,7 @@ class TestStatePipelineRun:
 
         mock_converter = MagicMock()
         mock_converter.__class__.__name__ = "AKConverter"
-        mock_converter.__class__.__module__ = "axiom.converters.us_states.ak"
+        mock_converter.__class__.__module__ = "axiom_corpus.converters.us_states.ak"
 
         sections = [_make_section()]
         mock_converter.iter_chapter.return_value = sections
@@ -230,7 +230,7 @@ class TestStatePipelineRun:
             with patch.object(pipeline, "_get_chapters", return_value=[("05", 43)]):
                 with patch.object(pipeline, "_get_chapter_url", return_value="https://example.com"):
                     with patch.object(pipeline, "_get_sections", return_value=sections):
-                        with patch("axiom.pipeline.runner.time.sleep"):
+                        with patch("axiom_corpus.pipeline.runner.time.sleep"):
                             stats = pipeline.run()
 
         assert stats["sections_found"] == 1

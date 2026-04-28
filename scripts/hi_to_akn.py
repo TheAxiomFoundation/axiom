@@ -32,12 +32,12 @@ from xml.dom import minidom
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from axiom.converters.us_states.hi import (
+from axiom_corpus.converters.us_states.hi import (
     HIConverter,
     HI_TAX_CHAPTERS,
     HI_WELFARE_CHAPTERS,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 
 # Akoma Ntoso namespace

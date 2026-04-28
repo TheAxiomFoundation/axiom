@@ -7,7 +7,7 @@ All HTTP and R2 calls are mocked.
 
 import pytest
 
-from axiom.crawl import (
+from axiom_corpus.crawl import (
     ARCHIVE_ORG_STATES,
     R2_BUCKET,
     R2_ENDPOINT,

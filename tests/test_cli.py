@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
 
-from axiom.cli import main
-from axiom.models import Citation, SearchResult, Section, TitleInfo
+from axiom_corpus.cli import main
+from axiom_corpus.models import Citation, SearchResult, Section, TitleInfo
 
 
 def _make_section(**kwargs):
@@ -36,7 +36,7 @@ class TestMainGroup:
 
 
 class TestGetCommand:
-    @patch("axiom.cli.AxiomArchive")
+    @patch("axiom_corpus.cli.AxiomArchive")
     def test_get_found(self, mock_archive_cls):
         mock_archive = MagicMock()
         mock_archive_cls.return_value = mock_archive
@@ -47,7 +47,7 @@ class TestGetCommand:
         assert result.exit_code == 0
         assert "Earned income" in result.output or "26" in result.output
 
-    @patch("axiom.cli.AxiomArchive")
+    @patch("axiom_corpus.cli.AxiomArchive")
     def test_get_not_found(self, mock_archive_cls):
         mock_archive = MagicMock()
         mock_archive_cls.return_value = mock_archive
@@ -57,7 +57,7 @@ class TestGetCommand:
         result = runner.invoke(main, ["get", "99 USC 999"])
         assert result.exit_code == 1
 
-    @patch("axiom.cli.AxiomArchive")
+    @patch("axiom_corpus.cli.AxiomArchive")
     def test_get_json(self, mock_archive_cls):
         mock_archive = MagicMock()
         mock_archive_cls.return_value = mock_archive
@@ -69,7 +69,7 @@ class TestGetCommand:
 
 
 class TestSearchCommand:
-    @patch("axiom.cli.AxiomArchive")
+    @patch("axiom_corpus.cli.AxiomArchive")
     def test_search_with_results(self, mock_archive_cls):
         mock_archive = MagicMock()
         mock_archive_cls.return_value = mock_archive
@@ -86,7 +86,7 @@ class TestSearchCommand:
         result = runner.invoke(main, ["search", "earned income"])
         assert result.exit_code == 0
 
-    @patch("axiom.cli.AxiomArchive")
+    @patch("axiom_corpus.cli.AxiomArchive")
     def test_search_no_results(self, mock_archive_cls):
         mock_archive = MagicMock()
         mock_archive_cls.return_value = mock_archive
@@ -97,7 +97,7 @@ class TestSearchCommand:
         assert result.exit_code == 0
         assert "No results" in result.output
 
-    @patch("axiom.cli.AxiomArchive")
+    @patch("axiom_corpus.cli.AxiomArchive")
     def test_search_with_title_filter(self, mock_archive_cls):
         mock_archive = MagicMock()
         mock_archive_cls.return_value = mock_archive
@@ -110,7 +110,7 @@ class TestSearchCommand:
 
 
 class TestTitlesCommand:
-    @patch("axiom.cli.AxiomArchive")
+    @patch("axiom_corpus.cli.AxiomArchive")
     def test_titles_with_data(self, mock_archive_cls):
         mock_archive = MagicMock()
         mock_archive_cls.return_value = mock_archive
@@ -129,7 +129,7 @@ class TestTitlesCommand:
         assert result.exit_code == 0
         assert "26" in result.output or "Internal Revenue" in result.output
 
-    @patch("axiom.cli.AxiomArchive")
+    @patch("axiom_corpus.cli.AxiomArchive")
     def test_titles_empty(self, mock_archive_cls):
         mock_archive = MagicMock()
         mock_archive_cls.return_value = mock_archive
@@ -142,7 +142,7 @@ class TestTitlesCommand:
 
 
 class TestRefsCommand:
-    @patch("axiom.cli.AxiomArchive")
+    @patch("axiom_corpus.cli.AxiomArchive")
     def test_refs(self, mock_archive_cls):
         mock_archive = MagicMock()
         mock_archive_cls.return_value = mock_archive
@@ -236,7 +236,7 @@ class TestValidateCommand:
 
 
 class TestDbOption:
-    @patch("axiom.cli.AxiomArchive")
+    @patch("axiom_corpus.cli.AxiomArchive")
     def test_custom_db(self, mock_archive_cls):
         mock_archive = MagicMock()
         mock_archive_cls.return_value = mock_archive

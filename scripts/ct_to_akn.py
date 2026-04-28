@@ -17,13 +17,13 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 from xml.dom import minidom
 
-from axiom.converters.us_states.ct import (
+from axiom_corpus.converters.us_states.ct import (
     CTConverter,
     CT_TAX_CHAPTERS,
     CT_WELFARE_CHAPTERS,
     CT_TITLES,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 
 # Akoma Ntoso namespace

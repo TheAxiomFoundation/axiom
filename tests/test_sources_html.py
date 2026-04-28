@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from axiom.sources.base import SourceConfig
-from axiom.sources.html import HTMLSource
+from axiom_corpus.sources.base import SourceConfig
+from axiom_corpus.sources.html import HTMLSource
 
 
 def _make_config(**kwargs):

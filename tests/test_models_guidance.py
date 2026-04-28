@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from axiom.models_guidance import (
+from axiom_corpus.models_guidance import (
     GuidanceSearchResult,
     GuidanceSection,
     GuidanceType,

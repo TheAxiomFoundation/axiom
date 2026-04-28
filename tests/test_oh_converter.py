@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.oh import (
+from axiom_corpus.converters.us_states.oh import (
     OH_TAX_CHAPTERS,
     OH_WELFARE_CHAPTERS,
     OHConverter,
@@ -17,7 +17,7 @@ from axiom.converters.us_states.oh import (
     download_oh_chapter,
     fetch_oh_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from codes.ohio.gov for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

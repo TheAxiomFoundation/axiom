@@ -11,8 +11,8 @@ import httpx
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from axiom.models_canada import CanadaSection
-from axiom.parsers.canada import CanadaStatuteParser
+from axiom_corpus.models_canada import CanadaSection
+from axiom_corpus.parsers.canada import CanadaStatuteParser
 
 # Configuration
 DEFAULT_AXIOM_SUPABASE_URL = "https://swocpijqqahhuwtuahwc.supabase.co"

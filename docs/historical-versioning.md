@@ -15,23 +15,23 @@ Last updated: 2026-04-16.
 subsystem:
 
 - **Accepted**
-  - `axiom.archive.AxiomArchive.get(citation, as_of=...)`
-  - `axiom.storage.base.StorageBackend.get_section(..., as_of=...)`
-  - REST endpoints under `src/axiom/api/main.py`
+  - `axiom_corpus.archive.AxiomArchive.get(citation, as_of=...)`
+  - `axiom_corpus.storage.base.StorageBackend.get_section(..., as_of=...)`
+  - REST endpoints under `src/axiom_corpus/api/main.py`
     (`/v1/sections/...`, search) accept `as_of` as a query parameter.
 - **Honored (point-in-time retrieval works)**
-  - **eCFR regulations** — `axiom.converters.ecfr.ECFRConverter` passes
+  - **eCFR regulations** — `axiom_corpus.converters.ecfr.ECFRConverter` passes
     `as_of` through to the eCFR API, which natively serves historical
     snapshots. Calls like `fetch("26/1.32", as_of=date(2020, 1, 1))`
     return the CFR text that was in effect on that date.
 - **Silently ignored (parameter accepted, current version returned)**
-  - **SQLite storage backend** — `src/axiom/storage/sqlite.py`
+  - **SQLite storage backend** — `src/axiom_corpus/storage/sqlite.py`
     `get_section()` has a `# TODO: Implement historical versions
     (as_of parameter)` comment and queries the `sections` table without
     any date predicate. Any call path that goes through
     `axiom-corpus get "26 USC 32" --as-of 2020-01-01` therefore returns the
     **currently ingested** section, regardless of the date supplied.
-  - **Postgres storage backend** — `src/axiom/storage/postgres.py`
+  - **Postgres storage backend** — `src/axiom_corpus/storage/postgres.py`
     accepts `as_of` but has no version table and likewise returns the
     current row.
   - **US Code, state statutes, IRS guidance, UK/Canada statutes** — no
@@ -87,8 +87,8 @@ current text.
 
 ## References
 
-- `src/axiom/storage/sqlite.py:230` — the `TODO` noting `as_of` is
+- `src/axiom_corpus/storage/sqlite.py:230` — the `TODO` noting `as_of` is
   unimplemented.
-- `src/axiom/converters/ecfr.py` — working `as_of` implementation via
+- `src/axiom_corpus/converters/ecfr.py` — working `as_of` implementation via
   eCFR API.
 - README section on historical queries.

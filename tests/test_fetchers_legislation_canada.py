@@ -3,7 +3,7 @@
 import pytest
 
 try:
-    from axiom.fetchers.legislation_canada import CanadaLegislationFetcher
+    from axiom_corpus.fetchers.legislation_canada import CanadaLegislationFetcher
     _IMPORT_OK = True
 except ImportError:
     _IMPORT_OK = False

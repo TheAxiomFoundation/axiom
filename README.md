@@ -48,7 +48,7 @@ axiom-corpus serve                          # Start REST API at localhost:8000
 ## Python API
 
 ```python
-from axiom import AxiomArchive
+from axiom_corpus import AxiomArchive
 
 archive = AxiomArchive()
 
@@ -103,7 +103,7 @@ curl "http://localhost:8000/v1/sections/26/32?as_of=2020-01-01"
 
 ```
 axiom-corpus/
-├── src/axiom/
+├── src/axiom_corpus/
 │   ├── __init__.py
 │   ├── archive.py        # Main Axiom archive class
 │   ├── models.py         # Pydantic models for statutes

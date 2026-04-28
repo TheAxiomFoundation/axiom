@@ -14,7 +14,7 @@ from xml.etree import ElementTree as ET
 
 import pytest
 
-from axiom.models_akoma_ntoso import (
+from axiom_corpus.models_akoma_ntoso import (
     _DOCUMENT_TYPES,
     _HIERARCHICAL_ELEMENTS,
     AKN_NAMESPACE,

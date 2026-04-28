@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.ri import (
+from axiom_corpus.converters.us_states.ri import (
     RI_TAX_CHAPTERS,
     RI_WELFARE_CHAPTERS,
     RIConverter,
@@ -16,7 +16,7 @@ from axiom.converters.us_states.ri import (
     download_ri_chapter,
     fetch_ri_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from rilegislature.gov for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

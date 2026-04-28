@@ -5,7 +5,7 @@ import sys
 
 sys.path.insert(0, "/Users/maxghenis/TheAxiomFoundation/axiom-corpus/src")
 
-from axiom.ingest.supabase import SupabaseIngestor
+from axiom_corpus.ingest.supabase import SupabaseIngestor
 
 
 def main():

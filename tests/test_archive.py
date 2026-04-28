@@ -3,8 +3,8 @@
 from datetime import date
 from unittest.mock import MagicMock, patch
 
-from axiom.archive import AxiomArchive
-from axiom.models import Citation, SearchResult, Section, TitleInfo
+from axiom_corpus.archive import AxiomArchive
+from axiom_corpus.models import Citation, SearchResult, Section, TitleInfo
 
 
 def _make_section(**kwargs):
@@ -22,12 +22,12 @@ def _make_section(**kwargs):
 
 
 class TestAxiomArchiveInit:
-    @patch("axiom.archive.SQLiteStorage")
+    @patch("axiom_corpus.archive.SQLiteStorage")
     def test_init_default(self, mock_sqlite):
         AxiomArchive()
         mock_sqlite.assert_called_once_with("axiom.db")
 
-    @patch("axiom.archive.SQLiteStorage")
+    @patch("axiom_corpus.archive.SQLiteStorage")
     def test_init_custom_path(self, mock_sqlite):
         AxiomArchive(db_path="custom.db")
         mock_sqlite.assert_called_once_with("custom.db")
@@ -168,7 +168,7 @@ class TestAxiomArchiveGetReferences:
 
 
 class TestAxiomArchiveIngestTitle:
-    @patch("axiom.parsers.us.statutes.USLMParser")
+    @patch("axiom_corpus.parsers.us.statutes.USLMParser")
     def test_ingest_title(self, mock_parser_cls):
         mock_storage = MagicMock()
         mock_parser = MagicMock()

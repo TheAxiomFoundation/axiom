@@ -6,7 +6,7 @@ from xml.etree import ElementTree as ET
 
 import pytest
 
-from axiom.converters.us_states.ny import (
+from axiom_corpus.converters.us_states.ny import (
     NY_LAW_CODES,
     USLM_NS,
     NYFetchResult,

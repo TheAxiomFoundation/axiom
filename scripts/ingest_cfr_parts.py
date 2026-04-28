@@ -32,7 +32,7 @@ Environment
 Design notes
 ------------
 * Deterministic IDs use the legacy ``uuid5(NAMESPACE_URL, "axiom:" + citation_path)``
-  namespace used by :mod:`axiom.ingest.supabase`, so re-runs upsert cleanly
+  namespace used by :mod:`axiom_corpus.ingest.supabase`, so re-runs upsert cleanly
   instead of producing
   duplicates.
 * ``doc_type`` is ``"regulation"`` for all rows.

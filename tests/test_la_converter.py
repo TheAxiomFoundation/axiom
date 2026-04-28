@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.la import (
+from axiom_corpus.converters.us_states.la import (
     LA_KNOWN_DOC_IDS,
     LA_TAX_SECTIONS,
     LA_TITLES,
@@ -18,7 +18,7 @@ from axiom.converters.us_states.la import (
     LAConverterError,
     fetch_la_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from legis.la.gov for testing (based on RS 47:287.445)
 # Note: The actual website returns HTML with newlines between paragraph elements

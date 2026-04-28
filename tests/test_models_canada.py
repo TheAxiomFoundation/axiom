@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from axiom.models_canada import CanadaAct, CanadaCitation, CanadaSection, CanadaSubsection
+from axiom_corpus.models_canada import CanadaAct, CanadaCitation, CanadaSection, CanadaSubsection
 
 
 class TestCanadaCitation:

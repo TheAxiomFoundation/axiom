@@ -3,13 +3,13 @@
 from datetime import date
 from unittest.mock import Mock, patch
 
-from axiom.converters.ecfr import (
+from axiom_corpus.converters.ecfr import (
     PRIORITY_TITLES,
     ECFRConverter,
     FetchResult,
     fetch_regulation,
 )
-from axiom.models_regulation import CFRCitation
+from axiom_corpus.models_regulation import CFRCitation
 
 # Sample XML fragments for testing
 SAMPLE_SECTION_XML = """<?xml version="1.0" encoding="UTF-8"?>
@@ -355,7 +355,7 @@ class TestModuleFunctions:
 
     def test_fetch_regulation(self):
         """Module function fetches regulation."""
-        with patch('axiom.converters.ecfr.ECFRConverter') as MockConverter:
+        with patch('axiom_corpus.converters.ecfr.ECFRConverter') as MockConverter:
             mock_converter = Mock()
             mock_converter.fetch.return_value = FetchResult(
                 success=True,

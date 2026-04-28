@@ -20,7 +20,7 @@ from xml.etree import ElementTree as ET
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from axiom.converters.us_states.ma import (
+from axiom_corpus.converters.us_states.ma import (
     MAConverter,
     MA_TAX_CHAPTERS,
     MA_WELFARE_CHAPTERS,

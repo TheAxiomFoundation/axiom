@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.nd import (
+from axiom_corpus.converters.us_states.nd import (
     ND_TAX_CHAPTERS,
     ND_WELFARE_CHAPTERS,
     NDConverter,
@@ -21,7 +21,7 @@ from axiom.converters.us_states.nd import (
     download_nd_chapter,
     fetch_nd_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from ndlegis.gov for testing
 SAMPLE_TITLE_HTML = """<!DOCTYPE html>

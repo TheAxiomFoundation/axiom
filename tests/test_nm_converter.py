@@ -8,7 +8,7 @@ from datetime import date
 
 import pytest
 
-from axiom.converters.us_states.nm import (
+from axiom_corpus.converters.us_states.nm import (
     NM_TAX_ARTICLES,
     NM_TAX_CHAPTERS,
     NM_WELFARE_ARTICLES,
@@ -17,7 +17,7 @@ from axiom.converters.us_states.nm import (
     NMConverterError,
     parse_nm_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from nmonesource.com for testing
 SAMPLE_TAX_SECTION_HTML = """<!DOCTYPE html>

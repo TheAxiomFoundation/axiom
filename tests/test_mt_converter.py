@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.mt import (
+from axiom_corpus.converters.us_states.mt import (
     MT_TAX_CHAPTERS,
     MT_WELFARE_CHAPTERS,
     MTConverter,
@@ -17,7 +17,7 @@ from axiom.converters.us_states.mt import (
     download_mt_chapter,
     fetch_mt_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from archive.legmt.gov for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

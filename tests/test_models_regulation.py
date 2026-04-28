@@ -4,7 +4,7 @@ from datetime import date
 
 import pytest
 
-from axiom.models_regulation import (
+from axiom_corpus.models_regulation import (
     CFR_CITATION_PATTERN,
     Amendment,
     CFRCitation,

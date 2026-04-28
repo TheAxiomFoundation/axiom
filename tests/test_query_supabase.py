@@ -7,7 +7,7 @@ HTTP calls are mocked.
 import os
 from unittest.mock import patch
 
-from axiom.query.supabase import Rule, Section, SupabaseQuery
+from axiom_corpus.query.supabase import Rule, Section, SupabaseQuery
 
 
 def _make_rule(**kwargs):

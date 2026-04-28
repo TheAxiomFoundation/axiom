@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.va import (
+from axiom_corpus.converters.us_states.va import (
     VA_TAX_TITLES,
     VA_TITLES,
     VA_WELFARE_TITLES,
@@ -18,7 +18,7 @@ from axiom.converters.us_states.va import (
     download_va_chapter,
     fetch_va_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from law.lis.virginia.gov for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

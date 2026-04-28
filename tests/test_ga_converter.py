@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.ga import (
+from axiom_corpus.converters.us_states.ga import (
     GA_SOCIAL_SERVICES_CHAPTERS,
     GA_TAX_CHAPTERS,
     GA_TITLES,
@@ -17,7 +17,7 @@ from axiom.converters.us_states.ga import (
     GAConverterError,
     fetch_ga_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from ga.elaws.us for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

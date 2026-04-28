@@ -7,8 +7,8 @@ Usage:
 
 from pathlib import Path
 
-from axiom.archive import AxiomArchive
-from axiom.parsers.us.statutes import download_title
+from axiom_corpus.archive import AxiomArchive
+from axiom_corpus.parsers.us.statutes import download_title
 
 
 def main():

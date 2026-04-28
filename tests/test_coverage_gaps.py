@@ -20,20 +20,20 @@ class TestVerifierCallPolicyengine:
 
     def test_call_policyengine_uses_package_when_available(self):
         """Test that call_policyengine dispatches to package when USE_PACKAGE=True."""
-        with patch("axiom.verifier.USE_PACKAGE", True), \
-             patch("axiom.verifier._call_policyengine_package") as mock_pkg:
+        with patch("axiom_corpus.verifier.USE_PACKAGE", True), \
+             patch("axiom_corpus.verifier._call_policyengine_package") as mock_pkg:
             mock_pkg.return_value = (100.0, None)
-            from axiom.verifier import call_policyengine
+            from axiom_corpus.verifier import call_policyengine
             result = call_policyengine({"people": {}}, "eitc", 2024)
             mock_pkg.assert_called_once()
             assert result == (100.0, None)
 
     def test_call_policyengine_uses_api_when_no_package(self):
         """Test that call_policyengine dispatches to API when USE_PACKAGE=False."""
-        with patch("axiom.verifier.USE_PACKAGE", False), \
-             patch("axiom.verifier._call_policyengine_api") as mock_api:
+        with patch("axiom_corpus.verifier.USE_PACKAGE", False), \
+             patch("axiom_corpus.verifier._call_policyengine_api") as mock_api:
             mock_api.return_value = (200.0, None)
-            from axiom.verifier import call_policyengine
+            from axiom_corpus.verifier import call_policyengine
             result = call_policyengine({"people": {}}, "eitc", 2024)
             mock_api.assert_called_once()
             assert result == (200.0, None)
@@ -46,9 +46,9 @@ class TestVerifierCallPolicyengine:
         # Use a list to mimic array with __len__ and indexing
         mock_sim_instance.calculate.return_value = [500.0]
 
-        with patch("axiom.verifier.USE_PACKAGE", True), \
-             patch("axiom.verifier.Simulation", mock_sim_class, create=True):
-            from axiom.verifier import _call_policyengine_package
+        with patch("axiom_corpus.verifier.USE_PACKAGE", True), \
+             patch("axiom_corpus.verifier.Simulation", mock_sim_class, create=True):
+            from axiom_corpus.verifier import _call_policyengine_package
             value, error = _call_policyengine_package({"people": {}}, "eitc", 2024)
             assert value == 500.0
             assert error is None
@@ -60,9 +60,9 @@ class TestVerifierCallPolicyengine:
         mock_sim_class.return_value = mock_sim_instance
         mock_sim_instance.calculate.return_value = 500.0
 
-        with patch("axiom.verifier.USE_PACKAGE", True), \
-             patch("axiom.verifier.Simulation", mock_sim_class, create=True):
-            from axiom.verifier import _call_policyengine_package
+        with patch("axiom_corpus.verifier.USE_PACKAGE", True), \
+             patch("axiom_corpus.verifier.Simulation", mock_sim_class, create=True):
+            from axiom_corpus.verifier import _call_policyengine_package
             value, error = _call_policyengine_package({"people": {}}, "eitc", 2024)
             assert value == 500.0
             assert error is None
@@ -72,16 +72,16 @@ class TestVerifierCallPolicyengine:
         mock_sim_class = MagicMock()
         mock_sim_class.side_effect = Exception("Simulation error")
 
-        with patch("axiom.verifier.USE_PACKAGE", True), \
-             patch("axiom.verifier.Simulation", mock_sim_class, create=True):
-            from axiom.verifier import _call_policyengine_package
+        with patch("axiom_corpus.verifier.USE_PACKAGE", True), \
+             patch("axiom_corpus.verifier.Simulation", mock_sim_class, create=True):
+            from axiom_corpus.verifier import _call_policyengine_package
             value, error = _call_policyengine_package({"people": {}}, "eitc", 2024)
             assert value is None
             assert "Simulation error" in error
 
     def _setup_api_url(self):
         """Ensure POLICYENGINE_API_URL is set in verifier module."""
-        import axiom.verifier as v
+        import axiom_corpus.verifier as v
         if not hasattr(v, "POLICYENGINE_API_URL"):
             v.POLICYENGINE_API_URL = "https://api.policyengine.org/us/calculate"
 
@@ -107,7 +107,7 @@ class TestVerifierCallPolicyengine:
             mock_requests = sys.modules["requests"]
             mock_requests.post.return_value = mock_response
             mock_requests.exceptions = real_requests.exceptions
-            from axiom.verifier import _call_policyengine_api
+            from axiom_corpus.verifier import _call_policyengine_api
             value, error = _call_policyengine_api(
                 {
                     "people": {"adult": {}},
@@ -133,7 +133,7 @@ class TestVerifierCallPolicyengine:
             mock_requests = sys.modules["requests"]
             mock_requests.post.return_value = mock_response
             mock_requests.exceptions = real_requests.exceptions
-            from axiom.verifier import _call_policyengine_api
+            from axiom_corpus.verifier import _call_policyengine_api
             value, error = _call_policyengine_api(
                 {
                     "people": {"adult": {}},
@@ -155,7 +155,7 @@ class TestVerifierCallPolicyengine:
             mock_requests = sys.modules["requests"]
             mock_requests.post.side_effect = real_requests.exceptions.ConnectionError("failed")
             mock_requests.exceptions = real_requests.exceptions
-            from axiom.verifier import _call_policyengine_api
+            from axiom_corpus.verifier import _call_policyengine_api
             value, error = _call_policyengine_api(
                 {"people": {"adult": {}}, "tax_units": {"tax_unit": {"members": ["adult"]}}},
                 "eitc",
@@ -179,7 +179,7 @@ class TestVerifierCallPolicyengine:
             mock_requests = sys.modules["requests"]
             mock_requests.post.return_value = mock_response
             mock_requests.exceptions = real_requests.exceptions
-            from axiom.verifier import _call_policyengine_api
+            from axiom_corpus.verifier import _call_policyengine_api
             value, error = _call_policyengine_api(
                 {"people": {"adult": {}}, "tax_units": {"tax_unit": {"members": ["adult"]}}},
                 "eitc",
@@ -203,7 +203,7 @@ class TestVerifierCallPolicyengine:
             mock_requests = sys.modules["requests"]
             mock_requests.post.return_value = mock_response
             mock_requests.exceptions = real_requests.exceptions
-            from axiom.verifier import _call_policyengine_api
+            from axiom_corpus.verifier import _call_policyengine_api
             value, error = _call_policyengine_api(
                 {"people": {"adult": {}}, "tax_units": {"tax_unit": {"members": ["adult"]}}},
                 "eitc",
@@ -222,12 +222,12 @@ class TestWriterLocalBackend:
     """Test LocalBackend read_original and list_versions."""
 
     def test_read_original_missing_dir(self, tmp_path):
-        from axiom.writer import LocalBackend
+        from axiom_corpus.writer import LocalBackend
         backend = LocalBackend(root=tmp_path)
         assert backend.read_original("nonexistent/path") is None
 
     def test_read_original_no_matching_file(self, tmp_path):
-        from axiom.writer import LocalBackend
+        from axiom_corpus.writer import LocalBackend
         backend = LocalBackend(root=tmp_path)
         # Create the directory but with no original.* files
         path = tmp_path / "test" / "path"
@@ -235,7 +235,7 @@ class TestWriterLocalBackend:
         assert backend.read_original("test/path") is None
 
     def test_read_original_finds_xml(self, tmp_path):
-        from axiom.writer import LocalBackend
+        from axiom_corpus.writer import LocalBackend
         backend = LocalBackend(root=tmp_path)
         path = tmp_path / "test" / "path"
         path.mkdir(parents=True)
@@ -244,12 +244,12 @@ class TestWriterLocalBackend:
         assert result == b"<xml/>"
 
     def test_list_versions_empty(self, tmp_path):
-        from axiom.writer import LocalBackend
+        from axiom_corpus.writer import LocalBackend
         backend = LocalBackend(root=tmp_path)
         assert backend.list_versions("nonexistent") == []
 
     def test_list_versions_with_dates(self, tmp_path):
-        from axiom.writer import LocalBackend
+        from axiom_corpus.writer import LocalBackend
         backend = LocalBackend(root=tmp_path)
         base = tmp_path / "us" / "statute" / "26" / "32"
         (base / "2024-01-01").mkdir(parents=True)
@@ -259,7 +259,7 @@ class TestWriterLocalBackend:
         assert result == ["2023-01-01", "2024-01-01"]
 
     def test_document_writer_read(self, tmp_path):
-        from axiom.writer import DocumentWriter, LocalBackend
+        from axiom_corpus.writer import DocumentWriter, LocalBackend
         backend = LocalBackend(root=tmp_path)
         writer = DocumentWriter(backend=backend)
         # Not found
@@ -276,12 +276,12 @@ class TestParsersInitImportFallbacks:
 
     def test_generic_parser_available(self):
         """Generic parser should be available since axiom is fully installed."""
-        from axiom.parsers import GenericStateParser
+        from axiom_corpus.parsers import GenericStateParser
         assert GenericStateParser is not None
 
     def test_parsers_init_exports(self):
         """Check all expected exports."""
-        from axiom import parsers
+        from axiom_corpus import parsers
         assert hasattr(parsers, "USLMParser")
         assert hasattr(parsers, "GenericStateParser")
 
@@ -295,15 +295,15 @@ class TestStorageInitImports:
     """Test storage __init__ imports."""
 
     def test_sqlite_storage_available(self):
-        from axiom.storage import SQLiteStorage
+        from axiom_corpus.storage import SQLiteStorage
         assert SQLiteStorage is not None
 
     def test_r2_storage_available(self):
-        from axiom.storage import R2Storage
+        from axiom_corpus.storage import R2Storage
         assert R2Storage is not None
 
     def test_storage_all_list(self):
-        from axiom import storage
+        from axiom_corpus import storage
         assert "StorageBackend" in storage.__all__
         assert "SQLiteStorage" in storage.__all__
 
@@ -317,14 +317,14 @@ class TestSQLiteStorageGaps:
     """Test SQLite storage edge cases."""
 
     def test_get_section_not_found(self, tmp_path):
-        from axiom.storage.sqlite import SQLiteStorage
+        from axiom_corpus.storage.sqlite import SQLiteStorage
         db_path = tmp_path / "test.db"
         storage = SQLiteStorage(db_path)
         result = storage.get_section(title=26, section="99999")
         assert result is None
 
     def test_list_titles_empty(self, tmp_path):
-        from axiom.storage.sqlite import SQLiteStorage
+        from axiom_corpus.storage.sqlite import SQLiteStorage
         db_path = tmp_path / "test.db"
         storage = SQLiteStorage(db_path)
         # No titles stored yet
@@ -332,21 +332,21 @@ class TestSQLiteStorageGaps:
         assert result == []
 
     def test_get_references_to_empty(self, tmp_path):
-        from axiom.storage.sqlite import SQLiteStorage
+        from axiom_corpus.storage.sqlite import SQLiteStorage
         db_path = tmp_path / "test.db"
         storage = SQLiteStorage(db_path)
         result = storage.get_references_to(26, "999")
         assert result == []
 
     def test_get_referenced_by_empty(self, tmp_path):
-        from axiom.storage.sqlite import SQLiteStorage
+        from axiom_corpus.storage.sqlite import SQLiteStorage
         db_path = tmp_path / "test.db"
         storage = SQLiteStorage(db_path)
         result = storage.get_referenced_by(26, "999")
         assert result == []
 
     def test_update_title_metadata(self, tmp_path):
-        from axiom.storage.sqlite import SQLiteStorage
+        from axiom_corpus.storage.sqlite import SQLiteStorage
         db_path = tmp_path / "test.db"
         storage = SQLiteStorage(db_path)
         storage.update_title_metadata(26, "Internal Revenue Code", True)
@@ -356,8 +356,8 @@ class TestSQLiteStorageGaps:
 
     def test_store_section_with_malformed_reference(self, tmp_path):
         """Test that malformed cross-references are silently skipped."""
-        from axiom.models import Citation, Section
-        from axiom.storage.sqlite import SQLiteStorage
+        from axiom_corpus.models import Citation, Section
+        from axiom_corpus.storage.sqlite import SQLiteStorage
         db_path = tmp_path / "test.db"
         storage = SQLiteStorage(db_path)
         section = Section(
@@ -386,7 +386,7 @@ class TestGuidanceStorageGaps:
     """Test guidance storage search and statute linking."""
 
     def _make_rev_proc(self):
-        from axiom.models_guidance import GuidanceType, RevenueProcedure
+        from axiom_corpus.models_guidance import GuidanceType, RevenueProcedure
         return RevenueProcedure(
             doc_number="2024-40",
             doc_type=GuidanceType.REV_PROC,
@@ -405,7 +405,7 @@ class TestGuidanceStorageGaps:
         )
 
     def test_search_guidance_no_results(self, tmp_path):
-        from axiom.storage.guidance import GuidanceStorage
+        from axiom_corpus.storage.guidance import GuidanceStorage
         db_path = tmp_path / "guidance.db"
         storage = GuidanceStorage(db_path)
 
@@ -427,7 +427,7 @@ class TestGuidanceStorageGaps:
         assert results == []
 
     def test_get_guidance_for_statute_empty(self, tmp_path):
-        from axiom.storage.guidance import GuidanceStorage
+        from axiom_corpus.storage.guidance import GuidanceStorage
         db_path = tmp_path / "guidance.db"
         storage = GuidanceStorage(db_path)
 
@@ -454,8 +454,8 @@ class TestArchiveIngestTitle:
 
     def test_ingest_title_basic(self, tmp_path):
         """Test ingest_title counts sections."""
-        from axiom.archive import AxiomArchive
-        from axiom.models import Citation, Section
+        from axiom_corpus.archive import AxiomArchive
+        from axiom_corpus.models import Citation, Section
 
         mock_section = Section(
             citation=Citation(title=26, section="32"),
@@ -467,7 +467,7 @@ class TestArchiveIngestTitle:
             retrieved_at=date.today(),
         )
 
-        with patch("axiom.parsers.us.statutes.USLMParser") as MockParser:
+        with patch("axiom_corpus.parsers.us.statutes.USLMParser") as MockParser:
             mock_parser = MockParser.return_value
             mock_parser.get_title_number.return_value = 26
             mock_parser.get_title_name.return_value = "Internal Revenue Code"
@@ -490,14 +490,14 @@ class TestECFRFetcherGaps:
     """Test eCFR fetcher async methods and convenience function."""
 
     def test_available_titles(self):
-        from axiom.fetchers.ecfr import ECFRFetcher
+        from axiom_corpus.fetchers.ecfr import ECFRFetcher
         fetcher = ECFRFetcher()
         titles = fetcher.available_titles
         assert 1 in titles
         assert 50 in titles
 
     def test_get_title_url(self):
-        from axiom.fetchers.ecfr import ECFRFetcher
+        from axiom_corpus.fetchers.ecfr import ECFRFetcher
         fetcher = ECFRFetcher()
         url = fetcher.get_title_url(26)
         assert "title-26" in url
@@ -506,7 +506,7 @@ class TestECFRFetcherGaps:
     async def test_download_file(self, tmp_path):
         from unittest.mock import AsyncMock
 
-        from axiom.fetchers.ecfr import ECFRFetcher
+        from axiom_corpus.fetchers.ecfr import ECFRFetcher
         fetcher = ECFRFetcher(data_dir=tmp_path)
 
         mock_response = MagicMock()
@@ -516,7 +516,7 @@ class TestECFRFetcherGaps:
         mock_client = AsyncMock()
         mock_client.get.return_value = mock_response
 
-        with patch("axiom.fetchers.ecfr.httpx.AsyncClient") as MockClient:
+        with patch("axiom_corpus.fetchers.ecfr.httpx.AsyncClient") as MockClient:
             MockClient.return_value.__aenter__ = AsyncMock(return_value=mock_client)
             MockClient.return_value.__aexit__ = AsyncMock(return_value=False)
 
@@ -527,7 +527,7 @@ class TestECFRFetcherGaps:
 
     @pytest.mark.asyncio
     async def test_download_title_existing(self, tmp_path):
-        from axiom.fetchers.ecfr import ECFRFetcher
+        from axiom_corpus.fetchers.ecfr import ECFRFetcher
         fetcher = ECFRFetcher(data_dir=tmp_path)
 
         # Create file so it's "already downloaded"
@@ -539,7 +539,7 @@ class TestECFRFetcherGaps:
 
     @pytest.mark.asyncio
     async def test_download_cfr_title_convenience(self, tmp_path):
-        from axiom.fetchers.ecfr import download_cfr_title
+        from axiom_corpus.fetchers.ecfr import download_cfr_title
         # Existing file case
         dest = tmp_path / "title-26.xml"
         dest.write_text("<xml/>")
@@ -557,7 +557,7 @@ class TestPDFExtractorGaps:
     """Test PDF extractor edge cases."""
 
     def test_extract_text_from_bytesio(self):
-        from axiom.fetchers.pdf_extractor import PDFTextExtractor
+        from axiom_corpus.fetchers.pdf_extractor import PDFTextExtractor
         extractor = PDFTextExtractor()
 
         # Create a minimal PDF
@@ -572,7 +572,7 @@ class TestPDFExtractorGaps:
         assert "Test PDF content" in result
 
     def test_extract_text_invalid_pdf(self):
-        from axiom.fetchers.pdf_extractor import PDFTextExtractor
+        from axiom_corpus.fetchers.pdf_extractor import PDFTextExtractor
         extractor = PDFTextExtractor()
         with pytest.raises(ValueError, match="Failed to read PDF"):
             extractor.extract_text(b"not a pdf")
@@ -580,7 +580,7 @@ class TestPDFExtractorGaps:
     def test_extract_text_from_file(self, tmp_path):
         import fitz
 
-        from axiom.fetchers.pdf_extractor import PDFTextExtractor
+        from axiom_corpus.fetchers.pdf_extractor import PDFTextExtractor
 
         doc = fitz.open()
         page = doc.new_page()
@@ -596,7 +596,7 @@ class TestPDFExtractorGaps:
     def test_get_metadata(self):
         import fitz
 
-        from axiom.fetchers.pdf_extractor import PDFTextExtractor
+        from axiom_corpus.fetchers.pdf_extractor import PDFTextExtractor
 
         doc = fitz.open()
         doc.new_page()
@@ -611,7 +611,7 @@ class TestPDFExtractorGaps:
     def test_get_metadata_from_bytesio(self):
         import fitz
 
-        from axiom.fetchers.pdf_extractor import PDFTextExtractor
+        from axiom_corpus.fetchers.pdf_extractor import PDFTextExtractor
 
         doc = fitz.open()
         doc.new_page()
@@ -634,7 +634,7 @@ class TestIRSGuidanceFetcherGaps:
     def test_parse_revenue_procedure_html(self):
         from bs4 import BeautifulSoup
 
-        from axiom.fetchers.irs_guidance import IRSGuidanceFetcher
+        from axiom_corpus.fetchers.irs_guidance import IRSGuidanceFetcher
 
         html = """
         <html>
@@ -661,7 +661,7 @@ class TestIRSGuidanceFetcherGaps:
         """Test fallback to main content element."""
         from bs4 import BeautifulSoup
 
-        from axiom.fetchers.irs_guidance import IRSGuidanceFetcher
+        from axiom_corpus.fetchers.irs_guidance import IRSGuidanceFetcher
 
         html = """
         <html>
@@ -688,7 +688,7 @@ class TestIRSGuidanceFetcherGaps:
     def test_extract_title(self):
         from bs4 import BeautifulSoup
 
-        from axiom.fetchers.irs_guidance import IRSGuidanceFetcher
+        from axiom_corpus.fetchers.irs_guidance import IRSGuidanceFetcher
 
         html = "<h2>Rev. Proc. 2024-40. Inflation Adjustments</h2>"
         soup = BeautifulSoup(html, "html.parser")
@@ -701,7 +701,7 @@ class TestIRSGuidanceFetcherGaps:
     def test_is_next_document(self):
         from bs4 import BeautifulSoup
 
-        from axiom.fetchers.irs_guidance import IRSGuidanceFetcher
+        from axiom_corpus.fetchers.irs_guidance import IRSGuidanceFetcher
 
         fetcher = IRSGuidanceFetcher()
 
@@ -718,7 +718,7 @@ class TestIRSGuidanceFetcherGaps:
     def test_parse_sections(self):
         from bs4 import BeautifulSoup
 
-        from axiom.fetchers.irs_guidance import IRSGuidanceFetcher
+        from axiom_corpus.fetchers.irs_guidance import IRSGuidanceFetcher
 
         html = """
         <div>
@@ -739,32 +739,32 @@ class TestIRSGuidanceFetcherGaps:
         assert len(sections[0].children) >= 1  # At least one subsection
 
     def test_extract_tax_years_from_text(self):
-        from axiom.fetchers.irs_guidance import IRSGuidanceFetcher
+        from axiom_corpus.fetchers.irs_guidance import IRSGuidanceFetcher
         fetcher = IRSGuidanceFetcher()
         years = fetcher._extract_tax_years("Applicable for 2025 and 2026.", 2024)
         assert 2025 in years
         assert 2026 in years
 
     def test_extract_tax_years_default(self):
-        from axiom.fetchers.irs_guidance import IRSGuidanceFetcher
+        from axiom_corpus.fetchers.irs_guidance import IRSGuidanceFetcher
         fetcher = IRSGuidanceFetcher()
         years = fetcher._extract_tax_years("No year mentioned.", 2024)
         assert years == [2025]
 
     def test_extract_subject_areas_eitc(self):
-        from axiom.fetchers.irs_guidance import IRSGuidanceFetcher
+        from axiom_corpus.fetchers.irs_guidance import IRSGuidanceFetcher
         fetcher = IRSGuidanceFetcher()
         subjects = fetcher._extract_subject_areas("Earned Income Credit", "eitc parameters")
         assert "EITC" in subjects
 
     def test_extract_subject_areas_default(self):
-        from axiom.fetchers.irs_guidance import IRSGuidanceFetcher
+        from axiom_corpus.fetchers.irs_guidance import IRSGuidanceFetcher
         fetcher = IRSGuidanceFetcher()
         subjects = fetcher._extract_subject_areas("Something", "something else")
         assert subjects == ["General"]
 
     def test_context_manager(self):
-        from axiom.fetchers.irs_guidance import IRSGuidanceFetcher
+        from axiom_corpus.fetchers.irs_guidance import IRSGuidanceFetcher
         with IRSGuidanceFetcher() as fetcher:
             assert fetcher is not None
 
@@ -778,8 +778,8 @@ class TestIRSBulkFetcherGaps:
     """Test IRS bulk fetcher gaps."""
 
     def test_irs_drop_document_properties(self):
-        from axiom.fetchers.irs_bulk import IRSDropDocument
-        from axiom.models_guidance import GuidanceType
+        from axiom_corpus.fetchers.irs_bulk import IRSDropDocument
+        from axiom_corpus.models_guidance import GuidanceType
 
         doc = IRSDropDocument(
             doc_type=GuidanceType.REV_PROC,
@@ -791,8 +791,8 @@ class TestIRSBulkFetcherGaps:
         assert doc.id == "rp-2024-40"
 
     def test_irs_drop_document_all_types(self):
-        from axiom.fetchers.irs_bulk import IRSDropDocument
-        from axiom.models_guidance import GuidanceType
+        from axiom_corpus.fetchers.irs_bulk import IRSDropDocument
+        from axiom_corpus.models_guidance import GuidanceType
 
         for gtype, prefix in [
             (GuidanceType.REV_RUL, "rr"),
@@ -808,8 +808,8 @@ class TestIRSBulkFetcherGaps:
             assert doc.id == f"{prefix}-2024-1"
 
     def test_parse_irs_drop_listing_with_filters(self):
-        from axiom.fetchers.irs_bulk import parse_irs_drop_listing
-        from axiom.models_guidance import GuidanceType
+        from axiom_corpus.fetchers.irs_bulk import parse_irs_drop_listing
+        from axiom_corpus.models_guidance import GuidanceType
 
         html = """
         <html><body>
@@ -835,13 +835,13 @@ class TestIRSBulkFetcherGaps:
         assert len(filenames) == len(set(filenames))
 
     def test_bulk_fetcher_context_manager(self):
-        from axiom.fetchers.irs_bulk import IRSBulkFetcher
+        from axiom_corpus.fetchers.irs_bulk import IRSBulkFetcher
         with IRSBulkFetcher() as fetcher:
             assert fetcher is not None
 
     def test_generate_title(self):
-        from axiom.fetchers.irs_bulk import IRSBulkFetcher, IRSDropDocument
-        from axiom.models_guidance import GuidanceType
+        from axiom_corpus.fetchers.irs_bulk import IRSBulkFetcher, IRSDropDocument
+        from axiom_corpus.models_guidance import GuidanceType
 
         fetcher = IRSBulkFetcher()
         doc = IRSDropDocument(
@@ -855,7 +855,7 @@ class TestIRSBulkFetcherGaps:
 
     def test_fetch_drop_listing_pagination(self):
         """Test _fetch_drop_listing pagination handling."""
-        from axiom.fetchers.irs_bulk import IRSBulkFetcher
+        from axiom_corpus.fetchers.irs_bulk import IRSBulkFetcher
 
         fetcher = IRSBulkFetcher(max_pages=2)
 
@@ -883,7 +883,7 @@ class TestIRSBulkFetcherGaps:
 
     def test_fetch_drop_listing_with_progress(self):
         """Test _fetch_drop_listing with progress callback."""
-        from axiom.fetchers.irs_bulk import IRSBulkFetcher
+        from axiom_corpus.fetchers.irs_bulk import IRSBulkFetcher
 
         fetcher = IRSBulkFetcher(max_pages=2)
         page0_html = '<a href="rp-24-01.pdf">rp-24-01.pdf</a> ?page=1'
@@ -910,8 +910,8 @@ class TestIRSBulkFetcherGaps:
 
     def test_fetch_and_store_basic(self, tmp_path):
         """Test fetch_and_store method."""
-        from axiom.fetchers.irs_bulk import IRSBulkFetcher
-        from axiom.models_guidance import GuidanceType
+        from axiom_corpus.fetchers.irs_bulk import IRSBulkFetcher
+        from axiom_corpus.models_guidance import GuidanceType
 
         fetcher = IRSBulkFetcher()
 
@@ -942,8 +942,8 @@ class TestIRSBulkFetcherGaps:
         """Test fetch_and_store handles HTTP errors."""
         import httpx
 
-        from axiom.fetchers.irs_bulk import IRSBulkFetcher
-        from axiom.models_guidance import GuidanceType
+        from axiom_corpus.fetchers.irs_bulk import IRSBulkFetcher
+        from axiom_corpus.models_guidance import GuidanceType
 
         fetcher = IRSBulkFetcher()
 
@@ -981,14 +981,14 @@ class TestUSLMSourceGaps:
     """Test USLM source adapter methods."""
 
     def test_get_federal_config(self):
-        from axiom.sources.uslm import get_federal_config
+        from axiom_corpus.sources.uslm import get_federal_config
         config = get_federal_config()
         assert config.jurisdiction == "us"
         assert config.source_type == "uslm"
         assert "26" in config.codes
 
     def test_uslm_source_init(self):
-        from axiom.sources.uslm import USLMSource
+        from axiom_corpus.sources.uslm import USLMSource
         source = USLMSource()
         assert source.config.jurisdiction == "us"
 
@@ -1005,7 +1005,7 @@ class TestAknModelsFromXmlGaps:
         """FRBRExpression.from_xml_element has Pydantic alias bug - ValidationError expected."""
         from pydantic import ValidationError
 
-        from axiom.models_akoma_ntoso import AKN_NAMESPACE, FRBRExpression
+        from axiom_corpus.models_akoma_ntoso import AKN_NAMESPACE, FRBRExpression
 
         elem = ET.Element(f"{{{AKN_NAMESPACE}}}FRBRExpression")
         # Known bug: from_xml_element passes keyword args that conflict with aliases
@@ -1016,7 +1016,7 @@ class TestAknModelsFromXmlGaps:
         """FRBRManifestation.from_xml_element has same Pydantic alias bug."""
         from pydantic import ValidationError
 
-        from axiom.models_akoma_ntoso import AKN_NAMESPACE, FRBRManifestation
+        from axiom_corpus.models_akoma_ntoso import AKN_NAMESPACE, FRBRManifestation
 
         elem = ET.Element(f"{{{AKN_NAMESPACE}}}FRBRManifestation")
         with pytest.raises(ValidationError):
@@ -1026,7 +1026,7 @@ class TestAknModelsFromXmlGaps:
         """FRBRItem.from_xml_element has same Pydantic alias bug."""
         from pydantic import ValidationError
 
-        from axiom.models_akoma_ntoso import AKN_NAMESPACE, FRBRItem
+        from axiom_corpus.models_akoma_ntoso import AKN_NAMESPACE, FRBRItem
 
         elem = ET.Element(f"{{{AKN_NAMESPACE}}}FRBRItem")
         with pytest.raises(ValidationError):
@@ -1036,7 +1036,7 @@ class TestAknModelsFromXmlGaps:
         """Identification.from_xml_element cascades the alias bug from sub-elements."""
         from pydantic import ValidationError
 
-        from axiom.models_akoma_ntoso import AKN_NAMESPACE, Identification
+        from axiom_corpus.models_akoma_ntoso import AKN_NAMESPACE, Identification
 
         elem = ET.Element(f"{{{AKN_NAMESPACE}}}identification")
         with pytest.raises(ValidationError):
@@ -1046,7 +1046,7 @@ class TestAknModelsFromXmlGaps:
         """Publication.from_xml_element also has alias bug (pub_date vs date)."""
         from pydantic import ValidationError
 
-        from axiom.models_akoma_ntoso import AKN_NAMESPACE, Publication
+        from axiom_corpus.models_akoma_ntoso import AKN_NAMESPACE, Publication
 
         elem = ET.Element(f"{{{AKN_NAMESPACE}}}publication")
         elem.set("date", "not-a-date")
@@ -1058,7 +1058,7 @@ class TestAknModelsFromXmlGaps:
         """LifecycleEvent.from_xml_element has Pydantic alias bug."""
         from pydantic import ValidationError
 
-        from axiom.models_akoma_ntoso import AKN_NAMESPACE, LifecycleEvent
+        from axiom_corpus.models_akoma_ntoso import AKN_NAMESPACE, LifecycleEvent
 
         elem = ET.Element(f"{{{AKN_NAMESPACE}}}eventRef")
         elem.set("date", "2024-01-01")
@@ -1068,7 +1068,7 @@ class TestAknModelsFromXmlGaps:
             LifecycleEvent.from_xml_element(elem)
 
     def test_lifecycle_from_xml_empty(self):
-        from axiom.models_akoma_ntoso import AKN_NAMESPACE, Lifecycle
+        from axiom_corpus.models_akoma_ntoso import AKN_NAMESPACE, Lifecycle
 
         elem = ET.Element(f"{{{AKN_NAMESPACE}}}lifecycle")
         elem.set("source", "#org1")
@@ -1081,7 +1081,7 @@ class TestAknModelsFromXmlGaps:
         """Modification.from_xml_element has Pydantic alias bug."""
         from pydantic import ValidationError
 
-        from axiom.models_akoma_ntoso import AKN_NAMESPACE, Modification
+        from axiom_corpus.models_akoma_ntoso import AKN_NAMESPACE, Modification
 
         elem = ET.Element(f"{{{AKN_NAMESPACE}}}textualMod")
         elem.set("type", "unknown_mod_type")
@@ -1092,7 +1092,7 @@ class TestAknModelsFromXmlGaps:
         """Modification with bad force date has alias bug."""
         from pydantic import ValidationError
 
-        from axiom.models_akoma_ntoso import AKN_NAMESPACE, Modification
+        from axiom_corpus.models_akoma_ntoso import AKN_NAMESPACE, Modification
 
         elem = ET.Element(f"{{{AKN_NAMESPACE}}}textualMod")
         elem.set("type", "substitution")
@@ -1108,7 +1108,7 @@ class TestAknModelsFromXmlGaps:
 
     def test_akn_document_full_roundtrip(self):
         """Test AkomaNtosoDocument with all optional elements."""
-        from axiom.models_akoma_ntoso import (
+        from axiom_corpus.models_akoma_ntoso import (
             AkomaNtosoDocument,
             DocumentType,
             FRBRAuthor,
@@ -1200,7 +1200,7 @@ class TestAknModelsFromXmlGaps:
 
     def test_akn_document_from_xml_no_doc_type(self):
         """Test from_xml_element with no doc type element."""
-        from axiom.models_akoma_ntoso import AKN_NAMESPACE, AkomaNtosoDocument
+        from axiom_corpus.models_akoma_ntoso import AKN_NAMESPACE, AkomaNtosoDocument
 
         root = ET.Element(f"{{{AKN_NAMESPACE}}}akomaNtoso")
         with pytest.raises(ValueError, match="No document type"):
@@ -1208,7 +1208,7 @@ class TestAknModelsFromXmlGaps:
 
     def test_akn_document_from_xml_no_meta(self):
         """Test from_xml_element with no meta section."""
-        from axiom.models_akoma_ntoso import AKN_NAMESPACE, AkomaNtosoDocument
+        from axiom_corpus.models_akoma_ntoso import AKN_NAMESPACE, AkomaNtosoDocument
 
         root = ET.Element(f"{{{AKN_NAMESPACE}}}akomaNtoso")
         ET.SubElement(root, f"{{{AKN_NAMESPACE}}}act")
@@ -1216,7 +1216,7 @@ class TestAknModelsFromXmlGaps:
             AkomaNtosoDocument.from_xml_element(root)
 
     def test_parse_akn_uri(self):
-        from axiom.models_akoma_ntoso import parse_akn_uri
+        from axiom_corpus.models_akoma_ntoso import parse_akn_uri
 
         result = parse_akn_uri("/akn/us/act/2024/1/eng@2024-01-01/section/32")
         assert result["country"] == "us"
@@ -1228,7 +1228,7 @@ class TestAknModelsFromXmlGaps:
         assert result["section"] == "32"
 
     def test_parse_akn_uri_invalid(self):
-        from axiom.models_akoma_ntoso import parse_akn_uri
+        from axiom_corpus.models_akoma_ntoso import parse_akn_uri
 
         result = parse_akn_uri("/some/random/path")
         assert result["country"] is None
@@ -1244,19 +1244,19 @@ class TestUKModelsGaps:
     """Test UK models edge cases."""
 
     def test_uk_models_import(self):
-        from axiom.models_uk import UKAct, UKAmendment, UKCitation, UKSection
+        from axiom_corpus.models_uk import UKAct, UKAmendment, UKCitation, UKSection
         assert UKSection is not None
         assert UKCitation is not None
         assert UKAct is not None
         assert UKAmendment is not None
 
     def test_uk_legislation_types(self):
-        from axiom.models_uk import UK_LEGISLATION_TYPES
+        from axiom_corpus.models_uk import UK_LEGISLATION_TYPES
         assert "ukpga" in UK_LEGISLATION_TYPES
         assert "uksi" in UK_LEGISLATION_TYPES
 
     def test_uk_act_short_titles(self):
-        from axiom.models_uk import UK_ACT_SHORT_TITLES
+        from axiom_corpus.models_uk import UK_ACT_SHORT_TITLES
         assert isinstance(UK_ACT_SHORT_TITLES, dict)
 
 
@@ -1269,8 +1269,8 @@ class TestPipelineAknGaps:
     """Test pipeline AKN conversion edge cases."""
 
     def test_section_to_akn_xml(self):
-        from axiom.models import Citation, Section
-        from axiom.pipeline.akn import section_to_akn_xml
+        from axiom_corpus.models import Citation, Section
+        from axiom_corpus.pipeline.akn import section_to_akn_xml
 
         section = Section(
             citation=Citation(title=0, section="1-1"),
@@ -1294,21 +1294,21 @@ class TestPipelineRunnerGaps:
     """Test pipeline runner methods."""
 
     def test_load_converter_invalid_state(self):
-        from axiom.pipeline.runner import StatePipeline
+        from axiom_corpus.pipeline.runner import StatePipeline
 
         with pytest.raises(ValueError, match="No converter"):
             pipeline = StatePipeline("zz", dry_run=True, r2_axiom=MagicMock())
             pipeline._load_converter()
 
     def test_load_converter_valid_state(self):
-        from axiom.pipeline.runner import StatePipeline
+        from axiom_corpus.pipeline.runner import StatePipeline
 
         pipeline = StatePipeline("ak", dry_run=True, r2_axiom=MagicMock())
         converter = pipeline._load_converter()
         assert converter is not None
 
     def test_get_chapter_url_with_build_method(self):
-        from axiom.pipeline.runner import StatePipeline
+        from axiom_corpus.pipeline.runner import StatePipeline
 
         pipeline = StatePipeline("ak", dry_run=True, r2_axiom=MagicMock())
         pipeline.converter = MagicMock()
@@ -1325,7 +1325,7 @@ class TestPipelineRunnerGaps:
         assert url == "https://test.com"
 
     def test_get_chapter_url_single_param(self):
-        from axiom.pipeline.runner import StatePipeline
+        from axiom_corpus.pipeline.runner import StatePipeline
 
         pipeline = StatePipeline("fl", dry_run=True, r2_axiom=MagicMock())
         pipeline.converter = MagicMock()
@@ -1340,7 +1340,7 @@ class TestPipelineRunnerGaps:
         assert url == "https://test.com"
 
     def test_get_chapter_url_fallback_base_url(self):
-        from axiom.pipeline.runner import StatePipeline
+        from axiom_corpus.pipeline.runner import StatePipeline
 
         pipeline = StatePipeline("fl", dry_run=True, r2_axiom=MagicMock())
         pipeline.converter = MagicMock(spec=[])
@@ -1349,7 +1349,7 @@ class TestPipelineRunnerGaps:
         assert "mystate.gov" in url
 
     def test_get_chapter_url_absolute_fallback(self):
-        from axiom.pipeline.runner import StatePipeline
+        from axiom_corpus.pipeline.runner import StatePipeline
 
         pipeline = StatePipeline("fl", dry_run=True, r2_axiom=MagicMock())
         pipeline.converter = MagicMock(spec=[])
@@ -1358,7 +1358,7 @@ class TestPipelineRunnerGaps:
         assert "fl.gov" in url
 
     def test_fetch_raw_html_with_get_method(self):
-        from axiom.pipeline.runner import StatePipeline
+        from axiom_corpus.pipeline.runner import StatePipeline
 
         pipeline = StatePipeline("ak", dry_run=True, r2_axiom=MagicMock())
         pipeline.converter = MagicMock()
@@ -1367,7 +1367,7 @@ class TestPipelineRunnerGaps:
         assert result == "<html/>"
 
     def test_fetch_raw_html_with_client(self):
-        from axiom.pipeline.runner import StatePipeline
+        from axiom_corpus.pipeline.runner import StatePipeline
 
         pipeline = StatePipeline("ak", dry_run=True, r2_axiom=MagicMock())
         pipeline.converter = MagicMock(spec=["client"])
@@ -1377,7 +1377,7 @@ class TestPipelineRunnerGaps:
         assert result == "<html/>"
 
     def test_fetch_raw_html_error(self):
-        from axiom.pipeline.runner import StatePipeline
+        from axiom_corpus.pipeline.runner import StatePipeline
 
         pipeline = StatePipeline("ak", dry_run=True, r2_axiom=MagicMock())
         pipeline.converter = MagicMock()
@@ -1386,7 +1386,7 @@ class TestPipelineRunnerGaps:
         assert result is None
 
     def test_get_chapters_ak(self):
-        from axiom.pipeline.runner import StatePipeline
+        from axiom_corpus.pipeline.runner import StatePipeline
 
         pipeline = StatePipeline("ak", dry_run=True, r2_axiom=MagicMock())
         pipeline.converter = pipeline._load_converter()
@@ -1394,7 +1394,7 @@ class TestPipelineRunnerGaps:
         assert len(chapters) > 0
 
     def test_get_chapters_standard_state(self):
-        from axiom.pipeline.runner import StatePipeline
+        from axiom_corpus.pipeline.runner import StatePipeline
 
         pipeline = StatePipeline("fl", dry_run=True, r2_axiom=MagicMock())
         pipeline.converter = pipeline._load_converter()
@@ -1403,7 +1403,7 @@ class TestPipelineRunnerGaps:
 
     def test_run_dry_run(self):
         """Test full pipeline run in dry_run mode."""
-        from axiom.pipeline.runner import StatePipeline
+        from axiom_corpus.pipeline.runner import StatePipeline
 
         r2_axiom = MagicMock()
         pipeline = StatePipeline("ak", dry_run=True, r2_axiom=r2_axiom)
@@ -1417,20 +1417,20 @@ class TestPipelineRunnerGaps:
         with patch.object(pipeline, "_load_converter", return_value=mock_converter):
             with patch.object(pipeline, "_get_chapters", return_value=[("05", 43)]):
                 with patch.object(pipeline, "_fetch_raw_html", return_value="<html/>"):
-                    with patch("axiom.pipeline.runner.section_to_akn_xml", return_value="<akn/>"):
-                        with patch("axiom.pipeline.runner.time"):
+                    with patch("axiom_corpus.pipeline.runner.section_to_akn_xml", return_value="<akn/>"):
+                        with patch("axiom_corpus.pipeline.runner.time"):
                             stats = pipeline.run()
                             assert stats["sections_found"] >= 0
 
     def test_run_converter_load_error(self):
-        from axiom.pipeline.runner import StatePipeline
+        from axiom_corpus.pipeline.runner import StatePipeline
 
         pipeline = StatePipeline("zz", dry_run=True, r2_axiom=MagicMock())
         stats = pipeline.run()
         assert stats["sections_found"] == 0
 
     def test_run_no_chapters(self):
-        from axiom.pipeline.runner import StatePipeline
+        from axiom_corpus.pipeline.runner import StatePipeline
 
         pipeline = StatePipeline("ak", dry_run=True, r2_axiom=MagicMock())
         mock_converter = MagicMock()
@@ -1450,20 +1450,20 @@ class TestStateBenefitsFetcherGaps:
     """Test state benefits fetcher classes."""
 
     def test_snap_sua_url(self):
-        from axiom.fetchers.state_benefits import SNAPSUAFetcher
+        from axiom_corpus.fetchers.state_benefits import SNAPSUAFetcher
         fetcher = SNAPSUAFetcher()
         url = fetcher.get_sua_url(2025)
         assert "FY25" in url
 
     def test_snap_save_file(self, tmp_path):
-        from axiom.fetchers.state_benefits import SNAPSUAFetcher
+        from axiom_corpus.fetchers.state_benefits import SNAPSUAFetcher
         fetcher = SNAPSUAFetcher()
         out = tmp_path / "sub" / "test.xlsx"
         fetcher.save_file(b"content", out)
         assert out.read_bytes() == b"content"
 
     def test_tanf_fetcher_urls(self):
-        from axiom.fetchers.state_benefits import TANFFetcher
+        from axiom_corpus.fetchers.state_benefits import TANFFetcher
         fetcher = TANFFetcher()
 
         url_2023 = fetcher.get_table_url("II.A.4", 2023)
@@ -1476,20 +1476,20 @@ class TestStateBenefitsFetcherGaps:
         assert "2023-10" in url_2021
 
     def test_tanf_list_tables(self):
-        from axiom.fetchers.state_benefits import TANFFetcher
+        from axiom_corpus.fetchers.state_benefits import TANFFetcher
         fetcher = TANFFetcher()
         tables = fetcher.list_available_tables()
         assert "II.A.4" in tables
 
     def test_tanf_save_file(self, tmp_path):
-        from axiom.fetchers.state_benefits import TANFFetcher
+        from axiom_corpus.fetchers.state_benefits import TANFFetcher
         fetcher = TANFFetcher()
         out = tmp_path / "test.xlsx"
         fetcher.save_file(b"data", out)
         assert out.exists()
 
     def test_ccdf_urls(self):
-        from axiom.fetchers.state_benefits import CCDFFetcher
+        from axiom_corpus.fetchers.state_benefits import CCDFFetcher
         fetcher = CCDFFetcher()
         db_url = fetcher.get_database_url()
         assert "CCDF" in db_url
@@ -1501,31 +1501,31 @@ class TestStateBenefitsFetcherGaps:
         assert "2022" in bot_url_2022
 
     def test_ccdf_save_file(self, tmp_path):
-        from axiom.fetchers.state_benefits import CCDFFetcher
+        from axiom_corpus.fetchers.state_benefits import CCDFFetcher
         fetcher = CCDFFetcher()
         out = tmp_path / "test.xlsx"
         fetcher.save_file(b"data", out)
         assert out.exists()
 
     def test_state_benefits_fetcher_init(self):
-        from axiom.fetchers.state_benefits import StateBenefitsFetcher
+        from axiom_corpus.fetchers.state_benefits import StateBenefitsFetcher
         fetcher = StateBenefitsFetcher()
         assert fetcher.snap is not None
         assert fetcher.tanf is not None
         assert fetcher.ccdf is not None
 
     def test_state_benefits_context_manager(self):
-        from axiom.fetchers.state_benefits import StateBenefitsFetcher
+        from axiom_corpus.fetchers.state_benefits import StateBenefitsFetcher
         with StateBenefitsFetcher() as fetcher:
             assert fetcher is not None
 
     def test_state_benefits_close(self):
-        from axiom.fetchers.state_benefits import StateBenefitsFetcher
+        from axiom_corpus.fetchers.state_benefits import StateBenefitsFetcher
         fetcher = StateBenefitsFetcher()
         fetcher.close()  # Should not raise
 
     def test_fetch_snap_sua_success(self, tmp_path):
-        from axiom.fetchers.state_benefits import StateBenefitsFetcher
+        from axiom_corpus.fetchers.state_benefits import StateBenefitsFetcher
         fetcher = StateBenefitsFetcher()
 
         mock_response = MagicMock()
@@ -1542,7 +1542,7 @@ class TestStateBenefitsFetcherGaps:
     def test_fetch_snap_sua_error(self, tmp_path):
         import httpx
 
-        from axiom.fetchers.state_benefits import StateBenefitsFetcher
+        from axiom_corpus.fetchers.state_benefits import StateBenefitsFetcher
 
         fetcher = StateBenefitsFetcher()
         fetcher.snap.client = MagicMock()
@@ -1553,7 +1553,7 @@ class TestStateBenefitsFetcherGaps:
         assert 2025 not in results
 
     def test_fetch_tanf_tables(self, tmp_path):
-        from axiom.fetchers.state_benefits import StateBenefitsFetcher
+        from axiom_corpus.fetchers.state_benefits import StateBenefitsFetcher
         fetcher = StateBenefitsFetcher()
 
         mock_response = MagicMock()
@@ -1570,7 +1570,7 @@ class TestStateBenefitsFetcherGaps:
     def test_fetch_tanf_tables_error(self, tmp_path):
         import httpx
 
-        from axiom.fetchers.state_benefits import StateBenefitsFetcher
+        from axiom_corpus.fetchers.state_benefits import StateBenefitsFetcher
 
         fetcher = StateBenefitsFetcher()
         fetcher.tanf.client = MagicMock()
@@ -1581,7 +1581,7 @@ class TestStateBenefitsFetcherGaps:
         assert len(results) == 0
 
     def test_fetch_tanf_databook(self, tmp_path):
-        from axiom.fetchers.state_benefits import StateBenefitsFetcher
+        from axiom_corpus.fetchers.state_benefits import StateBenefitsFetcher
         fetcher = StateBenefitsFetcher()
 
         mock_response = MagicMock()
@@ -1598,7 +1598,7 @@ class TestStateBenefitsFetcherGaps:
     def test_fetch_tanf_databook_error(self, tmp_path):
         import httpx
 
-        from axiom.fetchers.state_benefits import StateBenefitsFetcher
+        from axiom_corpus.fetchers.state_benefits import StateBenefitsFetcher
 
         fetcher = StateBenefitsFetcher()
         fetcher.tanf.client = MagicMock()
@@ -1609,7 +1609,7 @@ class TestStateBenefitsFetcherGaps:
         assert result is None
 
     def test_fetch_ccdf_database(self, tmp_path):
-        from axiom.fetchers.state_benefits import StateBenefitsFetcher
+        from axiom_corpus.fetchers.state_benefits import StateBenefitsFetcher
         fetcher = StateBenefitsFetcher()
 
         mock_response = MagicMock()
@@ -1626,7 +1626,7 @@ class TestStateBenefitsFetcherGaps:
     def test_fetch_ccdf_database_error(self, tmp_path):
         import httpx
 
-        from axiom.fetchers.state_benefits import StateBenefitsFetcher
+        from axiom_corpus.fetchers.state_benefits import StateBenefitsFetcher
 
         fetcher = StateBenefitsFetcher()
         fetcher.ccdf.client = MagicMock()
@@ -1637,7 +1637,7 @@ class TestStateBenefitsFetcherGaps:
         assert result is None
 
     def test_fetch_all(self, tmp_path):
-        from axiom.fetchers.state_benefits import StateBenefitsFetcher
+        from axiom_corpus.fetchers.state_benefits import StateBenefitsFetcher
         fetcher = StateBenefitsFetcher()
 
         mock_response = MagicMock()

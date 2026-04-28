@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from axiom.writer import (
+from axiom_corpus.writer import (
     CanonicalDocument,
     DocumentWriter,
     LocalBackend,

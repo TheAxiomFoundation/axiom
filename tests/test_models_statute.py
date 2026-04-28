@@ -2,7 +2,7 @@
 
 import pytest
 
-from axiom.models_statute import (
+from axiom_corpus.models_statute import (
     JURISDICTIONS,
     CodeType,
     JurisdictionInfo,

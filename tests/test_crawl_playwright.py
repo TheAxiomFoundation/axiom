@@ -6,7 +6,7 @@ Playwright browser calls are not invoked.
 
 import time
 
-from axiom.crawl_playwright import SPA_STATES, PlaywrightStats
+from axiom_corpus.crawl_playwright import SPA_STATES, PlaywrightStats
 
 
 class TestPlaywrightStats:

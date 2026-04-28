@@ -8,11 +8,11 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from axiom.converters.us_states.ca import (
+from axiom_corpus.converters.us_states.ca import (
     CA_CODES,
     CAStateConverter,
 )
-from axiom.models_statute import Statute
+from axiom_corpus.models_statute import Statute
 
 # Sample HTML from leginfo for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

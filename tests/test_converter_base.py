@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 import pytest
 
 # Import directly from the module to avoid full package import
-from axiom.converters.base import (
+from axiom_corpus.converters.base import (
     CONVERTERS,
     AknSection,
     AknSubsection,

@@ -8,8 +8,8 @@ from datetime import date
 
 from bs4 import BeautifulSoup
 
-from axiom.ingest.state_orchestrator import StateOrchestrator
-from axiom.models import Section, Subsection, Citation
+from axiom_corpus.ingest.state_orchestrator import StateOrchestrator
+from axiom_corpus.models import Section, Subsection, Citation
 
 
 def _make_section(section_num="5747.01", state="oh") -> Section:

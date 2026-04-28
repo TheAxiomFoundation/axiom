@@ -3,7 +3,7 @@
 
 import pytest
 
-from axiom.converters.state_to_uslm import (
+from axiom_corpus.converters.state_to_uslm import (
     USLM_NS,
     ParsedSection,
     ParsedSubsection,

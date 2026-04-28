@@ -2,7 +2,7 @@
 
 import pytest
 
-from axiom.storage.base import StorageBackend
+from axiom_corpus.storage.base import StorageBackend
 
 
 class TestStorageBackend:

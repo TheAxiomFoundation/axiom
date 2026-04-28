@@ -11,8 +11,8 @@ import argparse
 import time
 from datetime import datetime, timezone
 
-from axiom.ingest.state_orchestrator import STATE_CONVERTER_MODULES as STATE_CONVERTERS
-from axiom.storage.r2 import get_r2_axiom
+from axiom_corpus.ingest.state_orchestrator import STATE_CONVERTER_MODULES as STATE_CONVERTERS
+from axiom_corpus.storage.r2 import get_r2_axiom
 
 
 def section_to_akn_xml(section, state: str) -> str:
@@ -386,7 +386,7 @@ class StatePipeline:
 
 def run_supabase_ingestion(state: str | None = None, all_states: bool = False):
     """Ingest state statutes from local HTML into Supabase."""
-    from axiom.ingest.state_orchestrator import StateOrchestrator
+    from axiom_corpus.ingest.state_orchestrator import StateOrchestrator
 
     orch = StateOrchestrator()
 

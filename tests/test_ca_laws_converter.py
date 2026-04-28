@@ -5,12 +5,12 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from axiom.converters.ca_laws import (
+from axiom_corpus.converters.ca_laws import (
     BilingualContent,
     CanadaLawsConverter,
     CanadaLawsSource,
 )
-from axiom.models_canada import CanadaAct
+from axiom_corpus.models_canada import CanadaAct
 
 # Sample minimal XML for testing
 SAMPLE_ACT_XML = b"""<?xml version="1.0" encoding="UTF-8"?>

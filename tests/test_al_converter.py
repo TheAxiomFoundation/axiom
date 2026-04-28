@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.al import (
+from axiom_corpus.converters.us_states.al import (
     AL_TAX_CHAPTERS,
     AL_TITLES,
     AL_WELFARE_CHAPTERS,
@@ -18,7 +18,7 @@ from axiom.converters.us_states.al import (
     download_al_chapter,
     fetch_al_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from alisondb.legislature.state.al.us for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

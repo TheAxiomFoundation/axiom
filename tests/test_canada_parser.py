@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.parsers.canada.statutes import CanadaStatuteParser, download_act
+from axiom_corpus.parsers.canada.statutes import CanadaStatuteParser, download_act
 
 SAMPLE_CANADA_XML = """\
 <?xml version="1.0" encoding="UTF-8"?>

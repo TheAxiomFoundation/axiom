@@ -17,14 +17,14 @@ from xml.etree import ElementTree as ET
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from axiom.converters.us_states.sd import (
+from axiom_corpus.converters.us_states.sd import (
     SDConverter,
     SD_TITLES,
     SD_TAX_CHAPTERS,
     SD_WELFARE_CHAPTERS,
 )
-from axiom.models import Section as ArchSection
-from axiom.models_akoma_ntoso import (
+from axiom_corpus.models import Section as ArchSection
+from axiom_corpus.models_akoma_ntoso import (
     AKN_NAMESPACE,
     Act,
     Chapter,

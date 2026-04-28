@@ -63,9 +63,9 @@ verify = [
 ]
 
 [project.scripts]
-axiom-corpus = "axiom.cli:main"
-axiom-corpus-build = "axiom.scripts.build_archive:main"
-axiom-corpus-pipeline = "axiom.pipeline.cli:main"
+axiom-corpus = "axiom_corpus.cli:main"
+axiom-corpus-build = "axiom_corpus.scripts.build_archive:main"
+axiom-corpus-pipeline = "axiom_corpus.pipeline.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/TheAxiomFoundation/axiom-corpus"
@@ -102,7 +102,7 @@ markers = [
 
 [tool.towncrier]
 name = "axiom-corpus"
-package = "axiom"
+package = "axiom_corpus"
 package_dir = "src"
 directory = "changes"
 filename = "CHANGELOG.md"
@@ -129,19 +129,19 @@ name = "Misc"
 showcontent = true
 
 [tool.coverage.run]
-source = ["axiom"]
+source = ["axiom_corpus"]
 omit = [
-    "src/axiom/crawl.py",
-    "src/axiom/crawl_playwright.py",
-    "src/axiom/scripts/*",
-    "src/axiom/ingest/*",
-    "src/axiom/cli.py",
-    "src/axiom/converters.py",
-    "src/axiom/storage/postgres.py",
-    "src/axiom/storage/supabase.py",
-    "src/axiom/query/supabase.py",
-    "src/axiom/fetchers/legislation_uk.py",
-    "src/axiom/fetchers/legislation_canada.py",
+    "src/axiom_corpus/crawl.py",
+    "src/axiom_corpus/crawl_playwright.py",
+    "src/axiom_corpus/scripts/*",
+    "src/axiom_corpus/ingest/*",
+    "src/axiom_corpus/cli.py",
+    "src/axiom_corpus/converters.py",
+    "src/axiom_corpus/storage/postgres.py",
+    "src/axiom_corpus/storage/supabase.py",
+    "src/axiom_corpus/query/supabase.py",
+    "src/axiom_corpus/fetchers/legislation_uk.py",
+    "src/axiom_corpus/fetchers/legislation_canada.py",
 ]
 
 [tool.coverage.report]

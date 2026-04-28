@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.az import (
+from axiom_corpus.converters.us_states.az import (
     AZ_TAX_CHAPTERS,
     AZ_TITLES,
     AZ_WELFARE_CHAPTERS,
@@ -18,7 +18,7 @@ from axiom.converters.us_states.az import (
     download_az_title,
     fetch_az_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from azleg.gov for testing
 SAMPLE_SECTION_HTML = """<HTML>

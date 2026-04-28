@@ -27,13 +27,13 @@ from xml.dom import minidom
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from axiom.converters.us_states.md import (
+from axiom_corpus.converters.us_states.md import (
     MDConverter,
     MD_ARTICLES,
     MD_TAX_ARTICLES,
     MD_WELFARE_ARTICLES,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 
 # Akoma Ntoso namespace

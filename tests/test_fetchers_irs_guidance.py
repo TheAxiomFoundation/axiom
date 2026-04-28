@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from axiom.fetchers.irs_guidance import IRSGuidanceFetcher
+from axiom_corpus.fetchers.irs_guidance import IRSGuidanceFetcher
 
 
 class TestIRSGuidanceFetcher:

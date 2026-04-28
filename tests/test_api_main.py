@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from axiom.api.main import (
+from axiom_corpus.api.main import (
     ReferencesResponse,
     SearchResponse,
     SearchResultResponse,
@@ -13,7 +13,7 @@ from axiom.api.main import (
     TitleResponse,
     create_app,
 )
-from axiom.models import Citation, SearchResult, Section, Subsection, TitleInfo
+from axiom_corpus.models import Citation, SearchResult, Section, Subsection, TitleInfo
 
 
 @pytest.fixture
@@ -97,13 +97,13 @@ class TestReferencesResponse:
 
 
 class TestCreateApp:
-    @patch("axiom.api.main.AxiomArchive")
+    @patch("axiom_corpus.api.main.AxiomArchive")
     def test_create_app(self, mock_archive):
         app = create_app(db_path=":memory:")
         assert app is not None
         assert app.title == "Axiom"
 
-    @patch("axiom.api.main.AxiomArchive")
+    @patch("axiom_corpus.api.main.AxiomArchive")
     def test_app_has_routes(self, mock_archive):
         app = create_app(db_path=":memory:")
         routes = [r.path for r in app.routes]
@@ -112,7 +112,7 @@ class TestCreateApp:
 
 
 class TestAppEndpoints:
-    @patch("axiom.api.main.AxiomArchive")
+    @patch("axiom_corpus.api.main.AxiomArchive")
     def test_root(self, mock_archive):
         from fastapi.testclient import TestClient
 
@@ -123,7 +123,7 @@ class TestAppEndpoints:
         data = response.json()
         assert data["name"] == "Axiom"
 
-    @patch("axiom.api.main.AxiomArchive")
+    @patch("axiom_corpus.api.main.AxiomArchive")
     def test_search(self, mock_archive_cls):
         from fastapi.testclient import TestClient
 
@@ -146,7 +146,7 @@ class TestAppEndpoints:
         assert data["query"] == "earned income"
         assert data["total"] == 1
 
-    @patch("axiom.api.main.AxiomArchive")
+    @patch("axiom_corpus.api.main.AxiomArchive")
     def test_get_section_found(self, mock_archive_cls, section):
         from fastapi.testclient import TestClient
 
@@ -159,7 +159,7 @@ class TestAppEndpoints:
         response = client.get("/v1/sections/26/32")
         assert response.status_code == 200
 
-    @patch("axiom.api.main.AxiomArchive")
+    @patch("axiom_corpus.api.main.AxiomArchive")
     def test_get_section_not_found(self, mock_archive_cls):
         from fastapi.testclient import TestClient
 
@@ -172,7 +172,7 @@ class TestAppEndpoints:
         response = client.get("/v1/sections/99/999")
         assert response.status_code == 404
 
-    @patch("axiom.api.main.AxiomArchive")
+    @patch("axiom_corpus.api.main.AxiomArchive")
     def test_get_subsection(self, mock_archive_cls, section):
         from fastapi.testclient import TestClient
 
@@ -185,7 +185,7 @@ class TestAppEndpoints:
         response = client.get("/v1/sections/26/32/a/1")
         assert response.status_code == 200
 
-    @patch("axiom.api.main.AxiomArchive")
+    @patch("axiom_corpus.api.main.AxiomArchive")
     def test_get_subsection_not_found(self, mock_archive_cls):
         from fastapi.testclient import TestClient
 
@@ -198,7 +198,7 @@ class TestAppEndpoints:
         response = client.get("/v1/sections/99/999/a")
         assert response.status_code == 404
 
-    @patch("axiom.api.main.AxiomArchive")
+    @patch("axiom_corpus.api.main.AxiomArchive")
     def test_get_by_citation(self, mock_archive_cls, section):
         from fastapi.testclient import TestClient
 
@@ -211,7 +211,7 @@ class TestAppEndpoints:
         response = client.get("/v1/citation/26 USC 32")
         assert response.status_code == 200
 
-    @patch("axiom.api.main.AxiomArchive")
+    @patch("axiom_corpus.api.main.AxiomArchive")
     def test_get_by_citation_not_found(self, mock_archive_cls):
         from fastapi.testclient import TestClient
 
@@ -224,7 +224,7 @@ class TestAppEndpoints:
         response = client.get("/v1/citation/26 USC 32")
         assert response.status_code == 404
 
-    @patch("axiom.api.main.AxiomArchive")
+    @patch("axiom_corpus.api.main.AxiomArchive")
     def test_get_references(self, mock_archive_cls):
         from fastapi.testclient import TestClient
 
@@ -242,7 +242,7 @@ class TestAppEndpoints:
         data = response.json()
         assert data["citation"] == "26 USC 32"
 
-    @patch("axiom.api.main.AxiomArchive")
+    @patch("axiom_corpus.api.main.AxiomArchive")
     def test_list_titles(self, mock_archive_cls):
         from fastapi.testclient import TestClient
 

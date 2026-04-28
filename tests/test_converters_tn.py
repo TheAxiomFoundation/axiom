@@ -1,7 +1,7 @@
 """Tests for the Tennessee HTML to AKN converter module."""
 
 
-from axiom.converters.tn_html_to_akn import (
+from axiom_corpus.converters.tn_html_to_akn import (
     AKN_NS,
     ParsedSection,
     ParsedSubsection,

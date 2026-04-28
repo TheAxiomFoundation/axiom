@@ -3,8 +3,8 @@
 import pytest
 from uuid import UUID
 
-from axiom.ingest.rule_converter import section_to_rules, _deterministic_id
-from axiom.models import Section, Subsection, Citation
+from axiom_corpus.ingest.rule_converter import section_to_rules, _deterministic_id
+from axiom_corpus.models import Section, Subsection, Citation
 from datetime import date
 
 

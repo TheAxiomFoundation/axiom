@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.sc import (
+from axiom_corpus.converters.us_states.sc import (
     SC_TAX_CHAPTERS,
     SC_TITLES,
     SC_WELFARE_CHAPTERS,
@@ -18,7 +18,7 @@ from axiom.converters.us_states.sc import (
     download_sc_chapter,
     fetch_sc_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from scstatehouse.gov for testing
 # Based on actual SC Code structure: sections use <p><b>SECTION X-X-X. Title.</b></p>

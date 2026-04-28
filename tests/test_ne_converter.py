@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.ne import (
+from axiom_corpus.converters.us_states.ne import (
     NE_CHAPTERS,
     NE_TAX_CHAPTERS,
     NE_WELFARE_CHAPTERS,
@@ -18,7 +18,7 @@ from axiom.converters.us_states.ne import (
     download_ne_chapter,
     fetch_ne_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from nebraskalegislature.gov for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

@@ -15,8 +15,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from axiom.models_guidance import GuidanceType, RevenueProcedure
-from axiom.storage.guidance import GuidanceStorage
+from axiom_corpus.models_guidance import GuidanceType, RevenueProcedure
+from axiom_corpus.storage.guidance import GuidanceStorage
 
 
 # EITC-related Revenue Procedures with metadata

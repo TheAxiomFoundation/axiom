@@ -33,8 +33,8 @@ from xml.dom import minidom
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from axiom.converters.us_states.ca import CAStateConverter, CA_CODES
-from axiom.models_statute import Statute, StatuteSubsection
+from axiom_corpus.converters.us_states.ca import CAStateConverter, CA_CODES
+from axiom_corpus.models_statute import Statute, StatuteSubsection
 
 
 # Akoma Ntoso namespace

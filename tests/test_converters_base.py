@@ -7,7 +7,7 @@ from datetime import date
 
 import pytest
 
-from axiom.converters.base import (
+from axiom_corpus.converters.base import (
     CONVERTERS,
     AknSection,
     AknSubsection,

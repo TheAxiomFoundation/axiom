@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.pa import (
+from axiom_corpus.converters.us_states.pa import (
     PA_TAX_TITLES,
     PA_TITLES,
     PA_WELFARE_TITLES,
@@ -18,7 +18,7 @@ from axiom.converters.us_states.pa import (
     download_pa_title,
     fetch_pa_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from palegis.us for testing
 SAMPLE_TITLE_HTML = """<!DOCTYPE html>

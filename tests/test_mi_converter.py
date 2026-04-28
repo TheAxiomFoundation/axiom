@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from axiom.converters.us_states.mi import (
+from axiom_corpus.converters.us_states.mi import (
     MCLChapter,
     MCLCitation,
     MCLHistory,

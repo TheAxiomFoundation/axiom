@@ -4,7 +4,7 @@
 This script fetches Idaho Statutes directly from the official legislature website
 and converts them to Akoma Ntoso XML format, outputting to /tmp/rules-us-id-akn/.
 
-Uses the existing IDConverter from axiom.converters.us_states.id_.
+Uses the existing IDConverter from axiom_corpus.converters.us_states.id_.
 
 Usage:
     python scripts/id_to_akn.py
@@ -29,14 +29,14 @@ from xml.etree import ElementTree as ET
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from axiom.converters.us_states.id_ import (
+from axiom_corpus.converters.us_states.id_ import (
     ID_TAX_CHAPTERS,
     ID_TITLES,
     ID_WELFARE_CHAPTERS,
     IDConverter,
     IDConverterError,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Akoma Ntoso namespace
 AKN_NS = "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"

@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 try:
-    from axiom.pipeline.cli import main as pipeline_main
+    from axiom_corpus.pipeline.cli import main as pipeline_main
     _IMPORT_OK = True
 except ImportError:
     _IMPORT_OK = False
@@ -18,8 +18,8 @@ pytestmark = pytest.mark.skipif(not _IMPORT_OK, reason="Pipeline CLI not importa
 
 
 class TestPipelineCLI:
-    @patch("axiom.pipeline.cli.StatePipeline")
-    @patch("axiom.pipeline.cli.STATE_CONVERTERS", {"ak": "axiom.converters.us_states.ak"})
+    @patch("axiom_corpus.pipeline.cli.StatePipeline")
+    @patch("axiom_corpus.pipeline.cli.STATE_CONVERTERS", {"ak": "axiom_corpus.converters.us_states.ak"})
     def test_main_with_state(self, mock_pipeline_cls):
         mock_pipeline = MagicMock()
         mock_pipeline_cls.return_value = mock_pipeline
@@ -35,8 +35,8 @@ class TestPipelineCLI:
 
         mock_pipeline_cls.assert_called_once_with("ak", dry_run=False)
 
-    @patch("axiom.pipeline.cli.StatePipeline")
-    @patch("axiom.pipeline.cli.STATE_CONVERTERS", {"ak": "a", "oh": "b"})
+    @patch("axiom_corpus.pipeline.cli.StatePipeline")
+    @patch("axiom_corpus.pipeline.cli.STATE_CONVERTERS", {"ak": "a", "oh": "b"})
     def test_main_all_states(self, mock_pipeline_cls):
         mock_pipeline = MagicMock()
         mock_pipeline_cls.return_value = mock_pipeline
@@ -52,8 +52,8 @@ class TestPipelineCLI:
 
         assert mock_pipeline_cls.call_count == 2
 
-    @patch("axiom.pipeline.cli.StatePipeline")
-    @patch("axiom.pipeline.cli.STATE_CONVERTERS", {"ak": "a"})
+    @patch("axiom_corpus.pipeline.cli.StatePipeline")
+    @patch("axiom_corpus.pipeline.cli.STATE_CONVERTERS", {"ak": "a"})
     def test_main_dry_run(self, mock_pipeline_cls):
         mock_pipeline = MagicMock()
         mock_pipeline_cls.return_value = mock_pipeline

@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from axiom.converters.us_states.ky import (
+from axiom_corpus.converters.us_states.ky import (
     KY_CHAPTER_IDS,
     KY_TAX_CHAPTERS,
     KY_WELFARE_CHAPTERS,
@@ -18,7 +18,7 @@ from axiom.converters.us_states.ky import (
     download_ky_chapter,
     fetch_ky_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from chapter.aspx for testing (chapter 141 - Income Taxes)
 SAMPLE_CHAPTER_HTML = """<!DOCTYPE html>
@@ -429,7 +429,7 @@ class TestConvenienceFunctions:
         mock_get_text.return_value = SAMPLE_CHAPTER_HTML
         mock_get.return_value = b"fake pdf"
 
-        with patch("axiom.converters.us_states.ky.PDFTextExtractor") as mock_extractor:
+        with patch("axiom_corpus.converters.us_states.ky.PDFTextExtractor") as mock_extractor:
             mock_extractor.return_value.extract_text.return_value = SAMPLE_PDF_TEXT
             section = fetch_ky_section("141.010")
 
@@ -443,7 +443,7 @@ class TestConvenienceFunctions:
         mock_get_text.return_value = SAMPLE_CHAPTER_HTML
         mock_get.return_value = b"fake pdf"
 
-        with patch("axiom.converters.us_states.ky.PDFTextExtractor") as mock_extractor:
+        with patch("axiom_corpus.converters.us_states.ky.PDFTextExtractor") as mock_extractor:
             mock_extractor.return_value.extract_text.return_value = SAMPLE_PDF_TEXT
             sections = download_ky_chapter(141)
 

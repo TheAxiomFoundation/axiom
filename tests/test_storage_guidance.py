@@ -2,12 +2,12 @@
 
 from datetime import date
 
-from axiom.models_guidance import (
+from axiom_corpus.models_guidance import (
     GuidanceSection,
     GuidanceType,
     RevenueProcedure,
 )
-from axiom.storage.guidance import GuidanceStorage
+from axiom_corpus.storage.guidance import GuidanceStorage
 
 
 def _make_rev_proc(**kwargs):

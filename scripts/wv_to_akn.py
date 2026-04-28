@@ -21,7 +21,7 @@ from xml.dom import minidom
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from axiom.converters.us_states.wv import (
+from axiom_corpus.converters.us_states.wv import (
     WVConverter,
     WV_CHAPTERS,
     WV_TAX_CHAPTERS,
@@ -29,7 +29,7 @@ from axiom.converters.us_states.wv import (
     WV_TAX_ARTICLES,
     WV_WELFARE_ARTICLES,
 )
-from axiom.models import Section, Subsection
+from axiom_corpus.models import Section, Subsection
 
 
 # Akoma Ntoso namespace

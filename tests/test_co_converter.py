@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.co import (
+from axiom_corpus.converters.us_states.co import (
     CO_HUMAN_SERVICES_ARTICLES,
     CO_TAX_ARTICLES,
     CO_TITLES,
@@ -18,7 +18,7 @@ from axiom.converters.us_states.co import (
     download_co_article,
     fetch_co_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from colorado.public.law for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

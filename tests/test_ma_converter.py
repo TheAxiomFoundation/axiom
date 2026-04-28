@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.ma import (
+from axiom_corpus.converters.us_states.ma import (
     MA_TAX_CHAPTERS,
     MA_WELFARE_CHAPTERS,
     MAConverter,
@@ -17,7 +17,7 @@ from axiom.converters.us_states.ma import (
     download_ma_chapter,
     fetch_ma_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from malegislature.gov for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

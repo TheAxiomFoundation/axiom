@@ -8,14 +8,14 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.nj import (
+from axiom_corpus.converters.us_states.nj import (
     NJ_TAX_TITLES,
     NJ_WELFARE_TITLES,
     NJConverter,
     NJConverterError,
     search_nj_statutes,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from lis.njleg.state.nj.us for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

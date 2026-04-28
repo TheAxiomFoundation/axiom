@@ -30,7 +30,7 @@ from xml.dom import minidom
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 try:
-    from axiom.converters.us_states.ny import NYStateConverter, NYFetchResult, NY_LAW_CODES
+    from axiom_corpus.converters.us_states.ny import NYStateConverter, NYFetchResult, NY_LAW_CODES
 except ImportError:
     # Try direct import for standalone use
     import importlib.util

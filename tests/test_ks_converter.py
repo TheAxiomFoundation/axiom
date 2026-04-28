@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.ks import (
+from axiom_corpus.converters.us_states.ks import (
     KS_TAX_ARTICLES,
     KS_WELFARE_ARTICLES,
     KSConverter,
@@ -17,7 +17,7 @@ from axiom.converters.us_states.ks import (
     download_ks_article,
     fetch_ks_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from kslegislature.gov for testing - simple section
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

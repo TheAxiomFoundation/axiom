@@ -6,7 +6,7 @@ and helper functions.
 
 import pytest
 
-from axiom.parsers.base import (
+from axiom_corpus.parsers.base import (
     STATE_REGISTRY,
     BaseStateParser,
     StateCode,

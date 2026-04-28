@@ -6,12 +6,12 @@ from runner.py which has unresolved R2 deps. We import directly.
 
 import pytest
 
-from axiom.models import Citation, Section
+from axiom_corpus.models import Citation, Section
 
 # Direct import to avoid pipeline.__init__ which may fail
 try:
     import importlib
-    _akn_mod = importlib.import_module("axiom.pipeline.akn")
+    _akn_mod = importlib.import_module("axiom_corpus.pipeline.akn")
     section_to_akn_xml = _akn_mod.section_to_akn_xml
     AKN_NS = _akn_mod.AKN_NS
     _IMPORT_OK = True

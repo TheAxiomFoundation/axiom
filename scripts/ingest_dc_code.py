@@ -2,7 +2,7 @@
 
 The DC Code is checked into this repo as ~21,700 Akoma-Ntoso-derived XML
 files under ``sources/dc/dc-law-xml/us/dc/council/code/titles/*/sections``.
-The existing :class:`axiom.converters.us_states.dc.DCConverter` knows how
+The existing :class:`axiom_corpus.converters.us_states.dc.DCConverter` knows how
 to parse those XML bytes into a :class:`Section`; this script walks the
 local tree and funnels every section through that converter + the shared
 :class:`RuleUploader`.
@@ -42,9 +42,9 @@ from ingest_cfr_parts import (  # noqa: E402
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
 import re as _re
 
-from axiom.converters.us_states.dc import DCConverter, DCConverterError  # noqa: E402
-from axiom.ingest.rule_converter import section_to_rules  # noqa: E402
-from axiom.ingest.rule_uploader import RuleUploader  # noqa: E402
+from axiom_corpus.converters.us_states.dc import DCConverter, DCConverterError  # noqa: E402
+from axiom_corpus.ingest.rule_converter import section_to_rules  # noqa: E402
+from axiom_corpus.ingest.rule_uploader import RuleUploader  # noqa: E402
 
 DC_ROOT = Path(__file__).resolve().parent.parent / (
     "sources/dc/dc-law-xml/us/dc/council/code/titles"

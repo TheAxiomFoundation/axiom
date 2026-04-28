@@ -250,7 +250,7 @@ brackets = [
 
 ```
 axiom-corpus/
-├── src/axiom/parsers/
+├── src/axiom_corpus/parsers/
 │   ├── uslm.py           # Existing federal parser
 │   └── dc/
 │       ├── __init__.py
@@ -305,7 +305,7 @@ Priority order for rules-us encoding:
 
 ## Next Steps
 
-1. [ ] Create DC XML parser in `src/axiom/parsers/dc/`
+1. [ ] Create DC XML parser in `src/axiom_corpus/parsers/dc/`
 2. [ ] Clone law-xml-codified and test parsing
 3. [ ] Add DC sections to `axiom.db`
 4. [ ] Create catalog entries for key tax sections

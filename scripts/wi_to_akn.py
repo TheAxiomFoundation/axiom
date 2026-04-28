@@ -25,12 +25,12 @@ from xml.dom import minidom
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from axiom.converters.us_states.wi import (
+from axiom_corpus.converters.us_states.wi import (
     WIConverter,
     WI_TAX_CHAPTERS,
     WI_WELFARE_CHAPTERS,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Akoma Ntoso namespace
 AKN_NS = "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"

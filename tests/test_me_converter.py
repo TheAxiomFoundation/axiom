@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.me import (
+from axiom_corpus.converters.us_states.me import (
     ME_TAX_CHAPTERS,
     ME_TITLES,
     ME_WELFARE_CHAPTERS,
@@ -17,7 +17,7 @@ from axiom.converters.us_states.me import (
     download_me_chapter,
     fetch_me_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from legislature.maine.gov for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

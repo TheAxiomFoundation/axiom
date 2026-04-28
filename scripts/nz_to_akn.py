@@ -31,7 +31,7 @@ from xml.dom import minidom
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 # Import directly to avoid dependency chain issues
-from axiom.converters.nz_pco import NZPCOConverter, NZLegislation, NZProvision, NZLabeledParagraph
+from axiom_corpus.converters.nz_pco import NZPCOConverter, NZLegislation, NZProvision, NZLabeledParagraph
 
 
 # Akoma Ntoso namespace

@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from axiom.models import Citation, Section, Subsection
-from axiom.storage.sqlite import SQLiteStorage
+from axiom_corpus.models import Citation, Section, Subsection
+from axiom_corpus.storage.sqlite import SQLiteStorage
 
 
 @pytest.fixture

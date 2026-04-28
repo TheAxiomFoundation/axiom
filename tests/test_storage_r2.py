@@ -8,11 +8,11 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
-from axiom.storage.r2 import R2Storage, get_r2, get_r2_axiom
+from axiom_corpus.storage.r2 import R2Storage, get_r2, get_r2_axiom
 
 
 class TestR2StorageInit:
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_init(self, mock_boto3):
         r2 = R2Storage(
             endpoint_url="https://example.r2.cloudflarestorage.com",
@@ -22,7 +22,7 @@ class TestR2StorageInit:
         assert r2.bucket == "axiom"
         mock_boto3.client.assert_called_once()
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_init_custom_bucket(self, mock_boto3):
         r2 = R2Storage(
             endpoint_url="https://example.r2.cloudflarestorage.com",
@@ -34,19 +34,19 @@ class TestR2StorageInit:
 
 
 class TestR2StorageFromConfig:
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     @patch("builtins.open", mock_open(read_data='{"endpoint_url": "https://r2.example.com", "access_key_id": "key", "secret_access_key": "secret", "bucket": "axiom"}'))
     def test_from_config_default_path(self, mock_boto3):
         r2 = R2Storage.from_config()
         assert r2.bucket == "axiom"
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     @patch("builtins.open", mock_open(read_data='{"endpoint_url": "https://r2.example.com", "access_key_id": "key", "secret_access_key": "secret"}'))
     def test_from_config_custom_path(self, mock_boto3):
         r2 = R2Storage.from_config(config_path="/custom/path.json")
         assert r2.bucket == "axiom"  # default when not in config
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     @patch("builtins.open", side_effect=FileNotFoundError)
     def test_from_config_missing_file(self, mock_open, mock_boto3):
         with pytest.raises(FileNotFoundError):
@@ -54,7 +54,7 @@ class TestR2StorageFromConfig:
 
 
 class TestR2StorageUpload:
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_upload_raw_string(self, mock_boto3):
         mock_client = MagicMock()
         mock_boto3.client.return_value = mock_client
@@ -69,7 +69,7 @@ class TestR2StorageUpload:
         assert call_kwargs["Key"] == "test/file.html"
         assert call_kwargs["ContentType"] == "text/html; charset=utf-8"
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_upload_raw_bytes(self, mock_boto3):
         mock_client = MagicMock()
         mock_boto3.client.return_value = mock_client
@@ -80,7 +80,7 @@ class TestR2StorageUpload:
         call_kwargs = mock_client.put_object.call_args[1]
         assert call_kwargs["ContentType"] == "application/xml"
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_upload_raw_pdf(self, mock_boto3):
         mock_client = MagicMock()
         mock_boto3.client.return_value = mock_client
@@ -91,7 +91,7 @@ class TestR2StorageUpload:
         call_kwargs = mock_client.put_object.call_args[1]
         assert call_kwargs["ContentType"] == "application/pdf"
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_upload_raw_json(self, mock_boto3):
         mock_client = MagicMock()
         mock_boto3.client.return_value = mock_client
@@ -102,7 +102,7 @@ class TestR2StorageUpload:
         call_kwargs = mock_client.put_object.call_args[1]
         assert call_kwargs["ContentType"] == "application/json"
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_upload_raw_unknown_type(self, mock_boto3):
         mock_client = MagicMock()
         mock_boto3.client.return_value = mock_client
@@ -113,7 +113,7 @@ class TestR2StorageUpload:
         call_kwargs = mock_client.put_object.call_args[1]
         assert call_kwargs["ContentType"] == "application/octet-stream"
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_upload_raw_custom_content_type(self, mock_boto3):
         mock_client = MagicMock()
         mock_boto3.client.return_value = mock_client
@@ -124,7 +124,7 @@ class TestR2StorageUpload:
         call_kwargs = mock_client.put_object.call_args[1]
         assert call_kwargs["ContentType"] == "text/plain"
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_upload_raw_with_metadata(self, mock_boto3):
         mock_client = MagicMock()
         mock_boto3.client.return_value = mock_client
@@ -138,7 +138,7 @@ class TestR2StorageUpload:
 
 
 class TestR2StorageUploadStatute:
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_upload_state_statute(self, mock_boto3):
         mock_client = MagicMock()
         mock_boto3.client.return_value = mock_client
@@ -153,7 +153,7 @@ class TestR2StorageUploadStatute:
 
         assert key == "us/statutes/states/ak/43-05-010.html"
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_upload_federal_statute(self, mock_boto3):
         mock_client = MagicMock()
         mock_boto3.client.return_value = mock_client
@@ -168,7 +168,7 @@ class TestR2StorageUploadStatute:
 
         assert key == "us/statutes/federal/26/32.xml"
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_upload_guidance_pdf(self, mock_boto3):
         mock_client = MagicMock()
         mock_boto3.client.return_value = mock_client
@@ -183,7 +183,7 @@ class TestR2StorageUploadStatute:
 
         assert key == "us/guidance/irs/notices/n-24-01.pdf"
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_upload_guidance_html(self, mock_boto3):
         mock_client = MagicMock()
         mock_boto3.client.return_value = mock_client
@@ -200,7 +200,7 @@ class TestR2StorageUploadStatute:
 
 
 class TestR2StorageQuery:
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_exists_true(self, mock_boto3):
         mock_client = MagicMock()
         mock_boto3.client.return_value = mock_client
@@ -209,7 +209,7 @@ class TestR2StorageQuery:
         assert r2.exists("test/file.html") is True
         mock_client.head_object.assert_called_once()
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_exists_false(self, mock_boto3):
         from botocore.exceptions import ClientError
 
@@ -222,7 +222,7 @@ class TestR2StorageQuery:
         r2 = R2Storage("https://r2.example.com", "key", "secret")
         assert r2.exists("nonexistent.html") is False
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_get(self, mock_boto3):
         mock_client = MagicMock()
         mock_body = MagicMock()
@@ -234,7 +234,7 @@ class TestR2StorageQuery:
         content = r2.get("test/file.html")
         assert content == b"file content"
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_list_prefix(self, mock_boto3):
         mock_client = MagicMock()
         mock_client.list_objects_v2.return_value = {
@@ -249,7 +249,7 @@ class TestR2StorageQuery:
         result = r2.list_prefix("us/statutes/states/ak/")
         assert len(result) == 2
 
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_list_prefix_empty(self, mock_boto3):
         mock_client = MagicMock()
         mock_client.list_objects_v2.return_value = {}
@@ -261,7 +261,7 @@ class TestR2StorageQuery:
 
 
 class TestR2StorageStats:
-    @patch("axiom.storage.r2.boto3")
+    @patch("axiom_corpus.storage.r2.boto3")
     def test_get_state_stats(self, mock_boto3):
         mock_client = MagicMock()
         mock_client.list_objects_v2.return_value = {
@@ -279,14 +279,14 @@ class TestR2StorageStats:
 
 
 class TestConvenienceFunctions:
-    @patch("axiom.storage.r2.R2Storage.from_config")
+    @patch("axiom_corpus.storage.r2.R2Storage.from_config")
     def test_get_r2(self, mock_from_config):
         mock_r2 = MagicMock()
         mock_from_config.return_value = mock_r2
         result = get_r2()
         assert result is mock_r2
 
-    @patch("axiom.storage.r2.R2Storage.from_config")
+    @patch("axiom_corpus.storage.r2.R2Storage.from_config")
     def test_get_r2_axiom(self, mock_from_config):
         mock_r2 = MagicMock()
         mock_from_config.return_value = mock_r2

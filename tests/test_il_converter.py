@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.il import (
+from axiom_corpus.converters.us_states.il import (
     IL_CHAPTER_IDS,
     IL_CHAPTERS,
     IL_PUBLIC_AID_ACTS,
@@ -19,7 +19,7 @@ from axiom.converters.us_states.il import (
     download_il_act,
     fetch_il_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from ilga.gov for testing - based on actual 35 ILCS 5/201 structure
 # Note: Subsections need proper spacing for regex parsing

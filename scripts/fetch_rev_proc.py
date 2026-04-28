@@ -15,8 +15,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from axiom.fetchers.irs_guidance import IRSGuidanceFetcher
-from axiom.storage.guidance import GuidanceStorage
+from axiom_corpus.fetchers.irs_guidance import IRSGuidanceFetcher
+from axiom_corpus.storage.guidance import GuidanceStorage
 
 
 def fetch_and_store_rev_proc(doc_number: str, db_path: str = "axiom.db") -> None:

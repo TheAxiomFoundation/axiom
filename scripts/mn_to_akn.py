@@ -21,7 +21,7 @@ from pathlib import Path
 from xml.dom import minidom
 from xml.etree import ElementTree as ET
 
-from axiom.converters.us_states.mn import (
+from axiom_corpus.converters.us_states.mn import (
     MNConverter,
     MN_TAX_CHAPTERS,
     MN_WELFARE_CHAPTERS,
@@ -279,7 +279,7 @@ def add_subclause_to_xml(parent: ET.Element, subclause: dict, parent_id: str) ->
 
 
 def convert_section_to_dict(section) -> dict:
-    """Convert an axiom.models.Section to a dict for XML generation."""
+    """Convert an axiom_corpus.models.Section to a dict for XML generation."""
     subdivisions = []
     for sub in section.subsections:
         clauses = []

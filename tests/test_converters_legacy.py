@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from axiom.models import Citation, Section, Subsection
+from axiom_corpus.models import Citation, Section, Subsection
 
 # Load the shadowed converters.py module directly
 _spec = importlib.util.spec_from_file_location(

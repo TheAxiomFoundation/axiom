@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.mn import (
+from axiom_corpus.converters.us_states.mn import (
     MN_TAX_CHAPTERS,
     MN_WELFARE_CHAPTERS,
     MNConverter,
@@ -17,7 +17,7 @@ from axiom.converters.us_states.mn import (
     download_mn_chapter,
     fetch_mn_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from revisor.mn.gov for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

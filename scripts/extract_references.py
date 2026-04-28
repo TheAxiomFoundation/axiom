@@ -49,7 +49,7 @@ from ingest_cfr_parts import (  # noqa: E402
 )
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from axiom.citations import extract_all  # noqa: E402
+from axiom_corpus.citations import extract_all  # noqa: E402
 
 PAGE_SIZE = 500
 

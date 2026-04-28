@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.de import (
+from axiom_corpus.converters.us_states.de import (
     DE_TAX_CHAPTERS,
     DE_WELFARE_CHAPTERS,
     DEConverter,
@@ -17,7 +17,7 @@ from axiom.converters.us_states.de import (
     download_de_chapter,
     fetch_de_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from delcode.delaware.gov for testing
 SAMPLE_CHAPTER_HTML = """<html>

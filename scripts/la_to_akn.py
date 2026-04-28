@@ -27,7 +27,7 @@ from bs4 import BeautifulSoup
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from axiom.converters.us_states.la import LAConverter, LA_TITLES
+from axiom_corpus.converters.us_states.la import LAConverter, LA_TITLES
 
 # Akoma Ntoso namespace
 AKN_NS = "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"

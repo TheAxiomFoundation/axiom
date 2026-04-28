@@ -48,7 +48,7 @@ from ingest_cfr_parts import (  # noqa: E402, F401
 )
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from axiom.ingest.rule_uploader import RuleUploader  # noqa: E402
+from axiom_corpus.ingest.rule_uploader import RuleUploader  # noqa: E402
 
 AKN_NS = {"akn": "http://docs.oasis-open.org/legaldocml/ns/akn/3.0"}
 REPO_URL = "https://github.com/TheAxiomFoundation/rules-us-ca.git"

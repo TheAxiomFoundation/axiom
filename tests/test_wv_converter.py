@@ -19,7 +19,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.wv import (
+from axiom_corpus.converters.us_states.wv import (
     WV_CHAPTERS,
     WV_TAX_CHAPTERS,
     WV_WELFARE_CHAPTERS,
@@ -28,7 +28,7 @@ from axiom.converters.us_states.wv import (
     download_wv_article,
     fetch_wv_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from code.wvlegislature.gov for testing
 SAMPLE_SECTION_HTML = """<!DOCTYPE html>

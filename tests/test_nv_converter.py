@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import pytest
 
-from axiom.converters.us_states.nv import (
+from axiom_corpus.converters.us_states.nv import (
     NV_TAX_CHAPTERS,
     NV_WELFARE_CHAPTERS,
     NVConverter,
@@ -17,7 +17,7 @@ from axiom.converters.us_states.nv import (
     download_nv_chapter,
     fetch_nv_section,
 )
-from axiom.models import Section
+from axiom_corpus.models import Section
 
 # Sample HTML from leg.state.nv.us for testing
 SAMPLE_CHAPTER_HTML = """<!DOCTYPE html>
