@@ -44,6 +44,12 @@ class RuleUploader:
         if not rules:
             return 0
 
+        deduped: dict[str, dict] = {}
+        for rule in rules:
+            path = rule.get("citation_path")
+            deduped[path if path else str(id(rule))] = rule
+        rules = list(deduped.values())
+
         # Postgres's tsvector column (FTS index on body) caps at 1MB of
         # post-tokenization storage. A handful of state statutes contain
         # giant parameter tables that blow this; truncate them to fit
@@ -73,7 +79,7 @@ class RuleUploader:
                             "Authorization": f"Bearer {self.key}",
                             "Content-Type": "application/json",
                             "Content-Profile": "corpus",
-                            "Prefer": "resolution=ignore-duplicates,return=minimal",
+                            "Prefer": "resolution=merge-duplicates,return=minimal",
                         },
                         json=rules,
                     )

@@ -20,6 +20,7 @@ from uuid import NAMESPACE_URL, uuid4, uuid5
 
 import httpx
 
+from axiom_corpus.ingest.rule_converter import section_to_rules
 from axiom_corpus.models import Section, Subsection
 from axiom_corpus.models_canada import CanadaSection, CanadaSubsection
 from axiom_corpus.models_uk import UKSection, UKSubsection
@@ -92,6 +93,12 @@ class SupabaseIngestor:
 
         if not rules:
             return 0
+
+        deduped: dict[str, dict] = {}
+        for rule in rules:
+            path = rule.get("citation_path")
+            deduped[path if path else str(id(rule))] = rule
+        rules = list(deduped.values())
 
         # Add line_count to all rules based on body text
         for rule in rules:
@@ -310,84 +317,11 @@ class SupabaseIngestor:
         parent_id: str | None = None,
     ) -> Iterator[dict]:
         """Convert a US Code Section to rule dictionaries."""
-        # Parse ordinal from section number
-        ordinal = None
-        sec_num = section.citation.section
-        if sec_num.isdigit():
-            ordinal = int(sec_num)
-
-        # Build citation path: us/statute/{title}/{section}
-        title = section.citation.title
-        citation_path = f"us/statute/{title}/{sec_num}"
-        section_id = _deterministic_id(citation_path)
-
-        yield {
-            "id": section_id,
-            "jurisdiction": "us",
-            "doc_type": "statute",
-            "parent_id": parent_id,
-            "level": 0,
-            "ordinal": ordinal,
-            "heading": section.section_title,
-            "body": section.text,
-            "effective_date": section.effective_date.isoformat()
-            if section.effective_date
-            else None,
-            "source_url": section.source_url,
-            "source_path": None,
-            "citation_path": citation_path,
-            "rulespec_path": None,
-            "has_rulespec": False,
-        }
-
-        # Recursively yield subsections
-        yield from self._usc_subsections_to_rules(
-            section.subsections,
-            parent_id=section_id,
-            level=1,
-            parent_path=citation_path,
-        )
-
-    def _usc_subsections_to_rules(
-        self,
-        subsections: list[Subsection],
-        parent_id: str,
-        level: int,
-        parent_path: str | None = None,
-    ) -> Iterator[dict]:
-        """Convert US Code subsections to rule dictionaries."""
-        for i, sub in enumerate(subsections):
-            # Use identifier if available (a, b, 1, 2, etc.), else ordinal
-            sub_key = (
-                sub.identifier if hasattr(sub, "identifier") and sub.identifier else str(i + 1)
+        if parent_id is not None:
+            raise ValueError(
+                "US Code hierarchy is derived from citation_path; parent_id is ignored"
             )
-            citation_path = f"{parent_path}/{sub_key}" if parent_path else None
-            sub_id = _deterministic_id(citation_path) if citation_path else str(uuid4())
-
-            yield {
-                "id": sub_id,
-                "jurisdiction": "us",
-                "doc_type": "statute",
-                "parent_id": parent_id,
-                "level": level,
-                "ordinal": i + 1,
-                "heading": sub.heading,
-                "body": sub.text,
-                "effective_date": None,
-                "source_url": None,
-                "source_path": None,
-                "citation_path": citation_path,
-                "rulespec_path": None,
-                "has_rulespec": False,
-            }
-
-            if sub.children:
-                yield from self._usc_subsections_to_rules(
-                    sub.children,
-                    parent_id=sub_id,
-                    level=level + 1,
-                    parent_path=citation_path,
-                )
+        yield from section_to_rules(section, jurisdiction="us")
 
     def ingest_usc_title(
         self,

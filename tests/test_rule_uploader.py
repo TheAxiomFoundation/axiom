@@ -53,7 +53,7 @@ class TestUpsertBatchHeaders:
             assert headers["apikey"] == "test-service-key"
             assert headers["Authorization"] == "Bearer test-service-key"
             assert headers["Content-Profile"] == "corpus"
-            assert headers["Prefer"] == "resolution=ignore-duplicates,return=minimal"
+            assert headers["Prefer"] == "resolution=merge-duplicates,return=minimal"
 
 
 class TestUpsertBatchLineCount:

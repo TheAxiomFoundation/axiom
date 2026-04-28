@@ -1,11 +1,10 @@
 """Tests for rule_converter -- pure section-to-rules conversion."""
 
-import pytest
+from datetime import date
 from uuid import UUID
 
-from axiom_corpus.ingest.rule_converter import section_to_rules, _deterministic_id
-from axiom_corpus.models import Section, Subsection, Citation
-from datetime import date
+from axiom_corpus.ingest.rule_converter import _deterministic_id, section_to_rules
+from axiom_corpus.models import Citation, Section, Subsection
 
 
 def _make_us_section(**kwargs) -> Section:
@@ -47,7 +46,7 @@ class TestDeterministicId:
         UUID(result)
 
     def test_uses_axiom_namespace(self):
-        from uuid import uuid5, NAMESPACE_URL
+        from uuid import NAMESPACE_URL, uuid5
 
         path = "us/statute/26/32"
         expected = str(uuid5(NAMESPACE_URL, f"axiom:{path}"))
@@ -58,14 +57,22 @@ class TestSectionToRulesBasic:
     def test_us_federal_section_no_subsections(self):
         section = _make_us_section()
         rules = list(section_to_rules(section, jurisdiction="us"))
-        assert len(rules) == 1
-        rule = rules[0]
+        assert len(rules) == 2
+        title_rule = rules[0]
+        rule = rules[1]
+        assert title_rule["jurisdiction"] == "us"
+        assert title_rule["doc_type"] == "statute"
+        assert title_rule["level"] == 0
+        assert title_rule["heading"] == "Internal Revenue Code"
+        assert title_rule["body"] is None
+        assert title_rule["parent_id"] is None
+        assert title_rule["citation_path"] == "us/statute/26"
         assert rule["jurisdiction"] == "us"
         assert rule["doc_type"] == "statute"
-        assert rule["level"] == 0
+        assert rule["level"] == 1
         assert rule["heading"] == "Earned income"
         assert rule["body"] == "Test section text"
-        assert rule["parent_id"] is None
+        assert rule["parent_id"] == title_rule["id"]
         assert rule["citation_path"] == "us/statute/26/32"
         assert rule["has_rulespec"] is False
 
@@ -75,6 +82,8 @@ class TestSectionToRulesBasic:
         assert len(rules) == 1
         rule = rules[0]
         assert rule["jurisdiction"] == "us-oh"
+        assert rule["level"] == 0
+        assert rule["parent_id"] is None
         assert rule["citation_path"] == "us-oh/statute/0/OH-5747.01"
 
     def test_id_is_deterministic(self):
@@ -82,6 +91,7 @@ class TestSectionToRulesBasic:
         rules1 = list(section_to_rules(section, jurisdiction="us"))
         rules2 = list(section_to_rules(section, jurisdiction="us"))
         assert rules1[0]["id"] == rules2[0]["id"]
+        assert rules1[1]["id"] == rules2[1]["id"]
 
 
 class TestSectionToRulesWithSubsections:
@@ -93,11 +103,11 @@ class TestSectionToRulesWithSubsections:
             ]
         )
         rules = list(section_to_rules(section, jurisdiction="us"))
-        assert len(rules) == 3
-        parent_id = rules[0]["id"]
-        assert rules[1]["parent_id"] == parent_id
+        assert len(rules) == 4
+        parent_id = rules[1]["id"]
         assert rules[2]["parent_id"] == parent_id
-        assert rules[1]["level"] == 1
+        assert rules[3]["parent_id"] == parent_id
+        assert rules[2]["level"] == 2
 
     def test_nested_subsections(self):
         section = _make_us_section(
@@ -122,47 +132,49 @@ class TestSectionToRulesWithSubsections:
             ]
         )
         rules = list(section_to_rules(section, jurisdiction="us"))
-        assert len(rules) == 4
-        assert [r["level"] for r in rules] == [0, 1, 2, 3]
+        assert len(rules) == 5
+        assert [r["level"] for r in rules] == [0, 1, 2, 3, 4]
 
     def test_subsection_citation_paths(self):
         section = _make_us_section(
             subsections=[Subsection(identifier="a", text="Sub a", children=[])]
         )
         rules = list(section_to_rules(section, jurisdiction="us"))
-        assert rules[0]["citation_path"] == "us/statute/26/32"
-        assert rules[1]["citation_path"] == "us/statute/26/32/a"
+        assert rules[0]["citation_path"] == "us/statute/26"
+        assert rules[1]["citation_path"] == "us/statute/26/32"
+        assert rules[2]["citation_path"] == "us/statute/26/32/a"
 
 
 class TestOrdinalExtraction:
     def test_numeric_section(self):
         section = _make_us_section(citation=Citation(title=26, section="32"))
         rules = list(section_to_rules(section, jurisdiction="us"))
-        assert rules[0]["ordinal"] == 32
+        assert rules[1]["ordinal"] == 32
 
     def test_alphanumeric_section(self):
         section = _make_us_section(citation=Citation(title=26, section="36B"))
         rules = list(section_to_rules(section, jurisdiction="us"))
-        assert rules[0]["ordinal"] == 36
+        assert rules[1]["ordinal"] == 36
 
     def test_non_numeric_section(self):
         section = _make_us_section(citation=Citation(title=26, section="ABC"))
         rules = list(section_to_rules(section, jurisdiction="us"))
-        assert rules[0]["ordinal"] is None
+        assert rules[1]["ordinal"] is None
 
 
 class TestEmptySubsections:
     def test_empty_subsection_list(self):
         section = _make_us_section(subsections=[])
         rules = list(section_to_rules(section, jurisdiction="us"))
-        assert len(rules) == 1
+        assert len(rules) == 2
 
 
 class TestCitationPathFormat:
     def test_us_federal_format(self):
         section = _make_us_section()
         rules = list(section_to_rules(section, jurisdiction="us"))
-        assert rules[0]["citation_path"] == "us/statute/26/32"
+        assert rules[0]["citation_path"] == "us/statute/26"
+        assert rules[1]["citation_path"] == "us/statute/26/32"
 
     def test_state_format(self):
         section = _make_state_section()
@@ -172,17 +184,18 @@ class TestCitationPathFormat:
     def test_custom_doc_type(self):
         section = _make_us_section()
         rules = list(section_to_rules(section, jurisdiction="us", doc_type="regulation"))
-        assert rules[0]["citation_path"] == "us/regulation/26/32"
-        assert rules[0]["doc_type"] == "regulation"
+        assert rules[0]["citation_path"] == "us/regulation/26"
+        assert rules[1]["citation_path"] == "us/regulation/26/32"
+        assert rules[1]["doc_type"] == "regulation"
 
 
 class TestEffectiveDate:
     def test_effective_date_serialized(self):
         section = _make_us_section(effective_date=date(2025, 1, 1))
         rules = list(section_to_rules(section, jurisdiction="us"))
-        assert rules[0]["effective_date"] == "2025-01-01"
+        assert rules[1]["effective_date"] == "2025-01-01"
 
     def test_no_effective_date(self):
         section = _make_us_section()
         rules = list(section_to_rules(section, jurisdiction="us"))
-        assert rules[0]["effective_date"] is None
+        assert rules[1]["effective_date"] is None
