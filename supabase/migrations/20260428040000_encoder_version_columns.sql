@@ -22,17 +22,17 @@ BEGIN
   IF EXISTS (
     SELECT 1
     FROM information_schema.columns
-    WHERE table_schema = 'lab'
+    WHERE table_schema = 'telemetry'
       AND table_name = 'sdk_sessions'
       AND column_name = 'autorulespec_version'
   ) AND NOT EXISTS (
     SELECT 1
     FROM information_schema.columns
-    WHERE table_schema = 'lab'
+    WHERE table_schema = 'telemetry'
       AND table_name = 'sdk_sessions'
       AND column_name = 'encoder_version'
   ) THEN
-    ALTER TABLE lab.sdk_sessions
+    ALTER TABLE telemetry.sdk_sessions
       RENAME COLUMN autorulespec_version TO encoder_version;
   END IF;
 END $$;

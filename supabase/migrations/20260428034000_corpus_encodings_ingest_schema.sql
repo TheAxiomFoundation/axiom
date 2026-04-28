@@ -1,7 +1,7 @@
 -- Greenfield Supabase layout:
 --   corpus    = browsable source corpus and public corpus RPCs
 --   encodings = RuleSpec generation/evaluation metadata
---   lab       = encoder transcripts, SDK sessions, and event logs
+--   telemetry       = encoder transcripts, SDK sessions, and event logs
 --   app       = Axiom product metadata
 --   ingest = private ingest/staging workspace
 --   raw    = private raw-source provenance metadata
@@ -9,7 +9,7 @@
 CREATE SCHEMA IF NOT EXISTS corpus;
 
 CREATE SCHEMA IF NOT EXISTS encodings;
-CREATE SCHEMA IF NOT EXISTS lab;
+CREATE SCHEMA IF NOT EXISTS telemetry;
 CREATE SCHEMA IF NOT EXISTS app;
 CREATE SCHEMA IF NOT EXISTS ingest;
 CREATE SCHEMA IF NOT EXISTS raw;
@@ -46,15 +46,15 @@ BEGIN
     ) AND NOT EXISTS (
       SELECT 1
       FROM information_schema.tables
-      WHERE table_schema = 'lab'
+      WHERE table_schema = 'telemetry'
         AND table_name = table_name_var
     ) THEN
-      EXECUTE format('ALTER TABLE public.%I SET SCHEMA lab', table_name_var);
+      EXECUTE format('ALTER TABLE public.%I SET SCHEMA telemetry', table_name_var);
     END IF;
   END LOOP;
 END $$;
 
-ALTER SEQUENCE IF EXISTS public.agent_transcripts_id_seq SET SCHEMA lab;
+ALTER SEQUENCE IF EXISTS public.agent_transcripts_id_seq SET SCHEMA telemetry;
 
 ALTER TABLE IF EXISTS encodings.encoding_runs
   ADD COLUMN IF NOT EXISTS complexity jsonb NOT NULL DEFAULT '{}'::jsonb,
@@ -77,14 +77,14 @@ GRANT USAGE ON SCHEMA encodings TO postgres, service_role, anon, authenticated;
 GRANT SELECT ON ALL TABLES IN SCHEMA encodings TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA encodings TO postgres, service_role;
 
-GRANT USAGE ON SCHEMA lab TO postgres, service_role, anon, authenticated;
-GRANT SELECT ON ALL TABLES IN SCHEMA lab TO anon, authenticated;
-GRANT ALL ON ALL TABLES IN SCHEMA lab TO postgres, service_role;
+GRANT USAGE ON SCHEMA telemetry TO postgres, service_role, anon, authenticated;
+GRANT SELECT ON ALL TABLES IN SCHEMA telemetry TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA telemetry TO postgres, service_role;
 
 DO $$
 BEGIN
-  IF to_regclass('lab.agent_transcripts_id_seq') IS NOT NULL THEN
-    EXECUTE 'GRANT USAGE, SELECT ON SEQUENCE lab.agent_transcripts_id_seq TO postgres, service_role';
+  IF to_regclass('telemetry.agent_transcripts_id_seq') IS NOT NULL THEN
+    EXECUTE 'GRANT USAGE, SELECT ON SEQUENCE telemetry.agent_transcripts_id_seq TO postgres, service_role';
   END IF;
 END $$;
 
@@ -318,7 +318,7 @@ GRANT EXECUTE ON FUNCTION corpus.get_provision_references(text) TO anon, authent
 GRANT EXECUTE ON FUNCTION corpus.get_corpus_stats() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION corpus.refresh_jurisdiction_counts() TO anon, authenticated;
 
-ALTER ROLE authenticator SET pgrst.db_schemas = 'public,graphql_public,corpus,encodings,lab,app';
+ALTER ROLE authenticator SET pgrst.db_schemas = 'public,graphql_public,corpus,encodings,telemetry,app';
 
 NOTIFY pgrst, 'reload config';
 NOTIFY pgrst, 'reload schema';

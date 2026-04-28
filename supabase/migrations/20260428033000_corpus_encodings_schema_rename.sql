@@ -178,7 +178,7 @@ GRANT EXECUTE ON FUNCTION corpus.get_provision_references(text) TO anon, authent
 GRANT EXECUTE ON FUNCTION corpus.get_corpus_stats() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION corpus.refresh_jurisdiction_counts() TO anon, authenticated;
 
-ALTER ROLE authenticator SET pgrst.db_schemas = 'public,graphql_public,corpus,encodings,lab,app';
+ALTER ROLE authenticator SET pgrst.db_schemas = 'public,graphql_public,corpus,encodings,telemetry,app';
 
 NOTIFY pgrst, 'reload config';
 NOTIFY pgrst, 'reload schema';
