@@ -58,7 +58,7 @@ BEGIN
   END IF;
 END $$;
 
-ALTER ROLE authenticator SET pgrst.db_schemas = 'public,graphql_public,corpus,encodings,app';
+ALTER ROLE authenticator SET pgrst.db_schemas = 'public,graphql_public,corpus,encodings,lab,app';
 
 NOTIFY pgrst, 'reload config';
 NOTIFY pgrst, 'reload schema';

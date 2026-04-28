@@ -1,12 +1,14 @@
 -- Clean domain names:
 --   corpus     = browsable source corpus
---   encodings  = RuleSpec generation/evaluation/session records
+--   encodings  = RuleSpec generation/evaluation metadata
+--   lab        = encoder transcripts, SDK sessions, and event logs
 --   app        = Axiom product metadata
 --   ingest/raw = private pipeline workspace
 
 CREATE SCHEMA IF NOT EXISTS corpus;
 
 CREATE SCHEMA IF NOT EXISTS encodings;
+CREATE SCHEMA IF NOT EXISTS lab;
 CREATE SCHEMA IF NOT EXISTS app;
 CREATE SCHEMA IF NOT EXISTS ingest;
 CREATE SCHEMA IF NOT EXISTS raw;
@@ -78,46 +80,66 @@ ALTER INDEX IF EXISTS corpus.idx_rule_references_kind
 DO $$
 DECLARE
   table_name_var text;
+  source_schema_var text;
 BEGIN
+  FOREACH source_schema_var IN ARRAY ARRAY['public', 'app']
+  LOOP
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = source_schema_var
+        AND table_name = 'encoding_runs'
+    ) AND NOT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'encodings'
+        AND table_name = 'encoding_runs'
+    ) THEN
+      EXECUTE format('ALTER TABLE %I.encoding_runs SET SCHEMA encodings', source_schema_var);
+    END IF;
+  END LOOP;
+
   FOREACH table_name_var IN ARRAY ARRAY[
-    'encoding_runs',
     'agent_transcripts',
     'sdk_sessions',
     'sdk_session_events'
   ]
   LOOP
-    IF EXISTS (
-      SELECT 1
-      FROM information_schema.tables
-      WHERE table_schema = 'public'
-        AND table_name = table_name_var
-    ) AND NOT EXISTS (
-      SELECT 1
-      FROM information_schema.tables
-      WHERE table_schema = 'encodings'
-        AND table_name = table_name_var
-    ) THEN
-      EXECUTE format('ALTER TABLE public.%I SET SCHEMA encodings', table_name_var);
-    END IF;
-
-    IF EXISTS (
-      SELECT 1
-      FROM information_schema.tables
-      WHERE table_schema = 'app'
-        AND table_name = table_name_var
-    ) AND NOT EXISTS (
-      SELECT 1
-      FROM information_schema.tables
-      WHERE table_schema = 'encodings'
-        AND table_name = table_name_var
-    ) THEN
-      EXECUTE format('ALTER TABLE app.%I SET SCHEMA encodings', table_name_var);
-    END IF;
+    FOREACH source_schema_var IN ARRAY ARRAY['public', 'app', 'encodings']
+    LOOP
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = source_schema_var
+          AND table_name = table_name_var
+      ) AND NOT EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'lab'
+          AND table_name = table_name_var
+      ) THEN
+        EXECUTE format('ALTER TABLE %I.%I SET SCHEMA lab', source_schema_var, table_name_var);
+      END IF;
+    END LOOP;
   END LOOP;
 END $$;
 
-ALTER SEQUENCE IF EXISTS public.agent_transcripts_id_seq SET SCHEMA encodings;
-ALTER SEQUENCE IF EXISTS app.agent_transcripts_id_seq SET SCHEMA encodings;
+ALTER SEQUENCE IF EXISTS public.agent_transcripts_id_seq SET SCHEMA lab;
+ALTER SEQUENCE IF EXISTS app.agent_transcripts_id_seq SET SCHEMA lab;
+ALTER SEQUENCE IF EXISTS encodings.agent_transcripts_id_seq SET SCHEMA lab;
+
+ALTER TABLE IF EXISTS encodings.encoding_runs
+  ADD COLUMN IF NOT EXISTS complexity jsonb NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS scores jsonb NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS final_scores jsonb,
+  ADD COLUMN IF NOT EXISTS has_issues boolean,
+  ADD COLUMN IF NOT EXISTS note text,
+  ADD COLUMN IF NOT EXISTS session_id text,
+  ADD COLUMN IF NOT EXISTS file_path text,
+  ADD COLUMN IF NOT EXISTS rulespec_content text,
+  ADD COLUMN IF NOT EXISTS synced_at timestamptz,
+  ADD COLUMN IF NOT EXISTS encoder_version text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
 
 GRANT USAGE ON SCHEMA corpus TO postgres, service_role, anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA corpus TO postgres, service_role;
@@ -127,10 +149,14 @@ GRANT USAGE ON SCHEMA encodings TO postgres, service_role, anon, authenticated;
 GRANT SELECT ON ALL TABLES IN SCHEMA encodings TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA encodings TO postgres, service_role;
 
+GRANT USAGE ON SCHEMA lab TO postgres, service_role, anon, authenticated;
+GRANT SELECT ON ALL TABLES IN SCHEMA lab TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA lab TO postgres, service_role;
+
 DO $$
 BEGIN
-  IF to_regclass('encodings.agent_transcripts_id_seq') IS NOT NULL THEN
-    EXECUTE 'GRANT USAGE, SELECT ON SEQUENCE encodings.agent_transcripts_id_seq TO postgres, service_role';
+  IF to_regclass('lab.agent_transcripts_id_seq') IS NOT NULL THEN
+    EXECUTE 'GRANT USAGE, SELECT ON SEQUENCE lab.agent_transcripts_id_seq TO postgres, service_role';
   END IF;
 END $$;
 
@@ -371,7 +397,7 @@ GRANT EXECUTE ON FUNCTION corpus.get_provision_references(text) TO anon, authent
 GRANT EXECUTE ON FUNCTION corpus.get_corpus_stats() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION corpus.refresh_jurisdiction_counts() TO anon, authenticated;
 
-ALTER ROLE authenticator SET pgrst.db_schemas = 'public,graphql_public,corpus,encodings,app';
+ALTER ROLE authenticator SET pgrst.db_schemas = 'public,graphql_public,corpus,encodings,lab,app';
 
 NOTIFY pgrst, 'reload config';
 NOTIFY pgrst, 'reload schema';
