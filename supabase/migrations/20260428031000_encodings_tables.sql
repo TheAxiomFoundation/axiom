@@ -1,4 +1,4 @@
--- Empty Axiom-owned encoding tables used by the AutoRuleSpec run history UI.
+-- Empty Axiom-owned encoding tables used by the Encoder run history UI.
 --
 -- We intentionally do not migrate old validation/session rows here; this is a
 -- clean RuleSpec-era surface. New runs can write to these tables going forward.
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS encodings.encoding_runs (
   session_id             text,
   file_path              text,
   rulespec_content       text,
-  autorulespec_version   text,
+  encoder_version        text,
   created_at             timestamptz NOT NULL DEFAULT now()
 );
 
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS encodings.sdk_sessions (
   output_tokens          bigint NOT NULL DEFAULT 0,
   cache_read_tokens      bigint NOT NULL DEFAULT 0,
   estimated_cost_usd     numeric,
-  autorulespec_version   text,
+  encoder_version        text,
   created_at             timestamptz NOT NULL DEFAULT now()
 );
 
