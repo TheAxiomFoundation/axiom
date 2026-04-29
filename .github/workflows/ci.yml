@@ -15,10 +15,10 @@ jobs:
         python-version: ["3.14"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -34,13 +34,13 @@ jobs:
 
       - name: Type check with mypy
         run: |
-          mypy src/atlas --ignore-missing-imports
+          mypy src/axiom_corpus --ignore-missing-imports
         continue-on-error: true  # Strict typing takes time to fully implement
 
       - name: Run tests with coverage
         run: |
           pip install pytest-cov pytest-timeout
-          pytest tests -v -m "not integration" --cov=atlas --cov-report=term-missing --cov-config=pyproject.toml --timeout=60
+          pytest tests -v -m "not integration" --cov=axiom_corpus --cov-report=term-missing --cov-config=pyproject.toml --timeout=60
 
   postgres:
     runs-on: ubuntu-latest
@@ -51,7 +51,7 @@ jobs:
         env:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
-          POSTGRES_DB: atlas_test
+          POSTGRES_DB: axiom_corpus_test
         ports:
           - 5432:5432
         options: >-
@@ -61,10 +61,10 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
 
       - name: Set up Python 3.14
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.14"
 
@@ -75,10 +75,10 @@ jobs:
 
       - name: Test PostgreSQL connection
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/atlas_test
+          DATABASE_URL: postgresql://test:test@localhost:5432/axiom_corpus_test
         run: |
           python -c "
-          from atlas.storage import PostgresStorage
+          from axiom_corpus.storage import PostgresStorage
           storage = PostgresStorage()
           print('PostgreSQL connection successful')
           print('Stats:', storage.get_stats())
