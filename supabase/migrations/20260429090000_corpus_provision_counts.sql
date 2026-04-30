@@ -1,9 +1,4 @@
 -- Production corpus analytics grouped by jurisdiction and document class.
---
--- `corpus.jurisdiction_counts` is kept for backwards compatibility with the
--- existing landing-page stats contract. New analytics should read
--- `corpus.provision_counts` or `corpus.get_corpus_stats()`, both of which are
--- document-class aware.
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS corpus.provision_counts AS
 SELECT
@@ -167,28 +162,10 @@ SET lock_timeout = 0
 AS $$
 BEGIN
   REFRESH MATERIALIZED VIEW CONCURRENTLY corpus.provision_counts;
-
-  IF to_regclass('corpus.jurisdiction_counts') IS NOT NULL THEN
-    REFRESH MATERIALIZED VIEW CONCURRENTLY corpus.jurisdiction_counts;
-  END IF;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION corpus.refresh_jurisdiction_counts()
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = corpus, public
-SET statement_timeout = 0
-SET lock_timeout = 0
-AS $$
-BEGIN
-  PERFORM corpus.refresh_corpus_analytics();
 END;
 $$;
 
 GRANT EXECUTE ON FUNCTION corpus.get_corpus_stats() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION corpus.refresh_corpus_analytics() TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION corpus.refresh_jurisdiction_counts() TO anon, authenticated;
 
 NOTIFY pgrst, 'reload schema';

@@ -16,6 +16,7 @@ from axiom_corpus.corpus.analytics import (
 from axiom_corpus.corpus.artifacts import CorpusArtifactStore, sha256_bytes
 from axiom_corpus.corpus.colorado import extract_colorado_ccr
 from axiom_corpus.corpus.coverage import compare_provision_coverage
+from axiom_corpus.corpus.documents import extract_official_documents
 from axiom_corpus.corpus.ecfr import build_ecfr_inventory, ecfr_run_id, extract_ecfr
 from axiom_corpus.corpus.io import load_provisions, load_source_inventory
 from axiom_corpus.corpus.models import CorpusManifest, DocumentClass, ProvisionRecord
@@ -537,6 +538,46 @@ def _cmd_extract_colorado_ccr(args: argparse.Namespace) -> int:
     return 0 if report.coverage.complete or args.allow_incomplete else 2
 
 
+def _cmd_extract_official_documents(args: argparse.Namespace) -> int:
+    store = CorpusArtifactStore(args.base)
+    expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
+    report = extract_official_documents(
+        store,
+        manifest_path=args.manifest,
+        version=args.version,
+        source_as_of=args.source_as_of,
+        expression_date=expression_date,
+        only_source_id=args.only_source_id,
+        limit=args.limit,
+        progress_stream=sys.stderr,
+    )
+    print(
+        json.dumps(
+            {
+                "jurisdiction": report.jurisdiction,
+                "document_class": report.document_class,
+                "version": args.version,
+                "document_count": report.document_count,
+                "block_count": report.block_count,
+                "source_file_count": len(report.source_paths),
+                "provisions_written": report.provisions_written,
+                "inventory_path": str(report.inventory_path),
+                "provisions_path": str(report.provisions_path),
+                "coverage_path": str(report.coverage_path),
+                "coverage_complete": report.coverage.complete,
+                "source_count": report.coverage.source_count,
+                "provision_count": report.coverage.provision_count,
+                "matched_count": report.coverage.matched_count,
+                "missing_count": len(report.coverage.missing_from_provisions),
+                "extra_count": len(report.coverage.extra_provisions),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0 if report.coverage.complete or args.allow_incomplete else 2
+
+
 def _cmd_coverage(args: argparse.Namespace) -> int:
     store = CorpusArtifactStore(args.base)
     source_inventory = load_source_inventory(args.source_inventory)
@@ -564,7 +605,7 @@ def _cmd_analytics(args: argparse.Namespace) -> int:
         version=args.version,
         provision_counts=load_provision_count_snapshot(
             args.supabase_counts,
-            legacy_document_class=args.legacy_count_document_class,
+            default_document_class=args.default_count_document_class,
         ),
         jurisdictions=tuple(args.jurisdiction),
         document_classes=tuple(args.document_class),
@@ -729,6 +770,20 @@ def build_parser() -> argparse.ArgumentParser:
     extract_colorado_ccr_cmd.add_argument("--allow-incomplete", action="store_true")
     extract_colorado_ccr_cmd.set_defaults(func=_cmd_extract_colorado_ccr)
 
+    extract_documents_cmd = sub.add_parser(
+        "extract-official-documents",
+        help="Snapshot official HTML/PDF policy documents from a manifest.",
+    )
+    extract_documents_cmd.add_argument("--base", type=Path, required=True)
+    extract_documents_cmd.add_argument("--version", required=True)
+    extract_documents_cmd.add_argument("--manifest", type=Path, required=True)
+    extract_documents_cmd.add_argument("--only-source-id")
+    extract_documents_cmd.add_argument("--source-as-of", "--as-of", dest="source_as_of")
+    extract_documents_cmd.add_argument("--expression-date")
+    extract_documents_cmd.add_argument("--limit", type=int)
+    extract_documents_cmd.add_argument("--allow-incomplete", action="store_true")
+    extract_documents_cmd.set_defaults(func=_cmd_extract_official_documents)
+
     coverage = sub.add_parser(
         "coverage",
         help="Compare source inventory with normalized provision records.",
@@ -801,7 +856,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=[],
     )
     analytics.add_argument(
-        "--legacy-count-document-class",
+        "--default-count-document-class",
         default=DocumentClass.STATUTE.value,
         choices=[document_class.value for document_class in DocumentClass],
     )

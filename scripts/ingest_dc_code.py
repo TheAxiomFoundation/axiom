@@ -36,7 +36,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ingest_cfr_parts import (  # noqa: E402
     get_service_key,
-    refresh_jurisdiction_counts,
+    refresh_corpus_analytics,
 )
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
@@ -185,7 +185,7 @@ def main(argv: list[str] | None = None) -> int:
 
     flush()
     if not args.dry_run and rows_uploaded > 0:
-        refresh_jurisdiction_counts(get_service_key())
+        refresh_corpus_analytics(get_service_key())
     elapsed = time.time() - started
     verb = "would upload" if args.dry_run else "uploaded"
     print(

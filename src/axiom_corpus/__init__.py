@@ -2,10 +2,10 @@
 
 from axiom_corpus.archive import AxiomArchive
 
-# Legacy USC models (still used internally)
+# USC parser models
 from axiom_corpus.models import Citation, SearchResult, Section, Subsection
 
-# Unified statute model (new architecture)
+# Structured statute models
 from axiom_corpus.models_statute import (
     JURISDICTIONS,
     JurisdictionInfo,
@@ -19,12 +19,12 @@ __version__ = "0.1.0"
 __all__ = [
     # Main archive class
     "AxiomArchive",
-    # Legacy USC models
+    # USC parser models
     "Section",
     "Subsection",
     "Citation",
     "SearchResult",
-    # Unified statute model
+    # Structured statute models
     "Statute",
     "StatuteSubsection",
     "StatuteSearchResult",

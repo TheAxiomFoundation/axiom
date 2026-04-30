@@ -2,6 +2,7 @@ import json
 
 from axiom_corpus.corpus.cli import main
 from axiom_corpus.corpus.coverage import ProvisionCoverageReport
+from axiom_corpus.corpus.documents import OfficialDocumentExtractReport
 from axiom_corpus.corpus.ecfr import EcfrExtractReport, EcfrInventory
 from axiom_corpus.corpus.models import ProvisionRecord, SourceInventoryItem
 from axiom_corpus.corpus.usc import UscExtractReport
@@ -110,6 +111,61 @@ def test_extract_ecfr_cli(tmp_path, capsys, monkeypatch):
 
     assert exit_code == 0
     assert '"provisions_written": 1' in output
+
+
+def test_extract_official_documents_cli(tmp_path, capsys, monkeypatch):
+    import axiom_corpus.corpus.cli as cli
+
+    base = tmp_path / "corpus"
+    manifest_path = tmp_path / "documents.yaml"
+    manifest_path.write_text("documents: []\n")
+    coverage = ProvisionCoverageReport(
+        jurisdiction="us-co",
+        document_class="policy",
+        version="2026-04-30",
+        source_count=1,
+        provision_count=1,
+        matched_count=1,
+        missing_from_provisions=(),
+        extra_provisions=(),
+    )
+
+    def fake_extract(*args, **kwargs):
+        assert kwargs["manifest_path"] == manifest_path
+        assert kwargs["source_as_of"] == "2026-04-30"
+        return OfficialDocumentExtractReport(
+            jurisdiction="us-co",
+            document_class="policy",
+            document_count=1,
+            block_count=3,
+            provisions_written=4,
+            inventory_path=base / "inventory/us-co/policy/2026-04-30.json",
+            provisions_path=base / "provisions/us-co/policy/2026-04-30.jsonl",
+            coverage_path=base / "coverage/us-co/policy/2026-04-30.json",
+            coverage=coverage,
+            source_paths=(base / "sources/us-co/policy/2026-04-30/doc.pdf",),
+        )
+
+    monkeypatch.setattr(cli, "extract_official_documents", fake_extract)
+
+    exit_code = main(
+        [
+            "extract-official-documents",
+            "--base",
+            str(base),
+            "--version",
+            "2026-04-30",
+            "--manifest",
+            str(manifest_path),
+            "--as-of",
+            "2026-04-30",
+        ]
+    )
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert '"document_class": "policy"' in output
+    assert '"block_count": 3' in output
 
 
 def test_inventory_usc_cli(tmp_path, capsys):

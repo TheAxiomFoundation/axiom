@@ -1,0 +1,184 @@
+documents:
+  - source_id: co-cdhs-snap-page
+    jurisdiction: us-co
+    document_class: policy
+    title: Supplemental Nutrition Assistance Program (SNAP)
+    source_url: https://cdhs.colorado.gov/snap
+    source_format: html
+    metadata:
+      primary_source: true
+      source_authority: Colorado Department of Human Services
+      document_subtype: agency_page
+      program: SNAP
+
+  - source_id: co-cdhs-abawd-page
+    jurisdiction: us-co
+    document_class: policy
+    title: Able-Bodied Adults Without Dependents
+    source_url: https://cdhs.colorado.gov/snap/abawd
+    source_format: html
+    metadata:
+      primary_source: true
+      source_authority: Colorado Department of Human Services
+      document_subtype: agency_page
+      program: SNAP
+      topic: ABAWD
+
+  - source_id: co-fns-abawd-waiver-fy2025
+    jurisdiction: us-co
+    document_class: policy
+    title: FY 2025 ABAWD Waiver - FNS Response
+    source_url: https://www.fns.usda.gov/sites/default/files/resource-files/co-abawd-response-fy2025.pdf
+    source_format: pdf
+    source_as_of: "2024-08-15"
+    expression_date: "2024-08-15"
+    metadata:
+      primary_source: true
+      source_authority: USDA Food and Nutrition Service
+      document_subtype: waiver_approval
+      program: SNAP
+      topic: ABAWD
+      effective_start: "2024-10-01"
+      effective_end: "2025-09-30"
+
+  - source_id: co-fns-food-restriction-waiver-approval-2025
+    jurisdiction: us-co
+    document_class: policy
+    title: Colorado SNAP Food Restriction Waiver Approval
+    source_url: https://www.fns.usda.gov/sites/default/files/resource-files/snap-foodrestrictionWaiverApproval-colorado.pdf
+    source_format: pdf
+    source_as_of: "2025-08-04"
+    expression_date: "2025-08-04"
+    metadata:
+      primary_source: true
+      source_authority: USDA Food and Nutrition Service
+      document_subtype: waiver_approval
+      program: SNAP
+      topic: food_restriction_waiver
+      effective_start: "2026-03-01"
+      effective_end: "2028-01-29"
+
+  - source_id: co-cdhs-healthy-choice-waiver-page
+    jurisdiction: us-co
+    document_class: policy
+    title: SNAP Healthy Choice Waiver
+    source_url: https://cdhs.colorado.gov/snap-healthy-choice-waiver
+    source_format: html
+    metadata:
+      primary_source: true
+      source_authority: Colorado Department of Human Services
+      document_subtype: agency_page
+      program: SNAP
+      topic: food_restriction_waiver
+
+  - source_id: co-cdhs-employment-first-page
+    jurisdiction: us-co
+    document_class: policy
+    title: Colorado Employment First
+    source_url: https://cdhs.colorado.gov/colorado-employment-first
+    source_format: html
+    metadata:
+      primary_source: true
+      source_authority: Colorado Department of Human Services
+      document_subtype: agency_page
+      program: SNAP
+      topic: employment_and_training
+
+  - source_id: co-cdhs-snap-et-state-plan-ffy2026
+    jurisdiction: us-co
+    document_class: policy
+    title: Colorado SNAP E&T State Plan FFY 2026
+    source_url: https://drive.google.com/file/d/1Zjwe8PlA0Z3jNlvFPRNP5mk2octtuVhT/view
+    source_format: pdf
+    metadata:
+      primary_source: true
+      source_authority: Colorado Department of Human Services
+      document_subtype: state_plan
+      program: SNAP
+      topic: employment_and_training
+      fiscal_year: "2026"
+
+  - source_id: co-cdhs-workfare-state-plan
+    jurisdiction: us-co
+    document_class: policy
+    title: Colorado Workfare Program State Plan
+    source_url: https://drive.google.com/file/d/1yB9fURyq7GsxSLbRqpYICy9Y7VmCkeIU/view
+    source_format: pdf
+    metadata:
+      primary_source: true
+      source_authority: Colorado Department of Human Services
+      document_subtype: state_plan
+      program: SNAP
+      topic: workfare
+
+  - source_id: co-cdhs-energy-ebt-page
+    jurisdiction: us-co
+    document_class: policy
+    title: Energy EBT
+    source_url: https://cdhs.colorado.gov/energy-ebt
+    source_format: html
+    metadata:
+      primary_source: true
+      source_authority: Colorado Department of Human Services
+      document_subtype: agency_page
+      program: SNAP
+      topic: standard_utility_allowance
+
+  - source_id: co-cdhs-energy-ebt-implementation-2025
+    jurisdiction: us-co
+    document_class: policy
+    title: OM-FEA-2025-0002 Energy EBT Implementation
+    source_url: https://drive.google.com/file/d/1rC-IGBNHL26ryQq1e_iuutyfMYdL1n7Q/view
+    source_format: pdf
+    source_as_of: "2025-02-27"
+    expression_date: "2025-02-27"
+    metadata:
+      primary_source: true
+      source_authority: Colorado Department of Human Services
+      document_subtype: policy_memo
+      program: SNAP
+      topic: standard_utility_allowance
+      memo_id: OM-FEA-2025-0002
+
+  - source_id: co-cdhs-work-requirements-oral-explanation-waiver-2025
+    jurisdiction: us-co
+    document_class: policy
+    title: OM-FEA-2025-0003 SNAP Work Requirements Oral Explanation Waiver Extension Approval
+    source_url: https://drive.google.com/file/d/1b7-5vlS1uFgjyOcPOz5fvKwmQNS_Y_iV/view
+    source_format: pdf
+    source_as_of: "2025-03-24"
+    expression_date: "2025-03-24"
+    metadata:
+      primary_source: true
+      source_authority: Colorado Department of Human Services
+      document_subtype: policy_memo
+      program: SNAP
+      topic: work_requirements
+      memo_id: OM-FEA-2025-0003
+
+  - source_id: co-cdhs-snap-outreach-page
+    jurisdiction: us-co
+    document_class: policy
+    title: SNAP Outreach
+    source_url: https://cdhs.colorado.gov/snap-outreach
+    source_format: html
+    metadata:
+      primary_source: true
+      source_authority: Colorado Department of Human Services
+      document_subtype: agency_page
+      program: SNAP
+      topic: outreach
+
+  - source_id: co-cdhs-snap-outreach-plan-fy2026
+    jurisdiction: us-co
+    document_class: policy
+    title: Colorado SNAP Annual Plan FY26
+    source_url: https://drive.google.com/file/d/19OXBb8-Z8unuWsdFMcjbl2o1PPXEAjsj/view
+    source_format: pdf
+    metadata:
+      primary_source: true
+      source_authority: Colorado Department of Human Services
+      document_subtype: outreach_plan
+      program: SNAP
+      topic: outreach
+      fiscal_year: "2026"

@@ -1,6 +1,4 @@
 import json
-import urllib.error
-from io import BytesIO
 
 from axiom_corpus.corpus.models import ProvisionRecord
 from axiom_corpus.corpus.supabase import (
@@ -283,7 +281,7 @@ def test_resolve_service_key_fetches_service_role_from_management_api(monkeypatc
     assert calls == [("https://api.supabase.com/v1/projects/abc123/api-keys", "Bearer management")]
 
 
-def test_refresh_corpus_analytics_falls_back_to_legacy_rpc(monkeypatch):
+def test_refresh_corpus_analytics_calls_current_rpc(monkeypatch):
     import axiom_corpus.corpus.supabase as supabase
 
     calls = []
@@ -300,8 +298,6 @@ def test_refresh_corpus_analytics_falls_back_to_legacy_rpc(monkeypatch):
 
     def fake_urlopen(req, timeout):
         calls.append(req.full_url)
-        if req.full_url.endswith("/refresh_corpus_analytics"):
-            raise urllib.error.HTTPError(req.full_url, 404, "missing", {}, BytesIO())
         return FakeResponse()
 
     monkeypatch.setattr(supabase.urllib.request, "urlopen", fake_urlopen)
@@ -310,5 +306,4 @@ def test_refresh_corpus_analytics_falls_back_to_legacy_rpc(monkeypatch):
 
     assert calls == [
         "https://example.supabase.co/rest/v1/rpc/refresh_corpus_analytics",
-        "https://example.supabase.co/rest/v1/rpc/refresh_jurisdiction_counts",
     ]

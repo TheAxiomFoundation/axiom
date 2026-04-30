@@ -632,8 +632,7 @@ def extract_all(
 
     ``jurisdiction`` routes jurisdiction-scoped extractors (e.g. DC
     intra-code cites). Defaults to None, which runs only the universal
-    (federal) extractors — backward-compatible with callers that don't
-    know about jurisdiction.
+    federal extractors.
 
     ``source_citation_path`` is used by extractors that disambiguate
     bare references against the enclosing rule (e.g. NY intra-code

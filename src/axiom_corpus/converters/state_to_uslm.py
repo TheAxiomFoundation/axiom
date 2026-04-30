@@ -1,7 +1,7 @@
 """Convert state statute HTML to USLM-style XML.
 
-This module converts scraped state statute HTML into a USLM-compatible XML format
-that can be ingested using the existing USLMParser.
+This module converts scraped state statute HTML into USLM XML that can be
+ingested by the corpus parser pipeline.
 
 Usage:
     from axiom_corpus.converters.state_to_uslm import OhioToUSLM
@@ -23,7 +23,7 @@ from xml.etree import ElementTree as ET
 from bs4 import BeautifulSoup, Tag
 
 
-# USLM namespace - using House.gov format for compatibility
+# USLM namespace - House.gov format.
 USLM_NS = "http://xml.house.gov/schemas/uslm/1.0"
 NSMAP = {"uslm": USLM_NS}
 

@@ -139,11 +139,6 @@ class SupabaseIngestor:
 
         return len(rules)
 
-    # Keep old method for backwards compatibility
-    def _insert_rules(self, rules: list[dict], max_retries: int = 5) -> int:
-        """Insert rules (deprecated, use _upsert_rules)."""
-        return self._upsert_rules(rules, max_retries)
-
     def _section_to_rules(
         self,
         section: CanadaSection,
@@ -260,14 +255,14 @@ class SupabaseIngestor:
                 batch.append(rule)
 
                 if len(batch) >= batch_size:
-                    inserted = self._insert_rules(batch)
+                    inserted = self._upsert_rules(batch)
                     total_inserted += inserted
                     print(f"  Inserted {total_inserted} rules...")
                     batch = []
 
         # Insert remaining
         if batch:
-            inserted = self._insert_rules(batch)
+            inserted = self._upsert_rules(batch)
             total_inserted += inserted
 
         print(f"Done! Inserted {total_inserted} rules for {consolidated_number}")
@@ -552,7 +547,7 @@ class SupabaseIngestor:
                 batch.append(rule)
 
                 if len(batch) >= batch_size:
-                    inserted = self._insert_rules(batch)
+                    inserted = self._upsert_rules(batch)
                     total_inserted += inserted
                     print(f"  Inserted {total_inserted} rules...")
                     batch = []
@@ -560,7 +555,7 @@ class SupabaseIngestor:
             print(f"  Warning: Could not parse sections: {e}")
 
         if batch:
-            inserted = self._insert_rules(batch)
+            inserted = self._upsert_rules(batch)
             total_inserted += inserted
 
         print(f"Done! Inserted {total_inserted} rules for ukpga/{year}/{chapter}")

@@ -40,7 +40,7 @@ from axiom_corpus.converters.us_states.ny import (
 )
 
 __all__ = [
-    # State converters (legacy)
+    # State converters
     "StateToUSLMConverter",
     "OhioToUSLM",
     "ParsedSection",

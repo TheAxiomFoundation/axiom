@@ -26,7 +26,7 @@ def test_corpus_analytics_migration_is_document_class_aware():
     assert "statutes_count" in sql
     assert "regulations_count" in sql
     assert "CREATE OR REPLACE FUNCTION corpus.refresh_corpus_analytics()" in sql
-    assert "CREATE OR REPLACE FUNCTION corpus.refresh_jurisdiction_counts()" in sql
+    assert "refresh_jurisdiction_counts" not in sql
 
 
 def test_refresh_rpcs_are_service_only():
@@ -38,21 +38,16 @@ def test_refresh_rpcs_are_service_only():
         "GRANT EXECUTE ON FUNCTION corpus.refresh_corpus_analytics() TO postgres, service_role"
         in sql
     )
-    assert "REVOKE EXECUTE ON FUNCTION corpus.refresh_jurisdiction_counts() FROM PUBLIC" in sql
-    assert (
-        "GRANT EXECUTE ON FUNCTION corpus.refresh_jurisdiction_counts() TO postgres, service_role"
-        in sql
-    )
+    assert "refresh_jurisdiction_counts" not in sql
 
 
-def test_legacy_jurisdiction_counts_is_view_over_document_class_counts():
+def test_jurisdiction_count_aliases_are_dropped():
     sql = JURISDICTION_COUNTS_VIEW_MIGRATION.read_text()
 
-    assert "DROP MATERIALIZED VIEW IF EXISTS corpus.jurisdiction_counts" in sql
-    assert "CREATE VIEW corpus.jurisdiction_counts AS" in sql
-    assert "FROM corpus.provision_counts" in sql
-    assert "REFRESH MATERIALIZED VIEW CONCURRENTLY corpus.provision_counts" in sql
-    assert "REFRESH MATERIALIZED VIEW CONCURRENTLY corpus.jurisdiction_counts" not in sql
+    assert "DROP VIEW IF EXISTS corpus.jurisdiction_counts" in sql
+    assert "DROP MATERIALIZED VIEW corpus.jurisdiction_counts" in sql
+    assert "DROP FUNCTION IF EXISTS corpus.refresh_jurisdiction_counts()" in sql
+    assert "CREATE VIEW corpus.jurisdiction_counts" not in sql
 
 
 def test_corpus_provision_metadata_alignment_columns():
@@ -69,4 +64,4 @@ def test_corpus_analytics_views_are_service_readable():
     sql = ANALYTICS_GRANT_MIGRATION.read_text()
 
     assert "GRANT SELECT ON corpus.provision_counts TO postgres, service_role" in sql
-    assert "GRANT SELECT ON corpus.jurisdiction_counts TO postgres, service_role" in sql
+    assert "corpus.jurisdiction_counts" not in sql

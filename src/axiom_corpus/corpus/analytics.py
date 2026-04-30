@@ -16,7 +16,7 @@ from axiom_corpus.corpus.models import (
     SourceInventoryItem,
 )
 
-DEFAULT_LEGACY_COUNT_DOCUMENT_CLASS = DocumentClass.STATUTE.value
+DEFAULT_COUNT_DOCUMENT_CLASS = DocumentClass.STATUTE.value
 
 
 @dataclass(frozen=True)
@@ -114,7 +114,7 @@ class AnalyticsReport:
 def load_provision_count_snapshot(
     path: str | Path | None,
     *,
-    legacy_document_class: str = DEFAULT_LEGACY_COUNT_DOCUMENT_CLASS,
+    default_document_class: str = DEFAULT_COUNT_DOCUMENT_CLASS,
 ) -> dict[tuple[str, str], int]:
     if path is None:
         return {}
@@ -122,13 +122,13 @@ def load_provision_count_snapshot(
     if isinstance(data, dict):
         rows = data.get("rows") or data.get("items")
         if isinstance(rows, list):
-            return _counts_from_rows(rows, legacy_document_class=legacy_document_class)
+            return _counts_from_rows(rows, default_document_class=default_document_class)
         return {
-            (str(jurisdiction), legacy_document_class): int(count)
+            (str(jurisdiction), default_document_class): int(count)
             for jurisdiction, count in data.items()
         }
     if isinstance(data, list):
-        return _counts_from_rows(data, legacy_document_class=legacy_document_class)
+        return _counts_from_rows(data, default_document_class=default_document_class)
     raise ValueError("count snapshot must be a JSON object or list")
 
 
@@ -188,7 +188,7 @@ def build_analytics_report(
 def _counts_from_rows(
     rows: list[dict[str, Any]],
     *,
-    legacy_document_class: str,
+    default_document_class: str,
 ) -> dict[tuple[str, str], int]:
     counts: dict[tuple[str, str], int] = {}
     for row in rows:
@@ -199,7 +199,7 @@ def _counts_from_rows(
             row.get("document_class")
             or row.get("doc_type")
             or row.get("document_type")
-            or legacy_document_class
+            or default_document_class
         )
         count = row.get("count", row.get("provision_count", row.get("section_count", 0)))
         key = (str(jurisdiction), str(document_class))

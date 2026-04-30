@@ -465,17 +465,10 @@ def upsert_supabase_rows(
 
 
 def refresh_corpus_analytics(*, service_key: str, rest_url: str) -> None:
-    """Refresh corpus analytics after load, falling back to the old RPC name."""
-    try:
-        _post_refresh_rpc(
-            service_key=service_key, rest_url=rest_url, rpc_name="refresh_corpus_analytics"
-        )
-    except urllib.error.HTTPError as exc:
-        if exc.code != 404:
-            raise
-        _post_refresh_rpc(
-            service_key=service_key, rest_url=rest_url, rpc_name="refresh_jurisdiction_counts"
-        )
+    """Refresh corpus analytics after loading provision rows."""
+    _post_refresh_rpc(
+        service_key=service_key, rest_url=rest_url, rpc_name="refresh_corpus_analytics"
+    )
 
 
 def _post_refresh_rpc(*, service_key: str, rest_url: str, rpc_name: str) -> None:

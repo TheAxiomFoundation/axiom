@@ -50,7 +50,7 @@ axiom-corpus (R2 bucket)/
 
 ✅ **Bucket created**: 2024-12-28
 ✅ **API credentials configured**: R2 API token
-✅ **Data migrated** from legacy bucket (11 objects, 61.5 MB)
+✅ **Initial data loaded**: 11 objects, 61.5 MB
 
 ## API Credentials
 

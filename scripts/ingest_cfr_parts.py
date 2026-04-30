@@ -31,10 +31,8 @@ Environment
 
 Design notes
 ------------
-* Deterministic IDs use the legacy ``uuid5(NAMESPACE_URL, "axiom:" + citation_path)``
-  namespace used by :mod:`axiom_corpus.ingest.supabase`, so re-runs upsert cleanly
-  instead of producing
-  duplicates.
+* Deterministic IDs use ``uuid5(NAMESPACE_URL, "axiom:" + citation_path)``, so
+  re-runs upsert cleanly instead of producing duplicates.
 * ``doc_type`` is ``"regulation"`` for all rows.
 * Not every CFR part uses subparts; when none are present, sections become
   direct children of the part with ``level == 1`` rather than ``2``.
@@ -363,20 +361,9 @@ def refresh_corpus_analytics(service_key: str) -> None:
     try:
         _post_refresh_rpc(service_key, "refresh_corpus_analytics")
     except urllib.error.HTTPError as exc:
-        if exc.code == 404:
-            try:
-                _post_refresh_rpc(service_key, "refresh_jurisdiction_counts")
-            except (TimeoutError, urllib.error.HTTPError, urllib.error.URLError) as fallback_exc:
-                _warn_refresh_failure(fallback_exc)
-            return
         _warn_refresh_failure(exc)
     except (TimeoutError, urllib.error.URLError) as exc:
         _warn_refresh_failure(exc)
-
-
-def refresh_jurisdiction_counts(service_key: str) -> None:
-    """Compatibility wrapper for older ingest drivers."""
-    refresh_corpus_analytics(service_key)
 
 
 # --- Entry point -----------------------------------------------------------

@@ -15,7 +15,7 @@ Usage:
 The converter supports:
 - Fetching individual sections by law/location (e.g., "TAX/606")
 - Fetching entire law trees (e.g., "TAX")
-- Converting to USLM-style XML for compatibility with existing parsers
+- Converting to USLM-style XML for the corpus parser pipeline
 - Extracting section text, effective dates, and amendments
 """
 
@@ -147,7 +147,7 @@ class NYStateConverter:
     This class provides methods to:
     - Fetch individual sections or entire laws from the NY API
     - Convert the JSON responses to our internal models
-    - Generate USLM-style XML for compatibility with existing parsers
+    - Generate USLM-style XML for the corpus parser pipeline
 
     Example:
         >>> converter = NYStateConverter()

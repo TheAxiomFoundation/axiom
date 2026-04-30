@@ -9,6 +9,19 @@ The durable corpus contract is source-first:
 5. load Supabase/search/reference indexes from normalized provisions
 6. publish corpus-specific JSONL or database exports from normalized provisions
 
+## Source Eligibility
+
+Default corpus inputs are primary official sources: enacted statutes, adopted
+regulations, agency manuals, state plans, waiver approvals, policy memoranda,
+and other documents issued by the authority responsible for the policy.
+
+Compiled or analytical secondary sources, including federal or third-party
+reports that summarize state choices, should not be ingested as corpus sources
+by default. They can be used as QA checklists or gap-finding references outside
+the corpus contract. If a compiled source becomes necessary, add it deliberately
+as its own document class with explicit provenance and do not let it substitute
+for available primary documents.
+
 ## Storage
 
 The artifact root is designed to map directly to R2:
@@ -130,6 +143,18 @@ The SNAP rule manual is part of the CCR source as `10 CCR 2506-1`, so it is
 loaded under `us-co/regulation` with rule-manual metadata rather than as a
 separate corpus class.
 
+Primary SNAP policy documents that are not codified in CCR can be ingested from
+an explicit official-document manifest. This is for primary sources such as
+state plans, waiver approvals, agency memoranda, and agency policy pages. Do not
+add compiled State Options Report-style summaries to this manifest.
+
+```bash
+axiom-corpus-ingest extract-official-documents \
+  --base data/corpus \
+  --version 2026-04-30 \
+  --manifest manifests/us-co-snap-primary-policy.yaml
+```
+
 ## Coverage
 
 Coverage compares expected source inventory citations to normalized provision
@@ -150,7 +175,7 @@ axiom-corpus-ingest coverage \
 
 Supabase is derived from normalized provision JSONL. The ingestion importer
 should map provision records into `corpus.provisions`, then refresh
-`corpus.provision_counts` and `corpus.jurisdiction_counts`.
+`corpus.provision_counts`.
 
 The exact row projection is generated with:
 
