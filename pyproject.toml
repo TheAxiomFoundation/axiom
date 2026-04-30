@@ -136,7 +136,6 @@ omit = [
     "src/axiom_corpus/scripts/*",
     "src/axiom_corpus/ingest/*",
     "src/axiom_corpus/cli.py",
-    "src/axiom_corpus/converters.py",
     "src/axiom_corpus/storage/postgres.py",
     "src/axiom_corpus/storage/supabase.py",
     "src/axiom_corpus/query/supabase.py",
