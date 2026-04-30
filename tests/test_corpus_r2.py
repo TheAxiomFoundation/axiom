@@ -220,3 +220,73 @@ def test_artifact_report_flags_r2_and_supabase_mismatches(tmp_path):
         "missing_r2_coverage",
         "supabase_count_mismatch",
     }
+
+
+def test_sync_artifacts_to_r2_can_scope_uploads(tmp_path):
+    store = CorpusArtifactStore(tmp_path / "corpus")
+    store.write_inventory(
+        store.inventory_path("us-co", "policy", "2026-04-30"),
+        [SourceInventoryItem(citation_path="us-co/policy/doc")],
+    )
+    store.write_inventory(
+        store.inventory_path("us-ny", "policy", "2026-04-30"),
+        [SourceInventoryItem(citation_path="us-ny/policy/doc")],
+    )
+    client = FakeR2Client()
+    config = R2Config(
+        bucket="axiom-corpus",
+        endpoint_url="https://example.r2.cloudflarestorage.com",
+        access_key_id="key",
+        secret_access_key="secret",
+    )
+
+    report = sync_artifacts_to_r2(
+        store.root,
+        config=config,
+        client=client,
+        prefixes=("inventory",),
+        jurisdiction="us-co",
+        document_class="policy",
+        version="2026-04-30",
+        dry_run=False,
+    )
+
+    assert report.local_count == 1
+    assert report.remote_count == 0
+    assert report.uploaded_keys == ("inventory/us-co/policy/2026-04-30.json",)
+
+
+def test_artifact_report_scope_filters_counts_and_rows(tmp_path):
+    store = CorpusArtifactStore(tmp_path / "corpus")
+    store.write_inventory(
+        store.inventory_path("us-co", "policy", "2026-04-30"),
+        [SourceInventoryItem(citation_path="us-co/policy/doc")],
+    )
+    store.write_inventory(
+        store.inventory_path("us-ny", "policy", "2026-04-30"),
+        [SourceInventoryItem(citation_path="us-ny/policy/doc")],
+    )
+    remote = {
+        "inventory/us-co/policy/2026-04-30.json": RemoteArtifact(
+            key="inventory/us-co/policy/2026-04-30.json",
+            size=1,
+        ),
+        "inventory/us-ny/policy/2026-04-30.json": RemoteArtifact(
+            key="inventory/us-ny/policy/2026-04-30.json",
+            size=1,
+        ),
+    }
+
+    report = build_artifact_report(
+        store.root,
+        prefixes=("inventory",),
+        jurisdiction="us-co",
+        document_class="policy",
+        version="2026-04-30",
+        remote=remote,
+    )
+
+    assert report.local_count == 1
+    assert report.remote_count == 1
+    assert len(report.rows) == 1
+    assert report.rows[0].jurisdiction == "us-co"

@@ -331,7 +331,13 @@ def sync_artifacts_to_r2(
             version=version,
         )
     )
-    remote = list_r2_artifacts(r2, bucket=config.bucket, prefixes=prefix_tuple)
+    remote = _filter_remote_artifacts(
+        list_r2_artifacts(r2, bucket=config.bucket, prefixes=prefix_tuple),
+        jurisdiction=jurisdiction,
+        document_class=document_class,
+        version=version,
+    )
+    assert remote is not None
     upload_candidates = tuple(
         artifact
         for artifact in local
@@ -382,12 +388,27 @@ def build_artifact_report(
 ) -> ArtifactReport:
     prefix_tuple = _normalize_prefixes(prefixes)
     root_path = Path(root)
-    local = iter_local_artifacts(root_path, prefixes=prefix_tuple)
+    local = tuple(
+        artifact
+        for artifact in iter_local_artifacts(root_path, prefixes=prefix_tuple)
+        if _artifact_matches_scope(
+            artifact.key,
+            jurisdiction=jurisdiction,
+            document_class=document_class,
+            version=version,
+        )
+    )
+    scoped_remote = _filter_remote_artifacts(
+        remote,
+        jurisdiction=jurisdiction,
+        document_class=document_class,
+        version=version,
+    )
     supabase_counts = load_provision_count_snapshot(supabase_counts_path)
     rows = _build_scope_rows(
         root_path,
         local,
-        remote,
+        scoped_remote,
         version=version,
         jurisdiction=jurisdiction,
         document_class=document_class,
@@ -399,11 +420,13 @@ def build_artifact_report(
         local_count=len(local),
         local_bytes=sum(artifact.size for artifact in local),
         local_by_prefix=_summarize_by_prefix(local),
-        remote_count=len(remote) if remote is not None else None,
-        remote_bytes=sum(artifact.size for artifact in remote.values())
-        if remote is not None
+        remote_count=len(scoped_remote) if scoped_remote is not None else None,
+        remote_bytes=sum(artifact.size for artifact in scoped_remote.values())
+        if scoped_remote is not None
         else None,
-        remote_by_prefix=_summarize_remote_by_prefix(remote) if remote is not None else None,
+        remote_by_prefix=(
+            _summarize_remote_by_prefix(scoped_remote) if scoped_remote is not None else None
+        ),
         rows=rows,
     )
 
@@ -562,6 +585,27 @@ def _artifact_matches_scope(
         and (document_class is None or artifact_document_class == document_class)
         and (version is None or artifact_version == version)
     )
+
+
+def _filter_remote_artifacts(
+    remote: Mapping[str, RemoteArtifact] | None,
+    *,
+    jurisdiction: str | None,
+    document_class: str | None,
+    version: str | None,
+) -> dict[str, RemoteArtifact] | None:
+    if remote is None:
+        return None
+    return {
+        key: artifact
+        for key, artifact in remote.items()
+        if _artifact_matches_scope(
+            key,
+            jurisdiction=jurisdiction,
+            document_class=document_class,
+            version=version,
+        )
+    }
 
 
 def _merge_coverage(data: dict[str, Any], path: Path) -> None:
