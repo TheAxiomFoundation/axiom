@@ -322,3 +322,35 @@ def test_artifact_report_scope_filters_counts_and_rows(tmp_path):
     assert report.remote_count == 1
     assert len(report.rows) == 1
     assert report.rows[0].jurisdiction == "us-co"
+
+
+def test_artifact_report_release_filters_and_seeds_missing_scopes(tmp_path):
+    store = CorpusArtifactStore(tmp_path / "corpus")
+    store.write_inventory(
+        store.inventory_path("us-co", "policy", "2026-04-30"),
+        [SourceInventoryItem(citation_path="us-co/policy/doc")],
+    )
+    store.write_inventory(
+        store.inventory_path("us-ny", "policy", "2026-04-30"),
+        [SourceInventoryItem(citation_path="us-ny/policy/doc")],
+    )
+
+    report = build_artifact_report(
+        store.root,
+        prefixes=("inventory",),
+        release_name="current",
+        release_scopes=(
+            ("us-co", "policy", "2026-04-30"),
+            ("us-tx", "policy", "2026-04-30"),
+        ),
+    )
+
+    assert report.release_name == "current"
+    assert report.release_scope_count == 2
+    assert report.local_count == 1
+    assert [(row.jurisdiction, row.document_class, row.version) for row in report.rows] == [
+        ("us-co", "policy", "2026-04-30"),
+        ("us-tx", "policy", "2026-04-30"),
+    ]
+    assert report.rows[0].local_inventory is True
+    assert report.rows[1].local_inventory is False

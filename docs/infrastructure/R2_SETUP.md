@@ -129,9 +129,7 @@ axiom-corpus-ingest sync-r2 \
 # Compare local artifacts, R2 objects, coverage, and Supabase counts
 axiom-corpus-ingest artifact-report \
   --base data/corpus \
-  --version 2026-04-30 \
-  --jurisdiction us-co \
-  --document-class policy \
+  --release current \
   --supabase-counts data/corpus/snapshots/provision-counts-2026-04-30.json \
   --include-r2
 ```

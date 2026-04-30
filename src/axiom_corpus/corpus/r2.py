@@ -17,6 +17,7 @@ from typing import Any, TextIO
 import boto3  # type: ignore[import-untyped]
 
 from axiom_corpus.corpus.analytics import load_provision_count_snapshot
+from axiom_corpus.corpus.releases import ScopeKey
 
 DEFAULT_R2_BUCKET = "axiom-corpus"
 DEFAULT_R2_ACCOUNT_ID = "010d8d7f3b423be5ce36c7a5a49e91e4"
@@ -191,10 +192,12 @@ class ArtifactReport:
     remote_bytes: int | None
     remote_by_prefix: dict[str, dict[str, int]] | None
     rows: tuple[ArtifactScopeRow, ...]
+    release_name: str | None = None
+    release_scope_count: int | None = None
 
     def to_mapping(self) -> dict[str, Any]:
         mismatch_rows = [row for row in self.rows if row.mismatch_reasons()]
-        return {
+        payload = {
             "local_root": str(self.local_root),
             "prefixes": list(self.prefixes),
             "local_count": self.local_count,
@@ -208,6 +211,10 @@ class ArtifactReport:
             "mismatches": [row.to_mapping() for row in mismatch_rows],
             "rows": [row.to_mapping() for row in self.rows],
         }
+        if self.release_name is not None:
+            payload["release"] = self.release_name
+            payload["release_scope_count"] = self.release_scope_count
+        return payload
 
 
 def load_r2_config(
@@ -387,9 +394,12 @@ def build_artifact_report(
     document_class: str | None = None,
     supabase_counts_path: str | Path | None = None,
     remote: Mapping[str, RemoteArtifact] | None = None,
+    release_name: str | None = None,
+    release_scopes: Iterable[ScopeKey] | None = None,
 ) -> ArtifactReport:
     prefix_tuple = _normalize_prefixes(prefixes)
     root_path = Path(root)
+    release_scope_keys = _normalize_release_scopes(release_scopes)
     local = tuple(
         artifact
         for artifact in iter_local_artifacts(root_path, prefixes=prefix_tuple)
@@ -398,6 +408,7 @@ def build_artifact_report(
             jurisdiction=jurisdiction,
             document_class=document_class,
             version=version,
+            release_scopes=release_scope_keys,
         )
     )
     scoped_remote = _filter_remote_artifacts(
@@ -405,6 +416,7 @@ def build_artifact_report(
         jurisdiction=jurisdiction,
         document_class=document_class,
         version=version,
+        release_scopes=release_scope_keys,
     )
     supabase_counts = load_provision_count_snapshot(supabase_counts_path)
     rows = _build_scope_rows(
@@ -414,6 +426,7 @@ def build_artifact_report(
         version=version,
         jurisdiction=jurisdiction,
         document_class=document_class,
+        release_scopes=release_scope_keys,
         supabase_counts=supabase_counts,
     )
     return ArtifactReport(
@@ -430,6 +443,8 @@ def build_artifact_report(
             _summarize_remote_by_prefix(scoped_remote) if scoped_remote is not None else None
         ),
         rows=rows,
+        release_name=release_name,
+        release_scope_count=len(release_scope_keys) if release_scope_keys is not None else None,
     )
 
 
@@ -443,6 +458,8 @@ def build_artifact_report_with_r2(
     jurisdiction: str | None = None,
     document_class: str | None = None,
     supabase_counts_path: str | Path | None = None,
+    release_name: str | None = None,
+    release_scopes: Iterable[ScopeKey] | None = None,
 ) -> ArtifactReport:
     prefix_tuple = _normalize_prefixes(prefixes)
     r2 = client or make_r2_client(config)
@@ -455,6 +472,8 @@ def build_artifact_report_with_r2(
         document_class=document_class,
         supabase_counts_path=supabase_counts_path,
         remote=remote,
+        release_name=release_name,
+        release_scopes=release_scopes,
     )
 
 
@@ -466,9 +485,13 @@ def _build_scope_rows(
     version: str | None,
     jurisdiction: str | None,
     document_class: str | None,
+    release_scopes: frozenset[ScopeKey] | None,
     supabase_counts: Mapping[tuple[str, str], int],
 ) -> tuple[ArtifactScopeRow, ...]:
     builders: dict[tuple[str, str, str], dict[str, Any]] = defaultdict(dict)
+    if release_scopes is not None:
+        for key in release_scopes:
+            builders[key]
     for local_artifact in local:
         _merge_local_scope(builders, root, local_artifact)
     if remote is not None:
@@ -482,6 +505,8 @@ def _build_scope_rows(
         if jurisdiction is not None and row_jurisdiction != jurisdiction:
             continue
         if document_class is not None and row_document_class != document_class:
+            continue
+        if release_scopes is not None and key not in release_scopes:
             continue
         data = builders[key]
         rows.append(
@@ -575,15 +600,23 @@ def _artifact_matches_scope(
     jurisdiction: str | None,
     document_class: str | None,
     version: str | None,
+    release_scopes: frozenset[ScopeKey] | None = None,
 ) -> bool:
-    if jurisdiction is None and document_class is None and version is None:
+    if (
+        jurisdiction is None
+        and document_class is None
+        and version is None
+        and release_scopes is None
+    ):
         return True
     parsed = _parse_scope(key.split("/"))
     if parsed is None:
         return False
     _, artifact_jurisdiction, artifact_document_class, artifact_version = parsed
+    scope_key = (artifact_jurisdiction, artifact_document_class, artifact_version)
     return (
-        (jurisdiction is None or artifact_jurisdiction == jurisdiction)
+        (release_scopes is None or scope_key in release_scopes)
+        and (jurisdiction is None or artifact_jurisdiction == jurisdiction)
         and (document_class is None or artifact_document_class == document_class)
         and (version is None or artifact_version == version)
     )
@@ -595,6 +628,7 @@ def _filter_remote_artifacts(
     jurisdiction: str | None,
     document_class: str | None,
     version: str | None,
+    release_scopes: frozenset[ScopeKey] | None = None,
 ) -> dict[str, RemoteArtifact] | None:
     if remote is None:
         return None
@@ -606,8 +640,20 @@ def _filter_remote_artifacts(
             jurisdiction=jurisdiction,
             document_class=document_class,
             version=version,
+            release_scopes=release_scopes,
         )
     }
+
+
+def _normalize_release_scopes(
+    release_scopes: Iterable[ScopeKey] | None,
+) -> frozenset[ScopeKey] | None:
+    if release_scopes is None:
+        return None
+    return frozenset(
+        (str(jurisdiction), str(document_class), str(version))
+        for jurisdiction, document_class, version in release_scopes
+    )
 
 
 def _merge_coverage(data: dict[str, Any], path: Path) -> None:

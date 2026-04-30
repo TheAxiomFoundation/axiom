@@ -1,0 +1,71 @@
+{
+  "description": "Production corpus scopes currently treated as active for artifact/R2 reporting.",
+  "name": "current",
+  "scopes": [
+    {
+      "document_class": "statute",
+      "jurisdiction": "us",
+      "version": "2026-04-29"
+    },
+    {
+      "document_class": "policy",
+      "jurisdiction": "us-co",
+      "version": "2026-04-30"
+    },
+    {
+      "document_class": "regulation",
+      "jurisdiction": "us-co",
+      "version": "2026-04-29"
+    },
+    {
+      "document_class": "statute",
+      "jurisdiction": "us-co",
+      "version": "2026-04-29"
+    },
+    {
+      "document_class": "statute",
+      "jurisdiction": "us-dc",
+      "version": "2026-04-29"
+    },
+    {
+      "document_class": "statute",
+      "jurisdiction": "us-ga",
+      "version": "2026-04-29"
+    },
+    {
+      "document_class": "statute",
+      "jurisdiction": "us-ky",
+      "version": "2026-04-29"
+    },
+    {
+      "document_class": "statute",
+      "jurisdiction": "us-nc",
+      "version": "2026-04-29"
+    },
+    {
+      "document_class": "statute",
+      "jurisdiction": "us-nd",
+      "version": "2026-04-29"
+    },
+    {
+      "document_class": "statute",
+      "jurisdiction": "us-tn",
+      "version": "2026-04-29"
+    },
+    {
+      "document_class": "statute",
+      "jurisdiction": "us-va",
+      "version": "2026-04-29"
+    },
+    {
+      "document_class": "statute",
+      "jurisdiction": "us-vt",
+      "version": "2026-04-29"
+    },
+    {
+      "document_class": "statute",
+      "jurisdiction": "us-wy",
+      "version": "2026-04-29"
+    }
+  ]
+}

@@ -380,3 +380,53 @@ def test_load_supabase_cli_replace_scope_dry_run(tmp_path, capsys):
     assert exit_code == 0
     assert payload["replace_scope"]["dry_run"] is True
     assert payload["rows_total"] == 1
+
+
+def test_artifact_report_cli_accepts_release_name(tmp_path, capsys):
+    from axiom_corpus.corpus.artifacts import CorpusArtifactStore
+
+    store = CorpusArtifactStore(tmp_path / "corpus")
+    store.write_inventory(
+        store.inventory_path("us-co", "policy", "2026-04-30"),
+        [SourceInventoryItem(citation_path="us-co/policy/doc")],
+    )
+    store.write_inventory(
+        store.inventory_path("us-ny", "policy", "2026-04-30"),
+        [SourceInventoryItem(citation_path="us-ny/policy/doc")],
+    )
+    release_dir = store.root / "releases"
+    release_dir.mkdir(parents=True)
+    (release_dir / "current.json").write_text(
+        json.dumps(
+            {
+                "name": "current",
+                "scopes": [
+                    {
+                        "jurisdiction": "us-co",
+                        "document_class": "policy",
+                        "version": "2026-04-30",
+                    }
+                ],
+            }
+        )
+    )
+
+    exit_code = main(
+        [
+            "artifact-report",
+            "--base",
+            str(store.root),
+            "--prefix",
+            "inventory",
+            "--release",
+            "current",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert payload["release"] == "current"
+    assert payload["release_scope_count"] == 1
+    assert payload["scope_count"] == 1
+    assert payload["local_count"] == 1
+    assert payload["rows"][0]["jurisdiction"] == "us-co"

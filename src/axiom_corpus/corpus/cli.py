@@ -27,6 +27,7 @@ from axiom_corpus.corpus.r2 import (
     load_r2_config,
     sync_artifacts_to_r2,
 )
+from axiom_corpus.corpus.releases import ReleaseManifest, resolve_release_manifest_path
 from axiom_corpus.corpus.states import (
     extract_cic_html_release,
     extract_cic_odt_release,
@@ -650,6 +651,11 @@ def _cmd_sync_r2(args: argparse.Namespace) -> int:
 
 def _cmd_artifact_report(args: argparse.Namespace) -> int:
     prefixes = tuple(args.prefix or DEFAULT_ARTIFACT_PREFIXES)
+    release = None
+    release_path = None
+    if args.release:
+        release_path = resolve_release_manifest_path(args.base, args.release)
+        release = ReleaseManifest.load(release_path)
     if args.include_r2:
         config = load_r2_config(
             credential_path=args.credentials_file,
@@ -664,6 +670,8 @@ def _cmd_artifact_report(args: argparse.Namespace) -> int:
             jurisdiction=args.jurisdiction,
             document_class=args.document_class,
             supabase_counts_path=args.supabase_counts,
+            release_name=release.name if release else None,
+            release_scopes=release.scope_keys if release else None,
         )
     else:
         report = build_artifact_report(
@@ -673,8 +681,12 @@ def _cmd_artifact_report(args: argparse.Namespace) -> int:
             jurisdiction=args.jurisdiction,
             document_class=args.document_class,
             supabase_counts_path=args.supabase_counts,
+            release_name=release.name if release else None,
+            release_scopes=release.scope_keys if release else None,
         )
     payload = report.to_mapping()
+    if release_path:
+        payload["release_path"] = str(release_path)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
@@ -970,6 +982,13 @@ def build_parser() -> argparse.ArgumentParser:
     artifact_report.add_argument("--base", type=Path, required=True)
     artifact_report.add_argument("--version")
     artifact_report.add_argument("--jurisdiction")
+    artifact_report.add_argument(
+        "--release",
+        help=(
+            "Release manifest name or path. Names resolve to "
+            "<base>/releases/<name>.json or manifests/releases/<name>.json."
+        ),
+    )
     artifact_report.add_argument(
         "--document-class",
         choices=[document_class.value for document_class in DocumentClass],
