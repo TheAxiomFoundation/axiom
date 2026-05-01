@@ -38,6 +38,7 @@ class OfficialDocumentSource:
     document_class: str
     title: str
     source_url: str
+    citation_path: str | None = None
     download_url: str | None = None
     source_format: str | None = None
     source_as_of: str | None = None
@@ -53,6 +54,7 @@ class OfficialDocumentSource:
             document_class=str(data.get("document_class", DocumentClass.POLICY.value)),
             title=str(data["title"]),
             source_url=str(data["source_url"]),
+            citation_path=data.get("citation_path"),
             download_url=data.get("download_url"),
             source_format=data.get("source_format"),
             source_as_of=data.get("source_as_of"),
@@ -581,11 +583,33 @@ def _source_metadata(
 
 
 def _root_citation_path(source: OfficialDocumentSource) -> str:
+    if source.citation_path:
+        return _validate_citation_path(
+            source.citation_path,
+            jurisdiction=source.jurisdiction,
+            document_class=source.document_class,
+        )
     return f"{source.jurisdiction}/{source.document_class}/{safe_segment(source.source_id)}"
 
 
 def _block_citation_path(source: OfficialDocumentSource, block: _DocumentBlock) -> str:
     return f"{_root_citation_path(source)}/{block.kind}-{block.ordinal}"
+
+
+def _validate_citation_path(
+    citation_path: str,
+    *,
+    jurisdiction: str,
+    document_class: str,
+) -> str:
+    """Return a manifest-supplied citation path after basic scope validation."""
+    normalized = citation_path.strip().strip("/")
+    expected_prefix = f"{jurisdiction}/{document_class}/"
+    if not normalized.startswith(expected_prefix):
+        raise ValueError(f"citation_path must start with {expected_prefix!r}: {citation_path!r}")
+    for part in normalized.split("/"):
+        safe_segment(part)
+    return normalized
 
 
 def _date_text(value: date | str | None, fallback: str) -> str:

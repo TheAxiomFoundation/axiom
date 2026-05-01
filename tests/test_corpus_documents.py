@@ -48,6 +48,7 @@ documents:
     document_class: policy
     title: Colorado SNAP Policy
     source_url: https://cdhs.colorado.gov/snap
+    citation_path: us-co/policy/cdhs/snap
     source_format: html
     local_path: {json.dumps(str(html_path))}
     metadata:
@@ -83,8 +84,8 @@ documents:
 
     inventory = json.loads(report.inventory_path.read_text())
     assert [item["citation_path"] for item in inventory["items"]] == [
-        "us-co/policy/co-snap-page",
-        "us-co/policy/co-snap-page/block-1",
+        "us-co/policy/cdhs/snap",
+        "us-co/policy/cdhs/snap/block-1",
         "us-co/policy/co-snap-waiver",
         "us-co/policy/co-snap-waiver/page-1",
     ]

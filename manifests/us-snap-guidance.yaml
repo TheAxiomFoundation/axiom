@@ -1,0 +1,19 @@
+documents:
+  - source_id: snap-fy2026-cola
+    jurisdiction: us
+    document_class: guidance
+    citation_path: us/guidance/usda/fns/snap-fy2026-cola
+    title: SNAP FY 2026 Maximum Allotments and Deductions
+    source_url: https://www.fns.usda.gov/snap/allotment/cola/fy26
+    download_url: https://fns-prod.azureedge.us/sites/default/files/resource-files/snap-fy26maximumAllotments-deductions.pdf
+    source_format: pdf
+    source_as_of: "2025-08-14"
+    expression_date: "2025-10-01"
+    metadata:
+      primary_source: true
+      source_authority: USDA Food and Nutrition Service
+      document_subtype: cola_guidance
+      program: SNAP
+      fiscal_year: "2026"
+      effective_start: "2025-10-01"
+      effective_end: "2026-09-30"

@@ -3,6 +3,11 @@
   "name": "current",
   "scopes": [
     {
+      "document_class": "guidance",
+      "jurisdiction": "us",
+      "version": "2026-05-01-snap-fy2026-cola"
+    },
+    {
       "document_class": "statute",
       "jurisdiction": "us",
       "version": "2026-04-29"
