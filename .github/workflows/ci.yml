@@ -29,8 +29,7 @@ jobs:
 
       - name: Lint with ruff
         run: |
-          ruff check src tests
-        continue-on-error: true  # Pre-existing lint issues, fixing incrementally
+          ruff check .
 
       - name: Type check with mypy
         run: |
@@ -40,7 +39,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           pip install pytest-cov pytest-timeout
-          pytest tests -v -m "not integration" --cov=axiom_corpus --cov-report=term-missing --cov-config=pyproject.toml --timeout=60
+          pytest -v --cov=axiom_corpus --cov-report=term-missing --cov-config=pyproject.toml --timeout=60
 
   postgres:
     runs-on: ubuntu-latest
