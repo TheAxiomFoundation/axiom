@@ -84,6 +84,19 @@ sources:
     metadata:
       source_authority: Public.Resource.Org CIC state code release
 
+  - source_id: us-tx-statutes
+    jurisdiction: us-tx
+    document_class: statute
+    adapter: texas-tcas
+    source_url: https://statutes.capitol.texas.gov/
+    version: "2026-05-01"
+    options:
+      source_as_of: "2026-05-01"
+      expression_date: "2026-05-01"
+      workers: 4
+    metadata:
+      source_authority: Texas Legislative Council
+
   - source_id: us-va-code
     jurisdiction: us-va
     document_class: statute

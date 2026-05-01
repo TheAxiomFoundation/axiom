@@ -40,6 +40,7 @@ from axiom_corpus.corpus.states import (
     extract_cic_odt_release,
     extract_colorado_docx_release,
     extract_dc_code,
+    extract_texas_tcas,
 )
 from axiom_corpus.corpus.supabase import (
     DEFAULT_ACCESS_TOKEN_ENV,
@@ -508,6 +509,35 @@ def _cmd_extract_colorado_docx(args: argparse.Namespace) -> int:
     return 0 if report.coverage.complete or args.allow_incomplete else 2
 
 
+def _cmd_extract_texas_tcas(args: argparse.Namespace) -> int:
+    store = CorpusArtifactStore(args.base)
+    expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
+    report = extract_texas_tcas(
+        store,
+        version=args.version,
+        source_dir=args.source_dir,
+        source_as_of=args.source_as_of,
+        expression_date=expression_date,
+        only_title=args.only_title,
+        limit=args.limit,
+        workers=args.workers,
+        download_dir=args.download_dir,
+    )
+    print(
+        json.dumps(
+            _state_statute_report_payload(
+                report,
+                source_id="us-tx-statutes",
+                adapter="texas-tcas",
+                version=args.version,
+            ),
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0 if report.coverage.complete or args.allow_incomplete else 2
+
+
 def _cmd_extract_state_statutes(args: argparse.Namespace) -> int:
     manifest_path = args.manifest
     manifest = CorpusManifest.load(manifest_path)
@@ -663,6 +693,18 @@ def _extract_state_statute_source(
             only_title=only_title,
             limit=limit,
         )
+    if adapter == "texas-tcas":
+        return extract_texas_tcas(
+            store,
+            version=version,
+            source_dir=_optional_manifest_path(manifest_path, options, "source_dir"),
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            limit=limit,
+            workers=_optional_int(options.get("workers")) or 4,
+            download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
+        )
     raise ValueError(f"unsupported state statute adapter: {source.adapter}")
 
 
@@ -676,15 +718,19 @@ def _state_statute_plan_payload(
     options = _state_source_options(source)
     adapter = _canonical_state_statute_adapter(source.adapter)
     path_key = "source_dir" if adapter == "dc-code" else "release_dir"
-    source_path = _required_manifest_path(manifest_path, options, path_key)
+    source_path = (
+        _optional_manifest_path(manifest_path, options, "source_dir")
+        if adapter == "texas-tcas"
+        else _required_manifest_path(manifest_path, options, path_key)
+    )
     return {
         "source_id": source.source_id,
         "jurisdiction": source.jurisdiction,
         "document_class": source.document_class,
         "adapter": adapter,
         "version": source.version or manifest_version,
-        "source_path": str(source_path),
-        "source_path_exists": source_path.exists(),
+        "source_path": str(source_path) if source_path is not None else None,
+        "source_path_exists": True if source_path is None else source_path.exists(),
         "only_title": _optional_text(options.get("only_title")),
         "limit": (
             limit_override
@@ -745,6 +791,9 @@ def _canonical_state_statute_adapter(adapter: str) -> str:
         "cic-state-code-odt": "cic-odt",
         "colorado-docx": "colorado-docx",
         "colorado-crs-docx": "colorado-docx",
+        "texas-tcas": "texas-tcas",
+        "texas-api": "texas-tcas",
+        "tcas": "texas-tcas",
     }
     if normalized not in aliases:
         raise ValueError(f"unsupported state statute adapter: {adapter}")
@@ -759,6 +808,20 @@ def _required_manifest_path(
     value = options.get(key)
     if value is None:
         raise ValueError(f"missing required option: {key}")
+    path = Path(str(value))
+    if not path.is_absolute():
+        path = manifest_path.parent / path
+    return path
+
+
+def _optional_manifest_path(
+    manifest_path: Path,
+    options: dict[str, Any],
+    key: str,
+) -> Path | None:
+    value = options.get(key)
+    if value is None:
+        return None
     path = Path(str(value))
     if not path.is_absolute():
         path = manifest_path.parent / path
@@ -1106,6 +1169,22 @@ def build_parser() -> argparse.ArgumentParser:
     extract_colorado_docx_cmd.add_argument("--limit", type=int)
     extract_colorado_docx_cmd.add_argument("--allow-incomplete", action="store_true")
     extract_colorado_docx_cmd.set_defaults(func=_cmd_extract_colorado_docx)
+
+    extract_texas_tcas_cmd = sub.add_parser(
+        "extract-texas-tcas",
+        help="Snapshot official Texas statutes from the TCSS API/resources.",
+    )
+    extract_texas_tcas_cmd.add_argument("--base", type=Path, required=True)
+    extract_texas_tcas_cmd.add_argument("--version", required=True)
+    extract_texas_tcas_cmd.add_argument("--source-dir", type=Path)
+    extract_texas_tcas_cmd.add_argument("--download-dir", type=Path)
+    extract_texas_tcas_cmd.add_argument("--only-title")
+    extract_texas_tcas_cmd.add_argument("--source-as-of", "--as-of", dest="source_as_of")
+    extract_texas_tcas_cmd.add_argument("--expression-date")
+    extract_texas_tcas_cmd.add_argument("--limit", type=int)
+    extract_texas_tcas_cmd.add_argument("--workers", type=int, default=4)
+    extract_texas_tcas_cmd.add_argument("--allow-incomplete", action="store_true")
+    extract_texas_tcas_cmd.set_defaults(func=_cmd_extract_texas_tcas)
 
     extract_state_statutes_cmd = sub.add_parser(
         "extract-state-statutes",

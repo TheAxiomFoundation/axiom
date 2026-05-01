@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import json
 import re
 import zipfile
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date
 from io import BytesIO
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, quote, urlparse
 from xml.etree import ElementTree as ET
 
+import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
@@ -26,6 +30,12 @@ DC_XML_SOURCE_FORMAT = "dc-law-xml"
 CIC_HTML_SOURCE_FORMAT = "cic-state-code-html"
 CIC_ODT_SOURCE_FORMAT = "cic-state-code-odt"
 COLORADO_DOCX_SOURCE_FORMAT = "colorado-crs-docx"
+TEXAS_STATUTES_BASE_URL = "https://statutes.capitol.texas.gov"
+TEXAS_TCAS_API_BASE = "https://tcss.legis.texas.gov/api"
+TEXAS_TCAS_RESOURCE_BASE = "https://tcss.legis.texas.gov/resources"
+TEXAS_TCAS_TREE_SOURCE_FORMAT = "texas-tcas-json"
+TEXAS_TCAS_HTML_SOURCE_FORMAT = "texas-tcas-html"
+TEXAS_USER_AGENT = "axiom-corpus/0.1"
 ODT_TEXT_NS = "urn:oasis:names:tc:opendocument:xmlns:text:1.0"
 WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 PRIMARY_CIC_ODT_PREFIXES = {
@@ -163,6 +173,57 @@ class _ColoradoSupplementPdf:
     source_path: str
     sha256: str
     text: str
+
+
+@dataclass(frozen=True)
+class _TexasCode:
+    code_id: str
+    code: str
+    name: str
+
+    @property
+    def token(self) -> str:
+        return self.code.lower()
+
+
+@dataclass(frozen=True)
+class _TexasHtmlDocument:
+    code: str
+    resource_key: str
+    htm_link: str
+    parent_citation_path: str
+    level: int
+
+    @property
+    def source_url(self) -> str:
+        return _texas_resource_url(self.resource_key)
+
+    @property
+    def source_file_name(self) -> str:
+        return self.resource_key.rsplit("/", 1)[-1]
+
+
+@dataclass(frozen=True)
+class _TexasSection:
+    code: str
+    section: str
+    variant: str | None
+    marker: str
+    heading: str | None
+    body: str | None
+    source_id: str | None
+    source_url: str
+    source_document_id: str
+    parent_citation_path: str
+    level: int
+    ordinal: int | None
+    references_to: tuple[str, ...]
+    anchors: tuple[str, ...]
+
+    @property
+    def citation_path(self) -> str:
+        suffix = f"@{self.variant}" if self.variant else ""
+        return f"us-tx/statute/{_texas_code_token(self.code)}/{self.section}{suffix}"
 
 
 def state_run_id(
@@ -794,6 +855,243 @@ def extract_cic_html_release(
     )
 
 
+def extract_texas_tcas(
+    store: CorpusArtifactStore,
+    *,
+    version: str,
+    source_dir: str | Path | None = None,
+    source_as_of: str | None = None,
+    expression_date: date | str | None = None,
+    only_title: str | None = None,
+    limit: int | None = None,
+    workers: int = 4,
+    download_dir: str | Path | None = None,
+) -> StateStatuteExtractReport:
+    """Snapshot official Texas statutes from the TCSS statute API/resources."""
+    jurisdiction = "us-tx"
+    only_code = _texas_code_filter(only_title)
+    run_id = (
+        state_run_id(version, jurisdiction=jurisdiction, only_title=only_code, limit=limit)
+        if only_code or limit is not None
+        else version
+    )
+    source_root = Path(source_dir) if source_dir is not None else None
+    download_root = Path(download_dir) if download_dir is not None and source_root is None else None
+    source_as_of_text = source_as_of or version
+    expression_date_text = _date_text(expression_date, source_as_of_text)
+
+    session = _texas_session()
+    current_message = _load_texas_current_message(session, source_root, download_root)
+    code_tree_bytes = _load_texas_asset(
+        session,
+        source_root,
+        download_root,
+        relative_name="assets/StatuteCodeTree.json",
+        url=f"{TEXAS_STATUTES_BASE_URL}/assets/StatuteCodeTree.json",
+    )
+    code_tree_relative = "texas-tcas-json/StatuteCodeTree.json"
+    code_tree_path = store.source_path(
+        jurisdiction,
+        DocumentClass.STATUTE,
+        run_id,
+        code_tree_relative,
+    )
+    code_tree_sha = store.write_bytes(code_tree_path, code_tree_bytes)
+    source_paths: list[Path] = [code_tree_path]
+    code_tree_source_key = _state_source_key(jurisdiction, run_id, code_tree_relative)
+    codes = _texas_codes_from_asset(code_tree_bytes)
+    if only_code is not None:
+        codes = tuple(code for code in codes if code.code == only_code)
+    if not codes:
+        raise ValueError(f"no Texas statute codes selected for filter: {only_title!r}")
+
+    items: list[SourceInventoryItem] = []
+    records: list[ProvisionRecord] = []
+    errors: list[str] = []
+    remaining = limit
+    title_count = 0
+    container_count = 0
+    section_count = 0
+    seen_citation_paths: set[str] = set()
+    seen_section_counts: dict[str, int] = {}
+    html_documents_by_key: dict[str, _TexasHtmlDocument] = {}
+
+    for code in codes:
+        if remaining is not None and remaining <= 0:
+            break
+        tree_bytes = _load_texas_code_tree(session, source_root, download_root, code)
+        tree_relative = f"texas-tcas-json/trees/{code.code}.json"
+        tree_path = store.source_path(jurisdiction, DocumentClass.STATUTE, run_id, tree_relative)
+        tree_sha = store.write_bytes(tree_path, tree_bytes)
+        source_paths.append(tree_path)
+        tree_source_key = _state_source_key(jurisdiction, run_id, tree_relative)
+
+        code_container = _texas_code_container(
+            code,
+            source_path=code_tree_source_key,
+            sha256=code_tree_sha,
+            current_message=current_message,
+        )
+        containers, html_documents = _texas_tree_items(
+            json.loads(tree_bytes.decode("utf-8")),
+            code=code,
+            root=code_container,
+            source_path=tree_source_key,
+            sha256=tree_sha,
+            current_message=current_message,
+        )
+        title_count += 1
+        for container in (code_container, *containers):
+            if remaining is not None and remaining <= 0:
+                break
+            if container.citation_path in seen_citation_paths:
+                continue
+            seen_citation_paths.add(container.citation_path)
+            items.append(_container_inventory_item(container))
+            records.append(
+                _container_provision(
+                    container,
+                    version=run_id,
+                    source_as_of=source_as_of_text,
+                    expression_date=expression_date_text,
+                )
+            )
+            container_count += 1
+            if remaining is not None:
+                remaining -= 1
+        for document in html_documents:
+            html_documents_by_key.setdefault(document.resource_key, document)
+
+    if remaining is None or remaining > 0:
+        for document, html_bytes, error in _iter_texas_html_sources(
+            session,
+            source_root,
+            download_root,
+            tuple(html_documents_by_key.values()),
+            workers=workers,
+        ):
+            if remaining is not None and remaining <= 0:
+                break
+            if error is not None:
+                errors.append(f"{document.resource_key}: {error}")
+                continue
+            if html_bytes is None:
+                continue
+            html_relative = f"texas-tcas-html/{document.resource_key}"
+            html_path = store.source_path(
+                jurisdiction,
+                DocumentClass.STATUTE,
+                run_id,
+                html_relative,
+            )
+            html_sha = store.write_bytes(html_path, html_bytes)
+            source_paths.append(html_path)
+            html_source_key = _state_source_key(jurisdiction, run_id, html_relative)
+            try:
+                html_containers, sections = _parse_texas_html_document(
+                    html_bytes,
+                    document=document,
+                    seen_container_paths=seen_citation_paths,
+                    section_counts=seen_section_counts,
+                )
+            except ValueError as exc:
+                errors.append(f"{document.resource_key}: {exc}")
+                continue
+
+            for container in html_containers:
+                if remaining is not None and remaining <= 0:
+                    break
+                container = _replace_container_source(
+                    container,
+                    source_path=html_source_key,
+                    source_format=TEXAS_TCAS_HTML_SOURCE_FORMAT,
+                    sha256=html_sha,
+                    metadata_extra={
+                        "resource_key": document.resource_key,
+                        "source_url": document.source_url,
+                    },
+                )
+                items.append(_container_inventory_item(container))
+                records.append(
+                    _container_provision(
+                        container,
+                        version=run_id,
+                        source_as_of=source_as_of_text,
+                        expression_date=expression_date_text,
+                    )
+                )
+                container_count += 1
+                if remaining is not None:
+                    remaining -= 1
+
+            for section in sections:
+                if remaining is not None and remaining <= 0:
+                    break
+                item = SourceInventoryItem(
+                    citation_path=section.citation_path,
+                    source_url=section.source_url,
+                    source_path=html_source_key,
+                    source_format=TEXAS_TCAS_HTML_SOURCE_FORMAT,
+                    sha256=html_sha,
+                    metadata={
+                        "kind": "section",
+                        "code": section.code,
+                        "section": section.section,
+                        "variant": section.variant,
+                        "marker": section.marker,
+                        "heading": section.heading,
+                        "parent_citation_path": section.parent_citation_path,
+                        "source_id": section.source_id,
+                        "source_document_id": section.source_document_id,
+                        "anchors": list(section.anchors),
+                        "references_to": list(section.references_to),
+                        "resource_key": document.resource_key,
+                    },
+                )
+                record = _texas_section_provision(
+                    section,
+                    version=run_id,
+                    source_path=html_source_key,
+                    source_as_of=source_as_of_text,
+                    expression_date=expression_date_text,
+                )
+                items.append(item)
+                records.append(record)
+                section_count += 1
+                if remaining is not None:
+                    remaining -= 1
+
+    if not items:
+        raise ValueError("no Texas statutes extracted")
+
+    inventory_path = store.inventory_path(jurisdiction, DocumentClass.STATUTE, run_id)
+    store.write_inventory(inventory_path, items)
+    provisions_path = store.provisions_path(jurisdiction, DocumentClass.STATUTE, run_id)
+    store.write_provisions(provisions_path, records)
+    coverage = compare_provision_coverage(
+        tuple(items),
+        tuple(records),
+        jurisdiction=jurisdiction,
+        document_class=DocumentClass.STATUTE.value,
+        version=run_id,
+    )
+    coverage_path = store.coverage_path(jurisdiction, DocumentClass.STATUTE, run_id)
+    store.write_json(coverage_path, coverage.to_mapping())
+    return StateStatuteExtractReport(
+        jurisdiction=jurisdiction,
+        title_count=title_count,
+        container_count=container_count,
+        section_count=section_count,
+        provisions_written=len(records),
+        inventory_path=inventory_path,
+        provisions_path=provisions_path,
+        coverage_path=coverage_path,
+        coverage=coverage,
+        source_paths=tuple(source_paths),
+        errors=tuple(errors),
+    )
+
+
 def _iter_dc_title_dirs(title_root: Path, only_title: str | None) -> Iterator[Path]:
     dirs = [
         path for path in title_root.iterdir() if path.is_dir() and (path / "index.xml").exists()
@@ -1056,6 +1354,690 @@ def _dc_section_provision(
             "annotations": list(document.annotations),
         },
     )
+
+
+def _texas_session() -> requests.Session:
+    session = requests.Session()
+    session.headers.update({"User-Agent": TEXAS_USER_AGENT})
+    return session
+
+
+def _load_texas_current_message(
+    session: requests.Session,
+    source_root: Path | None,
+    download_root: Path | None,
+) -> str | None:
+    relative_name = "metadata/StatutesCurrentMsg.txt"
+    if source_root is not None:
+        path = _texas_source_file(source_root, relative_name)
+        if path.exists():
+            return path.read_text(encoding="utf-8").strip() or None
+        return None
+    try:
+        response = session.get(
+            f"{TEXAS_TCAS_API_BASE}/GetProperty/StatutesCurrentMsg",
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.RequestException:
+        return None
+    text = response.text.strip()
+    if download_root is not None:
+        _write_texas_download(download_root, relative_name, text.encode("utf-8"))
+    return text or None
+
+
+def _load_texas_asset(
+    session: requests.Session,
+    source_root: Path | None,
+    download_root: Path | None,
+    *,
+    relative_name: str,
+    url: str,
+) -> bytes:
+    if source_root is not None:
+        return _texas_source_file(source_root, relative_name).read_bytes()
+    data = _request_bytes(session, url)
+    if download_root is not None:
+        _write_texas_download(download_root, relative_name, data)
+    return data
+
+
+def _load_texas_code_tree(
+    session: requests.Session,
+    source_root: Path | None,
+    download_root: Path | None,
+    code: _TexasCode,
+) -> bytes:
+    relative_name = f"trees/{code.code}.json"
+    if source_root is not None:
+        return _texas_source_file(source_root, relative_name).read_bytes()
+    value_path = quote(f"S/{code.code_id}", safe="")
+    url = (
+        f"{TEXAS_TCAS_API_BASE}/StatuteCode/GetTopLevelHeadings/"
+        f"{value_path}/{code.code}/1/false/false"
+    )
+    data = _request_bytes(session, url)
+    if download_root is not None:
+        _write_texas_download(download_root, relative_name, data)
+    return data
+
+
+def _request_bytes(session: requests.Session, url: str) -> bytes:
+    response = session.get(url, timeout=90)
+    response.raise_for_status()
+    return response.content
+
+
+def _texas_source_file(source_root: Path, relative_name: str) -> Path:
+    path = source_root / relative_name
+    if path.exists():
+        return path
+    if relative_name.startswith("html/"):
+        legacy = source_root / relative_name.removeprefix("html/")
+        if legacy.exists():
+            return legacy
+    return path
+
+
+def _write_texas_download(root: Path, relative_name: str, data: bytes) -> None:
+    path = root / relative_name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+
+
+def _texas_codes_from_asset(data: bytes) -> tuple[_TexasCode, ...]:
+    payload = json.loads(data.decode("utf-8-sig"))
+    rows = payload.get("StatuteCode") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        raise ValueError("Texas StatuteCodeTree asset has no StatuteCode list")
+    codes: list[_TexasCode] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        code_id = row.get("codeID")
+        code = row.get("code")
+        name = row.get("CodeName")
+        if code_id is None or code is None or name is None:
+            continue
+        codes.append(_TexasCode(code_id=str(code_id), code=str(code), name=str(name)))
+    return tuple(codes)
+
+
+def _texas_code_filter(value: str | None) -> str | None:
+    if value is None:
+        return None
+    text = value.strip().upper()
+    if not re.fullmatch(r"[A-Z0-9]{1,4}", text):
+        raise ValueError(f"invalid Texas code filter: {value!r}")
+    return text
+
+
+def _texas_code_token(code: str) -> str:
+    return code.lower()
+
+
+def _texas_code_container(
+    code: _TexasCode,
+    *,
+    source_path: str,
+    sha256: str,
+    current_message: str | None,
+) -> _StateContainer:
+    return _StateContainer(
+        jurisdiction="us-tx",
+        title=code.token,
+        kind="code",
+        num=code.code,
+        heading=code.name,
+        citation_path=f"us-tx/statute/{code.token}",
+        parent_citation_path=None,
+        level=0,
+        ordinal=_ordinal(code.code_id),
+        source_path=source_path,
+        source_url=TEXAS_STATUTES_BASE_URL,
+        source_id=code.code_id,
+        source_format=TEXAS_TCAS_TREE_SOURCE_FORMAT,
+        sha256=sha256,
+        metadata={
+            "code": code.code,
+            "code_id": code.code_id,
+            "code_name": code.name,
+            "current_message": current_message,
+        },
+    )
+
+
+def _texas_tree_items(
+    data: Any,
+    *,
+    code: _TexasCode,
+    root: _StateContainer,
+    source_path: str,
+    sha256: str,
+    current_message: str | None,
+) -> tuple[tuple[_StateContainer, ...], tuple[_TexasHtmlDocument, ...]]:
+    if not isinstance(data, list):
+        raise ValueError(f"Texas code tree for {code.code} is not a list")
+    containers: list[_StateContainer] = []
+    documents: list[_TexasHtmlDocument] = []
+    seen_containers = {root.citation_path}
+    seen_resources: set[str] = set()
+
+    def walk(nodes: list[Any], parent: _StateContainer) -> None:
+        for raw in nodes:
+            if not isinstance(raw, dict):
+                continue
+            name = _texas_plain_text(str(raw.get("name") or ""))
+            parsed = _parse_texas_container_heading(name)
+            node_parent = parent
+            if parsed is not None:
+                kind, num, heading = parsed
+                citation_path = f"{parent.citation_path}/{kind}-{_clean_path_token(num)}"
+                if citation_path not in seen_containers:
+                    seen_containers.add(citation_path)
+                    container = _StateContainer(
+                        jurisdiction="us-tx",
+                        title=code.token,
+                        kind=kind,
+                        num=num,
+                        heading=heading,
+                        citation_path=citation_path,
+                        parent_citation_path=parent.citation_path,
+                        level=parent.level + 1,
+                        ordinal=_ordinal(num),
+                        source_path=source_path,
+                        source_url=None,
+                        source_id=str(raw.get("valuePath") or raw.get("value") or ""),
+                        source_format=TEXAS_TCAS_TREE_SOURCE_FORMAT,
+                        sha256=sha256,
+                        metadata={
+                            "code": code.code,
+                            "code_id": code.code_id,
+                            "code_name": code.name,
+                            "prefix": kind,
+                            "num": num,
+                            "tree_name": name,
+                            "value": raw.get("value"),
+                            "value_path": raw.get("valuePath"),
+                            "current_message": current_message,
+                        },
+                    )
+                    containers.append(container)
+                    node_parent = container
+                else:
+                    node_parent = next(
+                        (
+                            container
+                            for container in containers
+                            if container.citation_path == citation_path
+                        ),
+                        parent,
+                    )
+            htm_link = raw.get("htmLink")
+            if htm_link:
+                try:
+                    resource_key = _texas_resource_key(str(htm_link))
+                except ValueError:
+                    continue
+                if resource_key not in seen_resources:
+                    seen_resources.add(resource_key)
+                    documents.append(
+                        _TexasHtmlDocument(
+                            code=code.code,
+                            resource_key=resource_key,
+                            htm_link=str(htm_link),
+                            parent_citation_path=node_parent.citation_path,
+                            level=node_parent.level + 1,
+                        )
+                    )
+            children = raw.get("children")
+            if isinstance(children, list):
+                walk(children, node_parent)
+
+    walk(data, root)
+    return tuple(containers), tuple(documents)
+
+
+def _iter_texas_html_sources(
+    session: requests.Session,
+    source_root: Path | None,
+    download_root: Path | None,
+    documents: tuple[_TexasHtmlDocument, ...],
+    *,
+    workers: int,
+) -> Iterator[tuple[_TexasHtmlDocument, bytes | None, str | None]]:
+    if source_root is not None:
+        for document in documents:
+            try:
+                yield (
+                    document,
+                    _texas_source_file(source_root, f"html/{document.resource_key}").read_bytes(),
+                    None,
+                )
+            except OSError as exc:
+                yield document, None, str(exc)
+        return
+
+    worker_count = max(1, workers)
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        yield from executor.map(
+            lambda document: _load_texas_html_source(session, download_root, document),
+            documents,
+        )
+
+
+def _load_texas_html_source(
+    session: requests.Session,
+    download_root: Path | None,
+    document: _TexasHtmlDocument,
+) -> tuple[_TexasHtmlDocument, bytes | None, str | None]:
+    try:
+        data = _request_bytes(session, document.source_url)
+        if download_root is not None:
+            _write_texas_download(download_root, f"html/{document.resource_key}", data)
+        return document, data, None
+    except requests.RequestException as exc:
+        return document, None, str(exc)
+
+
+def _parse_texas_html_document(
+    html_bytes: bytes,
+    *,
+    document: _TexasHtmlDocument,
+    seen_container_paths: set[str],
+    section_counts: dict[str, int],
+) -> tuple[tuple[_StateContainer, ...], tuple[_TexasSection, ...]]:
+    soup = BeautifulSoup(html_bytes.decode("utf-8-sig", errors="replace"), "html.parser")
+    paragraphs = [tag for tag in soup.find_all("p") if isinstance(tag, Tag)]
+    if not paragraphs:
+        raise ValueError("Texas HTML document has no paragraphs")
+
+    containers: list[_StateContainer] = []
+    sections: list[_TexasSection] = []
+    pending_anchors: tuple[str, ...] = ()
+    current_section: dict[str, Any] | None = None
+    current_body: list[str] = []
+    current_tags: list[Tag] = []
+    current_html_containers: dict[str, _StateContainer] = {}
+
+    def finish_section() -> None:
+        nonlocal current_section, current_body, current_tags
+        if current_section is None:
+            return
+        body = "\n".join(current_body).strip() or None
+        section = _TexasSection(
+            code=str(current_section["code"]),
+            section=str(current_section["section"]),
+            variant=current_section["variant"],
+            marker=str(current_section["marker"]),
+            heading=current_section["heading"],
+            body=body,
+            source_id=current_section["source_id"],
+            source_url=str(current_section["source_url"]),
+            source_document_id=document.source_file_name,
+            parent_citation_path=str(current_section["parent_citation_path"]),
+            level=int(current_section["level"]),
+            ordinal=_section_ordinal(str(current_section["section"])),
+            references_to=_texas_references(
+                tuple(current_tags),
+                current_code=document.code,
+                self_path=str(current_section["citation_path"]),
+            ),
+            anchors=tuple(current_section["anchors"]),
+        )
+        sections.append(section)
+        current_section = None
+        current_body = []
+        current_tags = []
+
+    for paragraph in paragraphs:
+        text = _clean_text(paragraph.get_text(" ", strip=True))
+        anchor_names = _texas_anchor_names(paragraph)
+        section_anchor = _texas_section_anchor(paragraph)
+        if section_anchor is not None:
+            finish_section()
+            anchor_text = _clean_text(section_anchor.get_text(" ", strip=True))
+            parsed = _parse_texas_section_heading(anchor_text)
+            if parsed is None:
+                pending_anchors = anchor_names
+                continue
+            marker, section, heading = parsed
+            base_citation_path = f"us-tx/statute/{_texas_code_token(document.code)}/{section}"
+            occurrence = section_counts.get(base_citation_path, 0) + 1
+            section_counts[base_citation_path] = occurrence
+            variant = _texas_section_variant(heading, occurrence)
+            citation_path = f"{base_citation_path}@{variant}" if variant else base_citation_path
+            source_url = str(section_anchor.get("href") or f"{document.source_url}#{section}")
+            first_body = _texas_section_first_body(text, anchor_text)
+            current_section = {
+                "code": document.code,
+                "section": section,
+                "variant": variant,
+                "citation_path": citation_path,
+                "marker": marker,
+                "heading": heading,
+                "source_id": _texas_source_id(anchor_names or pending_anchors),
+                "source_url": source_url,
+                "parent_citation_path": _texas_current_html_parent_path(
+                    document,
+                    current_html_containers,
+                ),
+                "level": _texas_current_html_parent_level(document, current_html_containers) + 1,
+                "anchors": anchor_names or pending_anchors,
+            }
+            if first_body:
+                current_body.append(first_body)
+            current_tags.append(paragraph)
+            pending_anchors = ()
+            continue
+
+        parsed_container = _parse_texas_container_heading(text)
+        if parsed_container is not None and _is_texas_structural_heading(paragraph):
+            kind, num, heading = parsed_container
+            if kind in {"subchapter", "part", "article"}:
+                finish_section()
+                parent_path, parent_level = _texas_html_container_parent(
+                    kind,
+                    document,
+                    current_html_containers,
+                )
+                citation_path = f"{parent_path}/{kind}-{_clean_path_token(num)}"
+                if citation_path not in seen_container_paths:
+                    seen_container_paths.add(citation_path)
+                    container = _StateContainer(
+                        jurisdiction="us-tx",
+                        title=_texas_code_token(document.code),
+                        kind=kind,
+                        num=num,
+                        heading=heading,
+                        citation_path=citation_path,
+                        parent_citation_path=parent_path,
+                        level=parent_level + 1,
+                        ordinal=_ordinal(num),
+                        source_path="",
+                        source_url=document.source_url,
+                        source_id=None,
+                        source_format=TEXAS_TCAS_HTML_SOURCE_FORMAT,
+                        sha256="",
+                        metadata={
+                            "code": document.code,
+                            "prefix": kind,
+                            "num": num,
+                            "resource_key": document.resource_key,
+                        },
+                    )
+                    containers.append(container)
+                    current_html_containers[kind] = container
+                else:
+                    current_html_containers[kind] = _StateContainer(
+                        jurisdiction="us-tx",
+                        title=_texas_code_token(document.code),
+                        kind=kind,
+                        num=num,
+                        heading=heading,
+                        citation_path=citation_path,
+                        parent_citation_path=parent_path,
+                        level=parent_level + 1,
+                        ordinal=_ordinal(num),
+                        source_path="",
+                        source_url=document.source_url,
+                        source_id=None,
+                        source_format=TEXAS_TCAS_HTML_SOURCE_FORMAT,
+                        sha256="",
+                        metadata={},
+                    )
+                _texas_clear_deeper_html_containers(kind, current_html_containers)
+            pending_anchors = anchor_names
+            continue
+
+        if text and current_section is not None:
+            current_body.append(text)
+            current_tags.append(paragraph)
+        pending_anchors = anchor_names or pending_anchors
+
+    finish_section()
+    return tuple(containers), tuple(sections)
+
+
+def _texas_plain_text(value: str) -> str:
+    if "<" in value and ">" in value:
+        value = BeautifulSoup(value, "html.parser").get_text(" ", strip=True)
+    return _clean_text(value.replace("\xa0", " "))
+
+
+def _parse_texas_container_heading(text: str) -> tuple[str, str, str] | None:
+    clean = _texas_plain_text(text)
+    match = re.match(
+        r"^(?P<prefix>TITLE|SUBTITLE|CHAPTER|SUBCHAPTER|PART|ARTICLE)\s+"
+        r"(?P<num>[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)*)\.?\s*(?P<label>.*)$",
+        clean,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    prefix = match.group("prefix").lower()
+    num = match.group("num")
+    label = _clean_text(match.group("label").strip(" ."))
+    return prefix, num, label or clean
+
+
+def _is_texas_structural_heading(tag: Tag) -> bool:
+    class_attr = tag.get("class")
+    classes = (
+        {str(value).lower() for value in class_attr}
+        if isinstance(class_attr, list)
+        else ({str(class_attr).lower()} if class_attr else set())
+    )
+    style = str(tag.get("style") or "").lower()
+    return "center" in classes or "font-weight:bold" in style or "font-weight: bold" in style
+
+
+def _texas_anchor_names(tag: Tag) -> tuple[str, ...]:
+    names: list[str] = []
+    for anchor in tag.find_all("a"):
+        if not isinstance(anchor, Tag):
+            continue
+        name = anchor.get("name")
+        if name:
+            names.append(str(name))
+    return tuple(names)
+
+
+def _texas_section_anchor(tag: Tag) -> Tag | None:
+    for anchor in tag.find_all("a"):
+        if not isinstance(anchor, Tag):
+            continue
+        if _parse_texas_section_heading(anchor.get_text(" ", strip=True)) is not None:
+            return anchor
+    return None
+
+
+def _parse_texas_section_heading(text: str) -> tuple[str, str, str | None] | None:
+    clean = _clean_text(text)
+    match = re.match(
+        r"^(?P<marker>Sec\.|Art\.)\s+"
+        r"(?P<section>[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)*[A-Za-z]?)\.\s*"
+        r"(?P<heading>.*)$",
+        clean,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    marker = "Art." if match.group("marker").lower().startswith("art") else "Sec."
+    heading = _clean_text(match.group("heading").strip(" .")) or None
+    return marker, match.group("section"), heading
+
+
+def _texas_section_first_body(full_text: str, heading_text: str) -> str | None:
+    full = _clean_text(full_text)
+    heading = _clean_text(heading_text)
+    if full.startswith(heading):
+        return _clean_text(full[len(heading) :]) or None
+    return None
+
+
+def _texas_section_variant(heading: str | None, occurrence: int) -> str | None:
+    if occurrence <= 1:
+        return None
+    stem = _clean_path_token(heading or "duplicate")
+    return f"{stem}-{occurrence}"
+
+
+def _texas_source_id(anchors: tuple[str, ...]) -> str | None:
+    for anchor in reversed(anchors):
+        if re.fullmatch(r"\d+(?:\.\d+)?", anchor):
+            return anchor
+    return anchors[0] if anchors else None
+
+
+def _texas_current_html_parent_path(
+    document: _TexasHtmlDocument,
+    current_html_containers: dict[str, _StateContainer],
+) -> str:
+    for kind in ("article", "part", "subchapter"):
+        container = current_html_containers.get(kind)
+        if container is not None:
+            return container.citation_path
+    return document.parent_citation_path
+
+
+def _texas_current_html_parent_level(
+    document: _TexasHtmlDocument,
+    current_html_containers: dict[str, _StateContainer],
+) -> int:
+    for kind in ("article", "part", "subchapter"):
+        container = current_html_containers.get(kind)
+        if container is not None:
+            return container.level
+    return document.level - 1
+
+
+def _texas_html_container_parent(
+    kind: str,
+    document: _TexasHtmlDocument,
+    current_html_containers: dict[str, _StateContainer],
+) -> tuple[str, int]:
+    if kind == "article":
+        for parent_kind in ("part", "subchapter"):
+            parent = current_html_containers.get(parent_kind)
+            if parent is not None:
+                return parent.citation_path, parent.level
+    if kind == "part":
+        parent = current_html_containers.get("subchapter")
+        if parent is not None:
+            return parent.citation_path, parent.level
+    return document.parent_citation_path, document.level - 1
+
+
+def _texas_clear_deeper_html_containers(
+    kind: str,
+    current_html_containers: dict[str, _StateContainer],
+) -> None:
+    order = ("subchapter", "part", "article")
+    if kind not in order:
+        return
+    index = order.index(kind)
+    for deeper in order[index + 1 :]:
+        current_html_containers.pop(deeper, None)
+
+
+def _texas_references(
+    tags: tuple[Tag, ...],
+    *,
+    current_code: str,
+    self_path: str,
+) -> tuple[str, ...]:
+    refs: set[str] = set()
+    for tag in tags:
+        for anchor in tag.find_all("a"):
+            if not isinstance(anchor, Tag):
+                continue
+            href = anchor.get("href")
+            if not href:
+                continue
+            ref = _texas_href_to_citation_path(str(href), current_code=current_code)
+            if ref and ref != self_path:
+                refs.add(ref)
+    return tuple(sorted(refs))
+
+
+def _texas_href_to_citation_path(href: str, *, current_code: str) -> str | None:
+    parsed = urlparse(href)
+    query = parse_qs(parsed.query)
+    value = query.get("Value") or query.get("value")
+    code = query.get("Code") or query.get("code")
+    if value:
+        ref_code = (code[0] if code else current_code).upper()
+        return _texas_value_to_citation_path(ref_code, value[0])
+    path_parts = [part for part in parsed.path.split("/") if part]
+    if "htm" in path_parts:
+        htm_index = path_parts.index("htm")
+        if htm_index > 0 and parsed.fragment:
+            return _texas_value_to_citation_path(path_parts[htm_index - 1].upper(), parsed.fragment)
+    return None
+
+
+def _texas_value_to_citation_path(code: str, value: str) -> str | None:
+    clean_value = _clean_text(value).strip("#")
+    if not clean_value:
+        return None
+    return f"us-tx/statute/{_texas_code_token(code)}/{clean_value}"
+
+
+def _texas_section_provision(
+    section: _TexasSection,
+    *,
+    version: str,
+    source_path: str,
+    source_as_of: str,
+    expression_date: str,
+) -> ProvisionRecord:
+    return ProvisionRecord(
+        id=deterministic_provision_id(section.citation_path),
+        jurisdiction="us-tx",
+        document_class=DocumentClass.STATUTE.value,
+        citation_path=section.citation_path,
+        citation_label=f"{section.marker} {section.section}",
+        heading=section.heading,
+        body=section.body,
+        version=version,
+        source_url=section.source_url,
+        source_path=source_path,
+        source_id=section.source_id,
+        source_format=TEXAS_TCAS_HTML_SOURCE_FORMAT,
+        source_as_of=source_as_of,
+        expression_date=expression_date,
+        parent_citation_path=section.parent_citation_path,
+        parent_id=deterministic_provision_id(section.parent_citation_path),
+        level=section.level,
+        ordinal=section.ordinal,
+        kind="section",
+        legal_identifier=f"{section.marker} {section.section}",
+        identifiers={"texas:code": section.code, "texas:section": section.section},
+        metadata={
+            "code": section.code,
+            "section": section.section,
+            "variant": section.variant,
+            "marker": section.marker,
+            "anchors": list(section.anchors),
+            "references_to": list(section.references_to),
+            "source_document_id": section.source_document_id,
+        },
+    )
+
+
+def _texas_resource_key(htm_link: str) -> str:
+    link = htm_link.split("#", 1)[0].strip()
+    key = link.removeprefix("/")
+    file_name = key.rsplit("/", 1)[-1]
+    if not key.endswith(".htm") or "/htm/" not in key or file_name == ".htm":
+        raise ValueError(f"unsupported Texas HTML resource link: {htm_link!r}")
+    return key
+
+
+def _texas_resource_url(resource_key: str) -> str:
+    return f"{TEXAS_TCAS_RESOURCE_BASE}/{resource_key.lstrip('/')}"
 
 
 def _load_colorado_supplement_pdfs(

@@ -9,6 +9,7 @@ from axiom_corpus.corpus.states import (
     extract_cic_odt_release,
     extract_colorado_docx_release,
     extract_dc_code,
+    extract_texas_tcas,
     state_run_id,
 )
 
@@ -123,6 +124,29 @@ SAMPLE_COLORADO_VARIANT_PARAGRAPHS = [
 ]
 
 
+SAMPLE_TEXAS_HTML = """<html><body><pre xml:space="preserve">
+<p class="center" style="font-weight:bold;">TAX CODE</p>
+<p class="center" style="font-weight:bold;">TITLE 1. PROPERTY TAX CODE</p>
+<p class="center" style="font-weight:bold;">SUBTITLE A. GENERAL PROVISIONS</p>
+<p class="center" style="font-weight:bold;">CHAPTER 1. GENERAL PROVISIONS</p>
+<p class="left"><a name="1.01"></a><a name="65126.55941"></a></p>
+<p style="text-indent:7ex;" class="left"><a target="_blank"
+ href="https://statutes.capitol.texas.gov/Docs/TX/htm/TX.1.htm#1.01"
+ style="color:inherit;font-weight:bold;">Sec. 1.01.  SHORT TITLE.</a>
+ This title may be cited as the Property Tax Code.</p>
+<p class="left">Acts 1979, 66th Leg., ch. 841.</p>
+<p class="center" style="font-weight:bold;">SUBCHAPTER A. DEFINITIONS</p>
+<p class="left"><a name="1.03"></a><a name="65128.55943"></a></p>
+<p style="text-indent:7ex;" class="left"><a target="_blank"
+ href="https://statutes.capitol.texas.gov/Docs/TX/htm/TX.1.htm#1.03"
+ style="color:inherit;font-weight:bold;">Sec. 1.03.  CONSTRUCTION OF TITLE.</a>
+ The Code Construction Act (Chapter <a target="_blank"
+ href="https://statutes.capitol.texas.gov/GetStatute.aspx?Code=GV&amp;Value=311">311</a>,
+ Government Code) applies.</p>
+</pre></body></html>
+"""
+
+
 def _write_odt(path, content_xml):
     with zipfile.ZipFile(path, "w") as archive:
         archive.writestr("mimetype", "application/vnd.oasis.opendocument.text")
@@ -151,6 +175,50 @@ def _write_pdf(path, text):
     page.insert_text((72, 72), text)
     document.save(path)
     document.close()
+
+
+def _write_texas_fixture(source_dir):
+    (source_dir / "assets").mkdir(parents=True)
+    (source_dir / "trees").mkdir()
+    html_dir = source_dir / "html" / "TX" / "htm"
+    html_dir.mkdir(parents=True)
+    (source_dir / "assets" / "StatuteCodeTree.json").write_text(
+        """
+{
+  "StatuteCode": [
+    {"codeID": "28", "code": "TX", "CodeName": "Tax Code"}
+  ]
+}
+"""
+    )
+    (source_dir / "trees" / "TX.json").write_text(
+        """
+[
+  {
+    "name": "TITLE 1. PROPERTY TAX CODE",
+    "value": "65122.55940",
+    "valuePath": "S/28/65122.55940",
+    "children": [
+      {
+        "name": "SUBTITLE A. GENERAL PROVISIONS",
+        "value": "65123.55940",
+        "valuePath": "S/28/65122.55940/65123.55940",
+        "children": [
+          {
+            "name": "CHAPTER 1. GENERAL PROVISIONS",
+            "value": "65124.55940",
+            "valuePath": "S/28/65122.55940/65123.55940/65124.55940",
+            "htmLink": "/TX/htm/TX.1.htm",
+            "children": null
+          }
+        ]
+      }
+    ]
+  }
+]
+"""
+    )
+    (html_dir / "TX.1.htm").write_text(SAMPLE_TEXAS_HTML)
 
 
 def test_state_run_id_scopes_title_and_limit():
@@ -251,6 +319,38 @@ def test_extract_cic_odt_release_writes_state_records(tmp_path):
     assert "Civil Remedies Act" in records[-1].body
     assert "History" not in records[-1].body
     assert "Acts 2026" in records[-1].body
+
+
+def test_extract_texas_tcas_writes_state_records(tmp_path):
+    source_dir = tmp_path / "texas"
+    _write_texas_fixture(source_dir)
+    store = CorpusArtifactStore(tmp_path / "corpus")
+
+    report = extract_texas_tcas(
+        store,
+        version="2026-05-01",
+        source_dir=source_dir,
+        source_as_of="2026-05-01",
+    )
+
+    assert report.coverage.complete
+    assert report.title_count == 1
+    assert report.container_count == 5
+    assert report.section_count == 2
+    records = load_provisions(report.provisions_path)
+    assert [record.citation_path for record in records] == [
+        "us-tx/statute/tx",
+        "us-tx/statute/tx/title-1",
+        "us-tx/statute/tx/title-1/subtitle-a",
+        "us-tx/statute/tx/title-1/subtitle-a/chapter-1",
+        "us-tx/statute/tx/title-1/subtitle-a/chapter-1/subchapter-a",
+        "us-tx/statute/tx/1.01",
+        "us-tx/statute/tx/1.03",
+    ]
+    assert records[-1].parent_citation_path.endswith("/subchapter-a")
+    assert records[-1].source_format == "texas-tcas-html"
+    assert records[-1].metadata["references_to"] == ["us-tx/statute/gv/311"]
+    assert "Code Construction Act" in records[-1].body
 
 
 def test_extract_colorado_docx_release_writes_state_records(tmp_path):
@@ -393,6 +493,29 @@ def test_extract_colorado_docx_cli(tmp_path, capsys):
     assert exit_code == 0
     assert '"jurisdiction": "us-co"' in output
     assert '"provisions_written": 5' in output
+
+
+def test_extract_texas_tcas_cli_local_source(tmp_path, capsys):
+    source_dir = tmp_path / "texas"
+    _write_texas_fixture(source_dir)
+    base = tmp_path / "corpus"
+
+    exit_code = main(
+        [
+            "extract-texas-tcas",
+            "--base",
+            str(base),
+            "--version",
+            "2026-05-01",
+            "--source-dir",
+            str(source_dir),
+        ]
+    )
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert '"jurisdiction": "us-tx"' in output
+    assert '"provisions_written": 7' in output
 
 
 def test_extract_cic_state_html_cli(tmp_path, capsys):
