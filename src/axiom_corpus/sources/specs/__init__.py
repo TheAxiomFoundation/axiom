@@ -14,7 +14,7 @@ Each state has a YAML spec file defining:
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+
 import yaml
 
 
@@ -27,8 +27,8 @@ class StateSpec:
     crawler_type: str = "html"
     source_type: str = "html"
     toc_urls: list[str] = field(default_factory=list)
-    section_pattern: Optional[str] = None
-    archive_org_id: Optional[str] = None
+    section_pattern: str | None = None
+    archive_org_id: str | None = None
     selectors: dict[str, str] = field(default_factory=lambda: {"content": "body", "title": "title"})
     codes: dict[str, str] = field(default_factory=dict)
 
@@ -42,7 +42,7 @@ def get_specs_dir() -> Path:
     return Path(__file__).parent
 
 
-def load_spec(jurisdiction: str) -> Optional[StateSpec]:
+def load_spec(jurisdiction: str) -> StateSpec | None:
     """Load a state spec by jurisdiction ID."""
     if jurisdiction in _specs_cache:
         return _specs_cache[jurisdiction]
@@ -82,7 +82,7 @@ def load_all_specs() -> dict[str, StateSpec]:
     return specs
 
 
-def get_section_pattern(jurisdiction: str) -> Optional[str]:
+def get_section_pattern(jurisdiction: str) -> str | None:
     """Get the section URL pattern for a jurisdiction."""
     spec = load_spec(jurisdiction)
     return spec.section_pattern if spec else None

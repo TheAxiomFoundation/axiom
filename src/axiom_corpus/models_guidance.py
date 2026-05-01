@@ -21,7 +21,7 @@ class GuidanceSection(BaseModel):
     section_num: str = Field(..., description="Section number (e.g., '.01', '.02', '3.01')")
     heading: str | None = Field(None, description="Section heading if present")
     text: str = Field(..., description="Text content of this section")
-    children: list["GuidanceSection"] = Field(
+    children: list[GuidanceSection] = Field(
         default_factory=list, description="Child sections"
     )
 

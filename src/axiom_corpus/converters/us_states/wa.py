@@ -220,7 +220,7 @@ class ParsedWASection:
     title_name: str  # e.g., "Excise Taxes"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedWASubsection"] = field(default_factory=list)
+    subsections: list[ParsedWASubsection] = field(default_factory=list)
     history: str | None = None  # History note
     notes: str | None = None  # Additional notes (effective dates, etc.)
     source_url: str = ""
@@ -233,7 +233,7 @@ class ParsedWASubsection:
 
     identifier: str  # e.g., "1", "a", "i"
     text: str
-    children: list["ParsedWASubsection"] = field(default_factory=list)
+    children: list[ParsedWASubsection] = field(default_factory=list)
 
 
 class WAConverterError(Exception):
@@ -725,7 +725,7 @@ class WAConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "WAConverter":
+    def __enter__(self) -> WAConverter:
         return self
 
     def __exit__(self, *args) -> None:

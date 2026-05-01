@@ -9,9 +9,9 @@ and Notices including:
 - Parameter values (EITC amounts, standard deduction, etc.)
 """
 
+import contextlib
 import re
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 @dataclass
@@ -19,9 +19,9 @@ class ParsedSection:
     """A parsed section from an IRS document."""
 
     section_num: str
-    heading: Optional[str] = None
+    heading: str | None = None
     text: str = ""
-    children: list["ParsedSection"] = field(default_factory=list)
+    children: list[ParsedSection] = field(default_factory=list)
 
 
 @dataclass
@@ -30,7 +30,7 @@ class ParsedDocument:
 
     doc_number: str = ""
     doc_type: str = ""  # REV_PROC, REV_RUL, NOTICE
-    effective_year: Optional[int] = None
+    effective_year: int | None = None
     sections: list[ParsedSection] = field(default_factory=list)
     irc_sections: list[int] = field(default_factory=list)
     raw_text: str = ""
@@ -146,10 +146,8 @@ class IRSDocumentParser:
         for match in self.IRC_REF_PATTERN.finditer(text):
             section_text = match.group(1)
             for num_match in re.finditer(r"(\d+)", section_text):
-                try:
+                with contextlib.suppress(ValueError):
                     sections.add(int(num_match.group(1)))
-                except ValueError:  # pragma: no cover
-                    pass
 
         result.irc_sections = sorted(sections)
 
@@ -167,10 +165,7 @@ class IRSDocumentParser:
 
             # Find the end of this section (start of next section or end of doc)
             start = match.end()
-            if i + 1 < len(section_matches):
-                end = section_matches[i + 1].start()
-            else:
-                end = len(text)
+            end = section_matches[i + 1].start() if i + 1 < len(section_matches) else len(text)
 
             section_text = text[start:end].strip()
 
@@ -251,7 +246,7 @@ class IRSParameterExtractor:
 
         return params
 
-    def _extract_eitc_params(self, text: str) -> Optional[dict]:
+    def _extract_eitc_params(self, text: str) -> dict | None:
         """Extract EITC parameters from section .06 or similar."""
         # Find the EITC section
         eitc_section = re.search(
@@ -372,7 +367,7 @@ class IRSParameterExtractor:
 
         return params if any(params["max_credit"]) else None
 
-    def _extract_standard_deduction_params(self, text: str) -> Optional[dict]:
+    def _extract_standard_deduction_params(self, text: str) -> dict | None:
         """Extract standard deduction amounts from section .15 or similar."""
         # Find the standard deduction section
         sd_section = re.search(
@@ -452,7 +447,7 @@ class IRSParameterExtractor:
 
         return params if params else None
 
-    def _extract_ctc_params(self, text: str) -> Optional[dict]:
+    def _extract_ctc_params(self, text: str) -> dict | None:
         """Extract Child Tax Credit parameters."""
         params = {}
 

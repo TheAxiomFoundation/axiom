@@ -7,7 +7,6 @@ This module downloads and parses IRS guidance from:
 
 import re
 from datetime import date
-from typing import Optional
 
 import httpx
 from bs4 import BeautifulSoup
@@ -55,7 +54,7 @@ class IRSGuidanceFetcher:
         # Extract the Rev. Proc. content
         return self._parse_revenue_procedure(soup, doc_number, irb_url)
 
-    def _find_irb_url(self, doc_number: str) -> Optional[str]:
+    def _find_irb_url(self, doc_number: str) -> str | None:
         """Find the IRB URL for a given Revenue Procedure.
 
         This uses a lookup table for common Rev. Procs. For a production system,
@@ -94,7 +93,6 @@ class IRSGuidanceFetcher:
         content_elements = []
 
         # Start from the heading and collect all content until next major heading
-        current = rev_proc_heading
 
         # Look ahead for the actual content (skip navigation elements)
         for elem in rev_proc_heading.find_all_next():
@@ -103,10 +101,13 @@ class IRSGuidanceFetcher:
                 break
 
             # Collect text-bearing elements
-            if elem.name in ['p', 'div', 'section', 'article'] and elem.get_text(strip=True):
-                # Skip navigation and header elements
-                if 'nav' not in elem.get('class', []) and 'header' not in elem.get('class', []):
-                    content_elements.append(elem)
+            if (
+                elem.name in ["p", "div", "section", "article"]
+                and elem.get_text(strip=True)
+                and "nav" not in elem.get("class", [])
+                and "header" not in elem.get("class", [])
+            ):
+                content_elements.append(elem)
 
         # If we didn't find much, try a different approach - get the main content area
         if len(content_elements) < 5:
@@ -250,7 +251,7 @@ class IRSGuidanceFetcher:
         # Look for explicit year mentions
         year_mentions = re.findall(r"\b(20\d{2})\b", text)
         if year_mentions:
-            years = sorted(set(int(y) for y in year_mentions))
+            years = sorted({int(y) for y in year_mentions})
             # Filter to reasonable range (doc year to doc year + 2)
             return [y for y in years if doc_year <= y <= doc_year + 2]
 

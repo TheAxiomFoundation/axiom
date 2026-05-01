@@ -144,7 +144,7 @@ class ParsedCOSection:
     article_name: str | None  # e.g., "Income Tax"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedCOSubsection"] = field(default_factory=list)
+    subsections: list[ParsedCOSubsection] = field(default_factory=list)
     history: str | None = None  # History/source note
     source_url: str = ""
     effective_date: date | None = None
@@ -156,7 +156,7 @@ class ParsedCOSubsection:
 
     identifier: str  # e.g., "1", "a", "I", "A"
     text: str
-    children: list["ParsedCOSubsection"] = field(default_factory=list)
+    children: list[ParsedCOSubsection] = field(default_factory=list)
 
 
 class COConverterError(Exception):
@@ -716,7 +716,7 @@ class COConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "COConverter":
+    def __enter__(self) -> COConverter:
         return self
 
     def __exit__(self, *args) -> None:

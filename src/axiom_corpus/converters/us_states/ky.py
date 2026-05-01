@@ -97,7 +97,7 @@ class ParsedKYSection:
     title_roman: str | None  # e.g., "XI"
     title_name: str | None  # e.g., "Revenue and Taxation"
     text: str  # Full text content
-    subsections: list["ParsedKYSubsection"] = field(default_factory=list)
+    subsections: list[ParsedKYSubsection] = field(default_factory=list)
     history: str | None = None  # History note / amendments
     source_url: str = ""
     effective_date: date | None = None
@@ -109,7 +109,7 @@ class ParsedKYSubsection:
 
     identifier: str  # e.g., "1", "a", "A"
     text: str
-    children: list["ParsedKYSubsection"] = field(default_factory=list)
+    children: list[ParsedKYSubsection] = field(default_factory=list)
 
 
 class KYConverterError(Exception):
@@ -584,7 +584,7 @@ class KYConverter:
 
         # Filter cached sections for this chapter
         prefix = f"{chapter}."
-        section_numbers = [s for s in self._section_id_cache.keys() if s.startswith(prefix)]
+        section_numbers = [s for s in self._section_id_cache if s.startswith(prefix)]
 
         # Sort by section number
         def sort_key(s: str) -> tuple[int, str]:
@@ -638,7 +638,7 @@ class KYConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "KYConverter":
+    def __enter__(self) -> KYConverter:
         return self
 
     def __exit__(self, *args) -> None:

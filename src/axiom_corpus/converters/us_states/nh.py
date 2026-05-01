@@ -230,7 +230,7 @@ class ParsedNHSection:
     title_name: str | None  # e.g., "Taxation"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedNHSubsection"] = field(default_factory=list)
+    subsections: list[ParsedNHSubsection] = field(default_factory=list)
     history: str | None = None  # Source note
     source_url: str = ""
     effective_date: date | None = None
@@ -242,7 +242,7 @@ class ParsedNHSubsection:
 
     identifier: str  # e.g., "I", "a", "1", "A"
     text: str
-    children: list["ParsedNHSubsection"] = field(default_factory=list)
+    children: list[ParsedNHSubsection] = field(default_factory=list)
 
 
 class NHConverterError(Exception):
@@ -656,7 +656,7 @@ class NHConverter:
         except httpx.HTTPStatusError as e:  # pragma: no cover
             raise NHConverterError(
                 f"Section {section_number} not found: {e}", url
-            )  # pragma: no cover
+            ) from e  # pragma: no cover
 
         parsed = self._parse_section_html(html, section_number, url)
         return self._to_section(parsed)
@@ -674,7 +674,7 @@ class NHConverter:
         try:
             html = self._get(url)
         except httpx.HTTPStatusError as e:  # pragma: no cover
-            raise NHConverterError(f"Chapter {chapter} not found: {e}", url)  # pragma: no cover
+            raise NHConverterError(f"Chapter {chapter} not found: {e}", url) from e  # pragma: no cover
 
         soup = BeautifulSoup(html, "html.parser")
 
@@ -738,7 +738,7 @@ class NHConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "NHConverter":
+    def __enter__(self) -> NHConverter:
         return self
 
     def __exit__(self, *args) -> None:

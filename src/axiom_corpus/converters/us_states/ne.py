@@ -61,7 +61,7 @@ class ParsedNESection:
     chapter_title: str  # e.g., "Revenue and Taxation"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedNESubsection"] = field(default_factory=list)
+    subsections: list[ParsedNESubsection] = field(default_factory=list)
     history: str | None = None  # Source/history note
     cross_references: list[str] = field(default_factory=list)
     annotations: list[str] = field(default_factory=list)
@@ -74,7 +74,7 @@ class ParsedNESubsection:
 
     identifier: str  # e.g., "1", "a", "i"
     text: str
-    children: list["ParsedNESubsection"] = field(default_factory=list)
+    children: list[ParsedNESubsection] = field(default_factory=list)
 
 
 class NEConverterError(Exception):
@@ -518,7 +518,7 @@ class NEConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "NEConverter":
+    def __enter__(self) -> NEConverter:
         return self
 
     def __exit__(self, *args) -> None:

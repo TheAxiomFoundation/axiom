@@ -15,13 +15,10 @@ Usage:
 
 import re
 from dataclasses import dataclass, field
-from datetime import date
 from pathlib import Path
-from typing import Optional
 from xml.etree import ElementTree as ET
 
 from bs4 import BeautifulSoup, Tag
-
 
 # USLM namespace - House.gov format.
 USLM_NS = "http://xml.house.gov/schemas/uslm/1.0"
@@ -34,7 +31,7 @@ class ParsedSubsection:
     identifier: str  # e.g., "A", "1", "a"
     level: int  # 0=subsection, 1=paragraph, 2=subparagraph, etc.
     text: str
-    children: list["ParsedSubsection"] = field(default_factory=list)
+    children: list[ParsedSubsection] = field(default_factory=list)
 
 
 @dataclass
@@ -48,8 +45,8 @@ class ParsedSection:
     chapter_name: str  # e.g., "Income Tax"
     section_num: str  # e.g., "5747.02"
     section_title: str  # e.g., "Tax rates"
-    effective_date: Optional[str] = None
-    legislation: Optional[str] = None
+    effective_date: str | None = None
+    legislation: str | None = None
     text: str = ""
     subsections: list[ParsedSubsection] = field(default_factory=list)
     source_url: str = ""
@@ -281,9 +278,7 @@ class OhioToUSLM(StateToUSLMConverter):
         # Level 0: (A), (B), etc. - uppercase letters
         level0_pattern = r'\(([A-Z])\)\s*'  # pragma: no cover
         # Level 1: (1), (2), etc. - numbers
-        level1_pattern = r'\((\d+)\)\s*'  # pragma: no cover
         # Level 2: (a), (b), etc. - lowercase letters
-        level2_pattern = r'\(([a-z])\)\s*'  # pragma: no cover
 
         # Split by top-level subsections first
         parts = re.split(r'(?=\([A-Z]\))', text)  # pragma: no cover

@@ -1,15 +1,13 @@
 """Tests for state_orchestrator — coordinates state statute ingestion."""
 
 import inspect
-import pytest
-from unittest.mock import patch, MagicMock
-from pathlib import Path
 from datetime import date
+from unittest.mock import MagicMock, patch
 
 from bs4 import BeautifulSoup
 
 from axiom_corpus.ingest.state_orchestrator import StateOrchestrator
-from axiom_corpus.models import Section, Subsection, Citation
+from axiom_corpus.models import Citation, Section
 
 
 def _make_section(section_num="5747.01", state="oh") -> Section:
@@ -73,7 +71,7 @@ class TestIngestAllStates:
         mock_uploader = MagicMock()
         orch = StateOrchestrator(data_dir=tmp_path, uploader=mock_uploader)
         with patch.object(orch, "ingest_state", return_value=10) as mock_ingest:
-            result = orch.ingest_all_states()
+            orch.ingest_all_states()
         assert mock_ingest.call_count == 3
         states_called = {call.args[0] for call in mock_ingest.call_args_list}
         assert states_called == {"oh", "ak", "ca"}

@@ -24,7 +24,7 @@ import re
 import time
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import datetime
 from typing import Any
 from xml.etree import ElementTree as ET
 
@@ -742,7 +742,7 @@ class NYStateConverter:
             self._client.close()
             self._client = None
 
-    def __enter__(self) -> "NYStateConverter":
+    def __enter__(self) -> NYStateConverter:
         return self  # pragma: no cover
 
     def __exit__(self, *args: Any) -> None:

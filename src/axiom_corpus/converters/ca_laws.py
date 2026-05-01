@@ -27,12 +27,12 @@ Usage:
     )
 """
 
+import contextlib
 from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import date
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 from lxml import etree
 from pydantic import BaseModel
@@ -43,7 +43,6 @@ from axiom_corpus.models_canada import (
     CanadaSection,
     CanadaSubsection,
 )
-
 
 # LIMS namespace used in Justice Canada XML
 LIMS_NS = "{http://justice.gc.ca/lims}"
@@ -63,8 +62,8 @@ class CanadaLawsSource(Enum):
 class BilingualContent(BaseModel):
     """Bilingual text content (English and French)."""
 
-    en: Optional[str] = None
-    fr: Optional[str] = None
+    en: str | None = None
+    fr: str | None = None
 
     @property
     def primary(self) -> str:
@@ -77,8 +76,8 @@ class BilingualAct:
     """Act with bilingual metadata."""
 
     act: CanadaAct
-    french_short_title: Optional[str] = None
-    french_long_title: Optional[str] = None
+    french_short_title: str | None = None
+    french_long_title: str | None = None
 
 
 class CanadaLawsConverter:
@@ -99,7 +98,7 @@ class CanadaLawsConverter:
     def __init__(
         self,
         source: CanadaLawsSource = CanadaLawsSource.GITHUB,
-        local_path: Optional[Path] = None,
+        local_path: Path | None = None,
     ):
         """Initialize the converter.
 
@@ -137,16 +136,10 @@ class CanadaLawsConverter:
         """
         parts = path.strip("/").split("/")
 
-        if len(parts) >= 1:
-            doc_type = parts[0]  # "acts" or "regulations"
-        else:
-            doc_type = "acts"  # pragma: no cover
+        doc_type = parts[0] if len(parts) >= 1 else "acts"  # "acts" or "regulations"
 
         # The identifier is the last part (handles both "acts/I/I-3.3" and "acts/A-1")
-        if len(parts) >= 2:
-            identifier = parts[-1]
-        else:
-            identifier = path  # pragma: no cover
+        identifier = parts[-1] if len(parts) >= 2 else path
 
         return doc_type, identifier
 
@@ -216,7 +209,7 @@ class CanadaLawsConverter:
         return act
 
     def fetch_sections(  # pragma: no cover
-        self, path: str, section_numbers: Optional[list[str]] = None
+        self, path: str, section_numbers: list[str] | None = None
     ) -> list[CanadaSection]:
         """Fetch specific sections from an Act.
 
@@ -270,17 +263,13 @@ class CanadaLawsConverter:
         # Parse dates
         in_force_date = None
         if in_force_str:
-            try:
+            with contextlib.suppress(ValueError):
                 in_force_date = date.fromisoformat(in_force_str)
-            except ValueError:  # pragma: no cover
-                pass
 
         last_amended_date = None
         if last_amended_str:
-            try:
+            with contextlib.suppress(ValueError):
                 last_amended_date = date.fromisoformat(last_amended_str)
-            except ValueError:  # pragma: no cover
-                pass
 
         # Count sections
         section_count = len(list(root.iter("Section")))
@@ -345,7 +334,7 @@ class CanadaLawsConverter:
 
     def _parse_section(
         self, elem: etree._Element, cons_num: str, path: str = ""
-    ) -> Optional[CanadaSection]:
+    ) -> CanadaSection | None:
         """Parse a Section element.
 
         Args:
@@ -381,17 +370,13 @@ class CanadaLawsConverter:
 
         in_force_date = None
         if in_force_str:
-            try:
+            with contextlib.suppress(ValueError):
                 in_force_date = date.fromisoformat(in_force_str)
-            except ValueError:  # pragma: no cover
-                pass
 
         last_amended_date = None
         if last_amended_str:  # pragma: no cover
-            try:
+            with contextlib.suppress(ValueError):
                 last_amended_date = date.fromisoformat(last_amended_str)
-            except ValueError:  # pragma: no cover
-                pass
 
         # Extract historical notes
         historical_notes = []

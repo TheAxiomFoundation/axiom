@@ -131,7 +131,7 @@ class ParsedINSection:
     article_name: str | None  # e.g., "State Income Taxes"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedINSubsection"] = field(default_factory=list)
+    subsections: list[ParsedINSubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -143,7 +143,7 @@ class ParsedINSubsection:
 
     identifier: str  # e.g., "a", "1", "A"
     text: str
-    children: list["ParsedINSubsection"] = field(default_factory=list)
+    children: list[ParsedINSubsection] = field(default_factory=list)
 
 
 class INConverterError(Exception):
@@ -750,7 +750,7 @@ class INConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "INConverter":
+    def __enter__(self) -> INConverter:
         return self
 
     def __exit__(self, *args) -> None:

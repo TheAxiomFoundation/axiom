@@ -47,13 +47,11 @@ Source: Urban Institute CCDF Policies Database
 - Topics: Income eligibility, copayments, reimbursement rates
 """
 
-from dataclasses import dataclass, field
-from datetime import date
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Optional
 
 import httpx
-
 
 # FIPS codes for US states and territories
 STATE_FIPS = {

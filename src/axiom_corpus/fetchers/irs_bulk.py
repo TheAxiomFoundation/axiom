@@ -14,10 +14,10 @@ The IRS publishes guidance documents in two locations:
 """
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Callable, Optional
 
 import httpx
 from bs4 import BeautifulSoup
@@ -211,7 +211,7 @@ class IRSBulkFetcher:
     def fetch_and_extract(
         self,
         doc: IRSDropDocument,
-        save_pdf: Optional[Path] = None,
+        save_pdf: Path | None = None,
     ) -> RevenueProcedure:
         """Fetch a document and extract text content from the PDF.
 
@@ -226,8 +226,8 @@ class IRSBulkFetcher:
             httpx.HTTPError: If the HTTP request fails
             ValueError: If PDF extraction fails
         """
-        from axiom_corpus.fetchers.pdf_extractor import PDFTextExtractor
         from axiom_corpus.fetchers.irs_parser import IRSDocumentParser, IRSParameterExtractor
+        from axiom_corpus.fetchers.pdf_extractor import PDFTextExtractor
 
         # Fetch PDF
         pdf_content = self.fetch_pdf(doc)
@@ -429,11 +429,11 @@ class IRSBulkFetcher:
         import json  # pragma: no cover
         import time  # pragma: no cover
 
-        from axiom_corpus.fetchers.pdf_extractor import PDFTextExtractor  # pragma: no cover
         from axiom_corpus.fetchers.irs_parser import (
             IRSDocumentParser,
             IRSParameterExtractor,
         )  # pragma: no cover
+        from axiom_corpus.fetchers.pdf_extractor import PDFTextExtractor  # pragma: no cover
 
         if doc_types is None:  # pragma: no cover
             doc_types = [
@@ -488,7 +488,7 @@ class IRSBulkFetcher:
         param_extractor = IRSParameterExtractor() if extract_params else None  # pragma: no cover
 
         for i, doc in enumerate(all_docs):  # pragma: no cover
-            doc_id = f"{doc.doc_type.value[:3]}-{doc.doc_number}"  # pragma: no cover
+            f"{doc.doc_type.value[:3]}-{doc.doc_number}"  # pragma: no cover
 
             if progress_callback:  # pragma: no cover
                 progress_callback(  # pragma: no cover
@@ -516,7 +516,6 @@ class IRSBulkFetcher:
 
                 # Extract text if requested
                 full_text = ""  # pragma: no cover
-                parsed_doc = None  # pragma: no cover
                 parameters = {}  # pragma: no cover
 
                 if extract_text and pdf_extractor:  # pragma: no cover
@@ -530,7 +529,7 @@ class IRSBulkFetcher:
 
                         # Parse document structure
                         if doc_parser:  # pragma: no cover
-                            parsed_doc = doc_parser.parse(full_text)  # pragma: no cover
+                            doc_parser.parse(full_text)  # pragma: no cover
 
                         # Extract parameters
                         if extract_params and param_extractor and full_text:  # pragma: no cover

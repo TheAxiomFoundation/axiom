@@ -156,7 +156,7 @@ class ParsedSCSection:
     chapter_title: str | None  # e.g., "South Carolina Income Tax Act"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedSCSubsection"] = field(default_factory=list)
+    subsections: list[ParsedSCSubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -168,7 +168,7 @@ class ParsedSCSubsection:
 
     identifier: str  # e.g., "A", "1", "a"
     text: str
-    children: list["ParsedSCSubsection"] = field(default_factory=list)
+    children: list[ParsedSCSubsection] = field(default_factory=list)
 
 
 class SCConverterError(Exception):
@@ -749,7 +749,7 @@ class SCConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "SCConverter":
+    def __enter__(self) -> SCConverter:
         return self
 
     def __exit__(self, *args) -> None:

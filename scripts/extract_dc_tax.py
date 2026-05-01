@@ -19,8 +19,8 @@ import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
-import yaml
 
+import yaml
 
 # XML namespaces used in DC Law XML
 # The default namespace is the DC library namespace
@@ -439,7 +439,7 @@ def extract_standard_deduction() -> dict[str, Any]:
     Returns:
         Dictionary with standard deduction amounts by filing status
     """
-    section = parse_section("47-1801.04")
+    parse_section("47-1801.04")
 
     std_ded_data = {
         "description": "DC standard deduction amounts",

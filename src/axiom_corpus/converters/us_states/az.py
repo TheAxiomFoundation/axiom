@@ -128,7 +128,7 @@ class ParsedAZSection:
     title_name: str | None  # e.g., "Taxation"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedAZSubsection"] = field(default_factory=list)
+    subsections: list[ParsedAZSubsection] = field(default_factory=list)
     history: str | None = None  # History note (if present)
     source_url: str = ""
     effective_date: date | None = None
@@ -140,7 +140,7 @@ class ParsedAZSubsection:
 
     identifier: str  # e.g., "A", "1", "a"
     text: str
-    children: list["ParsedAZSubsection"] = field(default_factory=list)
+    children: list[ParsedAZSubsection] = field(default_factory=list)
 
 
 class AZConverterError(Exception):
@@ -601,7 +601,7 @@ class AZConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "AZConverter":
+    def __enter__(self) -> AZConverter:
         return self
 
     def __exit__(self, *args) -> None:

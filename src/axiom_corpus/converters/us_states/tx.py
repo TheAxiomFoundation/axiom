@@ -100,7 +100,7 @@ class ParsedTXSection:
     title_name: str | None  # e.g., "Title 2: State Taxation"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedTXSubsection"] = field(default_factory=list)
+    subsections: list[ParsedTXSubsection] = field(default_factory=list)
     history: str | None = None  # History/amendment notes
     source_url: str = ""
     effective_date: date | None = None
@@ -112,7 +112,7 @@ class ParsedTXSubsection:
 
     identifier: str  # e.g., "a", "1", "A"
     text: str
-    children: list["ParsedTXSubsection"] = field(default_factory=list)
+    children: list[ParsedTXSubsection] = field(default_factory=list)
 
 
 class TXConverterError(Exception):
@@ -647,7 +647,7 @@ class TXConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "TXConverter":
+    def __enter__(self) -> TXConverter:
         return self
 
     def __exit__(self, *args) -> None:

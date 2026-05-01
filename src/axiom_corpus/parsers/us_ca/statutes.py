@@ -22,7 +22,6 @@ import re
 import time
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import Literal
 
 import httpx
 from bs4 import BeautifulSoup
@@ -78,7 +77,7 @@ class CASubsection:
 
     identifier: str  # e.g., "a", "1", "A"
     text: str
-    children: list["CASubsection"] = field(default_factory=list)
+    children: list[CASubsection] = field(default_factory=list)
 
 
 @dataclass
@@ -362,9 +361,12 @@ class CACodeParser:
         print(f"Found {len(toc_entries)} TOC entries for {self.code}")  # pragma: no cover
 
         for entry in toc_entries:  # pragma: no cover
-            if divisions and entry["level"] == "division":  # pragma: no cover
-                if not any(d in entry["name"] for d in divisions):  # pragma: no cover
-                    continue  # pragma: no cover
+            if (
+                divisions
+                and entry["level"] == "division"
+                and not any(d in entry["name"] for d in divisions)
+            ):  # pragma: no cover
+                continue  # pragma: no cover
 
             # Get sections from this TOC page
             try:  # pragma: no cover
@@ -434,8 +436,8 @@ class CaliforniaStatutesParser:
 # CLI helper functions
 def download_california_rtc(output_dir: str = "data/ca/statute", max_sections: int | None = None):
     """Download California Revenue and Taxation Code."""
-    from pathlib import Path  # pragma: no cover
     import json  # pragma: no cover
+    from pathlib import Path  # pragma: no cover
 
     output_path = Path(output_dir)  # pragma: no cover
     output_path.mkdir(parents=True, exist_ok=True)  # pragma: no cover

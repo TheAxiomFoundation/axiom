@@ -188,7 +188,7 @@ class ParsedRISection:
     chapter_title: str | None  # e.g., "Personal Income Tax"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedRISubsection"] = field(default_factory=list)
+    subsections: list[ParsedRISubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
 
@@ -199,7 +199,7 @@ class ParsedRISubsection:
 
     identifier: str  # e.g., "a", "1", "i"
     text: str
-    children: list["ParsedRISubsection"] = field(default_factory=list)
+    children: list[ParsedRISubsection] = field(default_factory=list)
 
 
 class RIConverterError(Exception):
@@ -775,7 +775,7 @@ class RIConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "RIConverter":
+    def __enter__(self) -> RIConverter:
         return self
 
     def __exit__(self, *args) -> None:

@@ -92,7 +92,7 @@ class ParsedNJSection:
     chapter_number: str | None  # e.g., "4"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedNJSubsection"] = field(default_factory=list)
+    subsections: list[ParsedNJSubsection] = field(default_factory=list)
     history: str | None = None  # Amendment history note
     source_url: str = ""
     effective_date: date | None = None
@@ -104,7 +104,7 @@ class ParsedNJSubsection:
 
     identifier: str  # e.g., "a", "1", "i"
     text: str
-    children: list["ParsedNJSubsection"] = field(default_factory=list)
+    children: list[ParsedNJSubsection] = field(default_factory=list)
 
 
 class NJConverterError(Exception):
@@ -652,7 +652,7 @@ class NJConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "NJConverter":
+    def __enter__(self) -> NJConverter:
         return self
 
     def __exit__(self, *args) -> None:

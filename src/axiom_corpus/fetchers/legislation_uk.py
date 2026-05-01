@@ -10,16 +10,15 @@ import asyncio
 import json
 import logging
 import re
+from collections.abc import Callable, Iterator
 from datetime import datetime
 from pathlib import Path
-from typing import AsyncIterator, Callable, Iterator, Optional
 from xml.etree import ElementTree as ET
 
 import httpx
 
 from axiom_corpus.models_uk import UKAct, UKCitation, UKSection
 from axiom_corpus.parsers.clml import parse_act_metadata, parse_section
-
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +54,7 @@ class UKActReference:
         title: str,
         year: int,
         number: int,
-        updated: Optional[datetime] = None,
+        updated: datetime | None = None,
     ):
         self.act_id = act_id  # e.g., "ukpga/2003/1"
         self.title = title
@@ -81,7 +80,7 @@ class BulkDownloadProgress:
         self.failed: dict[str, str] = {}  # act_id -> error message
         self.total_acts: int = 0
         self.total_sections: int = 0
-        self.started_at: Optional[datetime] = None
+        self.started_at: datetime | None = None
         self.load()
 
     def load(self) -> None:
@@ -151,7 +150,7 @@ class UKLegislationFetcher:
 
     def __init__(
         self,
-        data_dir: Optional[Path] = None,
+        data_dir: Path | None = None,
         base_url: str = "https://www.legislation.gov.uk",
         rate_limit_delay: float = 0.2,
     ):
@@ -189,8 +188,8 @@ class UKLegislationFetcher:
     def build_search_url(
         self,
         query: str,
-        type: Optional[str] = None,
-        year: Optional[int] = None,
+        type: str | None = None,
+        year: int | None = None,
         limit: int = 20,
     ) -> str:
         """Build search API URL.
@@ -319,7 +318,7 @@ class UKLegislationFetcher:
     async def fetch_act_sections(
         self,
         citation: UKCitation,
-        max_sections: Optional[int] = None,
+        max_sections: int | None = None,
     ) -> Iterator[UKSection]:
         """Fetch all sections from an Act.
 
@@ -360,8 +359,8 @@ class UKLegislationFetcher:
     async def list_all_ukpga_acts(
         self,
         page_size: int = 50,
-        max_pages: Optional[int] = None,
-        progress_callback: Optional[Callable[[str], None]] = None,
+        max_pages: int | None = None,
+        progress_callback: Callable[[str], None] | None = None,
     ) -> list[UKActReference]:
         """List all UK Public General Acts from the legislation.gov.uk feed.
 
@@ -423,7 +422,7 @@ class UKLegislationFetcher:
 
         return acts
 
-    def _parse_feed_entry(self, entry: ET.Element) -> Optional[UKActReference]:
+    def _parse_feed_entry(self, entry: ET.Element) -> UKActReference | None:
         """Parse an Atom feed entry into a UKActReference.
 
         Args:
@@ -523,11 +522,11 @@ class UKLegislationFetcher:
 
     async def bulk_download_ukpga(
         self,
-        output_dir: Optional[Path] = None,
-        progress: Optional[BulkDownloadProgress] = None,
-        act_refs: Optional[list[UKActReference]] = None,
-        progress_callback: Optional[Callable[[str], None]] = None,
-        log_file: Optional[Path] = None,
+        output_dir: Path | None = None,
+        progress: BulkDownloadProgress | None = None,
+        act_refs: list[UKActReference] | None = None,
+        progress_callback: Callable[[str], None] | None = None,
+        log_file: Path | None = None,
     ) -> BulkDownloadProgress:
         """Bulk download all UK Public General Acts.
 
@@ -553,7 +552,7 @@ class UKLegislationFetcher:
         log_handle = None
         if log_file:
             log_file.parent.mkdir(parents=True, exist_ok=True)
-            log_handle = open(log_file, "a")
+            log_handle = open(log_file, "a")  # noqa: SIM115
 
         def log(msg: str) -> None:
             if progress_callback:
@@ -621,8 +620,8 @@ class UKLegislationFetcher:
 
 async def download_uk_act(
     act_ref: str,
-    data_dir: Optional[Path] = None,
-    max_sections: Optional[int] = None,
+    data_dir: Path | None = None,
+    max_sections: int | None = None,
 ) -> list[UKSection]:
     """Convenience function to download an entire UK Act.
 

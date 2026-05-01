@@ -74,7 +74,7 @@ def main():
         print(f"Published: {rp_2023_34.published_date}")
         print(f"Tax Years: {rp_2023_34.tax_years}")
         print(f"Subject Areas: {rp_2023_34.subject_areas}")
-        print(f"\nFull Text Preview (first 500 chars):")
+        print("\nFull Text Preview (first 500 chars):")
         print("-"*70)
         print(rp_2023_34.full_text[:500])
         print("-"*70)

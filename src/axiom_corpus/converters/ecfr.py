@@ -19,10 +19,10 @@ Priority titles for tax/benefit modeling:
 """
 
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Iterator, Optional
 from xml.etree import ElementTree as ET
 
 import httpx
@@ -32,7 +32,6 @@ from axiom_corpus.models_regulation import (
     Regulation,
     RegulationSubsection,
 )
-
 
 # eCFR API base URL
 ECFR_API_BASE = "https://www.ecfr.gov/api/versioner/v1"
@@ -53,8 +52,8 @@ class ECFRMetadata:
 
     title: int
     name: str
-    latest_issue_date: Optional[date] = None
-    amendment_date: Optional[date] = None
+    latest_issue_date: date | None = None
+    amendment_date: date | None = None
     part_count: int = 0
     section_count: int = 0
 
@@ -64,11 +63,11 @@ class FetchResult:
     """Result of fetching a CFR section or part."""
 
     success: bool
-    citation: Optional[CFRCitation] = None
-    regulation: Optional[Regulation] = None
+    citation: CFRCitation | None = None
+    regulation: Regulation | None = None
     regulations: list[Regulation] = field(default_factory=list)
-    error: Optional[str] = None
-    source_url: Optional[str] = None
+    error: str | None = None
+    source_url: str | None = None
 
 
 class ECFRConverter:
@@ -95,7 +94,7 @@ class ECFRConverter:
 
     def __init__(
         self,
-        data_dir: Optional[Path] = None,
+        data_dir: Path | None = None,
         api_base: str = ECFR_API_BASE,
         timeout: float = 120.0,
     ):
@@ -110,7 +109,7 @@ class ECFRConverter:
         self.api_base = api_base
         self.data_dir = data_dir or Path.home() / ".axiom" / "ecfr"
         self.timeout = timeout
-        self._client: Optional[httpx.Client] = None
+        self._client: httpx.Client | None = None
 
     @property
     def client(self) -> httpx.Client:
@@ -125,7 +124,7 @@ class ECFRConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "ECFRConverter":
+    def __enter__(self) -> ECFRConverter:
         return self
 
     def __exit__(self, *args) -> None:
@@ -134,8 +133,8 @@ class ECFRConverter:
     def get_title_url(
         self,
         title: int,
-        as_of: Optional[date] = None,
-        part: Optional[int] = None,
+        as_of: date | None = None,
+        part: int | None = None,
     ) -> str:
         """Build the API URL for a CFR title.
 
@@ -159,7 +158,7 @@ class ECFRConverter:
     def fetch(
         self,
         citation_str: str,
-        as_of: Optional[date] = None,
+        as_of: date | None = None,
     ) -> FetchResult:
         """Fetch a specific CFR section.
 
@@ -239,7 +238,7 @@ class ECFRConverter:
         self,
         title: int,
         part: int,
-        as_of: Optional[date] = None,
+        as_of: date | None = None,
     ) -> FetchResult:
         """Fetch all sections in a CFR part.
 
@@ -294,7 +293,7 @@ class ECFRConverter:
     def fetch_title(
         self,
         title: int,
-        as_of: Optional[date] = None,
+        as_of: date | None = None,
         cache: bool = True,
     ) -> Iterator[Regulation]:
         """Fetch all sections in a CFR title.
@@ -326,7 +325,7 @@ class ECFRConverter:
         # Parse all sections
         yield from self._parse_title(xml_content, title, url, as_of)  # pragma: no cover
 
-    def _get_cache_path(self, title: int, as_of: Optional[date] = None) -> Path:
+    def _get_cache_path(self, title: int, as_of: date | None = None) -> Path:
         """Get the cache file path for a title."""
         date_str = (as_of or date.today()).isoformat()  # pragma: no cover
         return self.data_dir / f"title-{title}_{date_str}.xml"  # pragma: no cover
@@ -338,8 +337,8 @@ class ECFRConverter:
         part: int,
         section: str,
         source_url: str,
-        as_of: Optional[date] = None,
-    ) -> Optional[Regulation]:
+        as_of: date | None = None,
+    ) -> Regulation | None:
         """Parse a specific section from XML content.
 
         Args:
@@ -384,7 +383,7 @@ class ECFRConverter:
         title: int,
         part: int,
         source_url: str,
-        as_of: Optional[date] = None,
+        as_of: date | None = None,
     ) -> Iterator[Regulation]:
         """Parse all sections in a part.
 
@@ -424,7 +423,7 @@ class ECFRConverter:
         xml_content: str,
         title: int,
         source_url: str,
-        as_of: Optional[date] = None,
+        as_of: date | None = None,
     ) -> Iterator[Regulation]:
         """Parse all sections in a title.
 
@@ -444,7 +443,6 @@ class ECFRConverter:
 
         # Track current authority by part
         current_authority = ""  # pragma: no cover
-        current_part = None  # pragma: no cover
 
         for elem in root.iter():  # pragma: no cover
             # Update authority when we enter a new part
@@ -457,7 +455,7 @@ class ECFRConverter:
                 # Extract part number
                 part_n = elem.get("N", "")  # pragma: no cover
                 if part_n.isdigit():  # pragma: no cover
-                    current_part = int(part_n)  # pragma: no cover
+                    int(part_n)  # pragma: no cover
 
             # Parse sections
             if elem.tag == "DIV8" and elem.get("TYPE") == "SECTION":  # pragma: no cover
@@ -475,9 +473,9 @@ class ECFRConverter:
         elem: ET.Element,
         title: int,
         source_url: str,
-        as_of: Optional[date] = None,
+        as_of: date | None = None,
         authority: str = "",
-    ) -> Optional[Regulation]:
+    ) -> Regulation | None:
         """Convert a DIV8 section element to a Regulation.
 
         Args:
@@ -492,7 +490,7 @@ class ECFRConverter:
         """
         # Extract section info from attributes
         n_attr = elem.get("N", "")
-        node_attr = elem.get("NODE", "")
+        elem.get("NODE", "")
 
         # Parse part and section from N attribute
         # Format: "§ 1.32-1" or "1.32-1"
@@ -598,8 +596,8 @@ class ECFRConverter:
     def fetch_irs(
         self,
         part: int,
-        section: Optional[str] = None,
-        as_of: Optional[date] = None,
+        section: str | None = None,
+        as_of: date | None = None,
     ) -> FetchResult:
         """Fetch IRS regulations from Title 26.
 
@@ -617,8 +615,8 @@ class ECFRConverter:
 
     def fetch_snap(
         self,
-        section: Optional[str] = None,
-        as_of: Optional[date] = None,
+        section: str | None = None,
+        as_of: date | None = None,
     ) -> FetchResult:
         """Fetch SNAP regulations from Title 7, Parts 271-283.
 
@@ -650,8 +648,8 @@ class ECFRConverter:
     def fetch_ssa(
         self,
         part: int = 404,
-        section: Optional[str] = None,
-        as_of: Optional[date] = None,
+        section: str | None = None,
+        as_of: date | None = None,
     ) -> FetchResult:
         """Fetch SSA regulations from Title 20.
 
@@ -672,7 +670,7 @@ class ECFRConverter:
 
 def fetch_regulation(
     citation_str: str,
-    as_of: Optional[date] = None,
+    as_of: date | None = None,
 ) -> FetchResult:
     """Fetch a single CFR regulation.
 
@@ -687,7 +685,7 @@ def fetch_regulation(
         return converter.fetch(citation_str, as_of=as_of)
 
 
-def fetch_eitc_regulations(as_of: Optional[date] = None) -> FetchResult:
+def fetch_eitc_regulations(as_of: date | None = None) -> FetchResult:
     """Fetch all EITC-related IRS regulations.
 
     The EITC regulations are primarily in:
@@ -717,7 +715,7 @@ if __name__ == "__main__":
             print(f"\nCitation: {reg.cfr_cite}")
             print(f"Heading: {reg.heading}")
             print(f"Authority: {reg.authority}")
-            print(f"\nText preview (first 500 chars):")
+            print("\nText preview (first 500 chars):")
             print(reg.full_text[:500])
         else:
             print(f"\nFound {len(result.regulations)} sections")

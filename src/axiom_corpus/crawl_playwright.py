@@ -107,7 +107,7 @@ class AlabamaCrawler:
                 text = await btn.inner_text()
                 if text.strip().startswith("Title"):
                     title_buttons.append(text.strip())
-            except:
+            except Exception:
                 pass
         return title_buttons
 
@@ -120,7 +120,7 @@ class AlabamaCrawler:
                 if text.strip().startswith(text_prefix):
                     await btn.click()
                     return True
-            except:
+            except Exception:
                 pass
         return False
 
@@ -175,7 +175,7 @@ class AlabamaCrawler:
                     text = await btn.inner_text()
                     if text.strip().startswith("Chapter"):
                         chapter_names.append(text.strip())
-                except:
+                except Exception:
                     pass
 
             # Click each chapter to reveal sections
@@ -199,7 +199,7 @@ class AlabamaCrawler:
                                 "title": text.strip(),
                             }
                         )
-                except:
+                except Exception:
                     pass
 
             # Progress update
@@ -623,7 +623,7 @@ class TexasCrawler:
                                     "code": code_name,
                                 }
                             )
-                except:
+                except Exception:
                     pass
 
             # Progress update

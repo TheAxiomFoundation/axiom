@@ -31,7 +31,7 @@ class Citation(BaseModel):
         return f"statute/{self.title}/{self.section}"
 
     @classmethod
-    def from_string(cls, cite: str) -> "Citation":
+    def from_string(cls, cite: str) -> Citation:
         """Parse a citation string like '26 USC 32(a)(1)'."""
         import re
 
@@ -62,7 +62,7 @@ class Subsection(BaseModel):
     identifier: str = Field(..., description="Subsection identifier (e.g., 'a', '1', 'A')")
     heading: str | None = Field(None, description="Subsection heading if present")
     text: str = Field(..., description="Text content of this subsection")
-    children: list["Subsection"] = Field(default_factory=list, description="Child subsections")
+    children: list[Subsection] = Field(default_factory=list, description="Child subsections")
 
     model_config = {"extra": "forbid"}
 
@@ -114,7 +114,7 @@ class Section(BaseModel):
 
     model_config = {"extra": "forbid"}
 
-    def get_subsection(self, path: str) -> "Subsection | None":
+    def get_subsection(self, path: str) -> Subsection | None:
         """Walk the subsection tree by slash-separated path (e.g., 'c', 'b/1/A')."""
         if not path:
             return None

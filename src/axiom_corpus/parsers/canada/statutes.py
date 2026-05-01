@@ -12,6 +12,7 @@ Structure:
 Source: https://laws-lois.justice.gc.ca
 """
 
+import contextlib
 import logging
 from collections.abc import Iterator
 from datetime import date
@@ -88,17 +89,13 @@ class CanadaStatuteParser:
 
         in_force_date = None
         if in_force_str:
-            try:
+            with contextlib.suppress(ValueError):
                 in_force_date = date.fromisoformat(in_force_str)
-            except ValueError:
-                pass
 
         last_amended_date = None
         if last_amended_str:
-            try:
+            with contextlib.suppress(ValueError):
                 last_amended_date = date.fromisoformat(last_amended_str)
-            except ValueError:
-                pass
 
         # Bill info
         bill_origin = root.get("bill-origin")
@@ -195,17 +192,13 @@ class CanadaStatuteParser:
 
         in_force_date = None
         if in_force_str:
-            try:
+            with contextlib.suppress(ValueError):
                 in_force_date = date.fromisoformat(in_force_str)
-            except ValueError:
-                pass
 
         last_amended_date = None
         if last_amended_str:
-            try:
+            with contextlib.suppress(ValueError):
                 last_amended_date = date.fromisoformat(last_amended_str)
-            except ValueError:
-                pass
 
         # Extract historical notes
         historical_notes = []

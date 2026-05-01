@@ -275,10 +275,7 @@ class USLMParser:
                             p_tag = etree.QName(p.tag).localname if isinstance(p.tag, str) else ""
                             if p_tag == "p":
                                 p_texts.append("".join(p.itertext()).strip())
-                        if p_texts:
-                            text = " ".join(p_texts)
-                        else:
-                            text = "".join(cell.itertext()).strip()
+                        text = " ".join(p_texts) if p_texts else "".join(cell.itertext()).strip()
                         text = " ".join(text.split())
                         cells.append(text)
                 if cells:

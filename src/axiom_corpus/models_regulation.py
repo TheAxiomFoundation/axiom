@@ -35,7 +35,7 @@ class CFRCitation(BaseModel):
     model_config = {"extra": "forbid"}
 
     @classmethod
-    def from_string(cls, citation_str: str) -> "CFRCitation":
+    def from_string(cls, citation_str: str) -> CFRCitation:
         """Parse a CFR citation string.
 
         Args:
@@ -103,7 +103,7 @@ class RegulationSubsection(BaseModel):
     id: str = Field(..., description="Subsection identifier (e.g., 'a', '1', 'i')")
     heading: str | None = Field(None, description="Subsection heading if present")
     text: str = Field(..., description="Text content of this subsection")
-    children: list["RegulationSubsection"] = Field(
+    children: list[RegulationSubsection] = Field(
         default_factory=list, description="Child subsections"
     )
 

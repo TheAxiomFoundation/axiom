@@ -27,7 +27,6 @@ Example:
 
 import re
 import time
-from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import date
 
@@ -128,7 +127,7 @@ class ParsedLASection:
     section_title: str  # e.g., "Special adjustment for long-term contracts"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedLASubsection"] = field(default_factory=list)
+    subsections: list[ParsedLASubsection] = field(default_factory=list)
     history: str | None = None  # History note (Acts yyyy, No. xxx)
     source_url: str = ""
 
@@ -139,7 +138,7 @@ class ParsedLASubsection:
 
     identifier: str  # e.g., "A", "B", "1", "a"
     text: str
-    children: list["ParsedLASubsection"] = field(default_factory=list)
+    children: list[ParsedLASubsection] = field(default_factory=list)
 
 
 class LAConverterError(Exception):
@@ -569,8 +568,8 @@ class LAConverter:
         """
         if doc_id is None:
             raise LAConverterError(
-                f"Document ID required for Louisiana statutes. "
-                f"Use fetch_section_by_id() or provide doc_id parameter.",
+                "Document ID required for Louisiana statutes. "
+                "Use fetch_section_by_id() or provide doc_id parameter.",
                 None,
             )
         return self.fetch_section_by_id(doc_id)
@@ -581,7 +580,7 @@ class LAConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "LAConverter":
+    def __enter__(self) -> LAConverter:
         return self
 
     def __exit__(self, *args) -> None:

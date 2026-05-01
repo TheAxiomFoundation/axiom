@@ -7,7 +7,6 @@ Some jurisdictions provide public APIs:
 
 import re
 from collections.abc import Iterator
-from datetime import datetime
 
 import httpx
 

@@ -26,6 +26,7 @@ Example:
     "Tax basis -- Tax rate -- Exemption."
 """
 
+import contextlib
 import re
 import time
 from collections.abc import Iterator
@@ -108,7 +109,7 @@ class ParsedUTSection:
     part_title: str | None  # e.g., "Determination and Reporting..."
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedUTSubsection"] = field(default_factory=list)
+    subsections: list[ParsedUTSubsection] = field(default_factory=list)
     history: str | None = None  # History/amendment note
     source_url: str = ""
     effective_date: date | None = None
@@ -121,7 +122,7 @@ class ParsedUTSubsection:
 
     identifier: str  # e.g., "1", "a", "i"
     text: str
-    children: list["ParsedUTSubsection"] = field(default_factory=list)
+    children: list[ParsedUTSubsection] = field(default_factory=list)
 
 
 class UTConverterError(Exception):
@@ -331,14 +332,12 @@ class UTConverter:
             effective_text = secdiv.get_text()
             eff_match = re.search(r"Effective\s+(\d{1,2}/\d{1,2}/\d{4})", effective_text)
             if eff_match:
-                try:
+                with contextlib.suppress(ValueError, IndexError):
                     effective_date = date(
                         int(eff_match.group(1).split("/")[2]),
                         int(eff_match.group(1).split("/")[0]),
                         int(eff_match.group(1).split("/")[1]),
                     )
-                except ValueError, IndexError:  # pragma: no cover
-                    pass
 
         # Get content
         content_elem = secdiv or soup.find("div", id="content") or soup.find("body")
@@ -583,7 +582,9 @@ class UTConverter:
         try:
             wrapper_html = self._get(wrapper_url)
         except httpx.HTTPStatusError as e:
-            raise UTConverterError(f"Section {section_number} not found: {e}", wrapper_url)
+            raise UTConverterError(
+                f"Section {section_number} not found: {e}", wrapper_url
+            ) from e
 
         version = self._get_current_version(wrapper_html)
 
@@ -711,7 +712,7 @@ class UTConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "UTConverter":
+    def __enter__(self) -> UTConverter:
         return self
 
     def __exit__(self, *args) -> None:

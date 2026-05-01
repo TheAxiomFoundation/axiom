@@ -35,10 +35,10 @@ def fetch_and_store_rev_proc(doc_number: str, db_path: str = "axiom.db") -> None
     with IRSGuidanceFetcher() as fetcher:
         try:
             # Fetch the document
-            print(f"Downloading from IRS.gov...")
+            print("Downloading from IRS.gov...")
             rev_proc = fetcher.fetch_revenue_procedure(doc_number)
 
-            print(f"\nDocument Details:")
+            print("\nDocument Details:")
             print(f"  Title: {rev_proc.title}")
             print(f"  IRB Citation: {rev_proc.irb_citation}")
             print(f"  Published: {rev_proc.published_date}")
@@ -48,12 +48,12 @@ def fetch_and_store_rev_proc(doc_number: str, db_path: str = "axiom.db") -> None
             print(f"  Full Text Length: {len(rev_proc.full_text)} chars")
 
             # Store in database
-            print(f"\nStoring in database...")
+            print("\nStoring in database...")
             storage.store_revenue_procedure(rev_proc)
 
             # Link to EITC statute if applicable
             if "EITC" in rev_proc.subject_areas or "earned income" in rev_proc.title.lower():
-                print(f"Linking to IRC § 32 (EITC)...")
+                print("Linking to IRC § 32 (EITC)...")
                 year, num = doc_number.split("-")
                 doc_id = f"rp-{year}-{num}"
                 storage.link_guidance_to_statute(
@@ -67,13 +67,13 @@ def fetch_and_store_rev_proc(doc_number: str, db_path: str = "axiom.db") -> None
             print(f"\n✓ Successfully stored Rev. Proc. {doc_number}")
 
             # Test retrieval
-            print(f"\nVerifying storage...")
+            print("\nVerifying storage...")
             retrieved = storage.get_revenue_procedure(doc_number)
             if retrieved:
-                print(f"✓ Successfully retrieved from database")
+                print("✓ Successfully retrieved from database")
                 print(f"  Title: {retrieved.title}")
             else:
-                print(f"✗ Failed to retrieve from database")
+                print("✗ Failed to retrieve from database")
 
         except Exception as e:
             print(f"\n✗ Error: {e}")
@@ -102,7 +102,7 @@ def main():
         fetch_and_store_rev_proc(doc_number, db_path)
 
     print(f"\n{'='*60}")
-    print(f"All documents processed successfully!")
+    print("All documents processed successfully!")
     print(f"{'='*60}\n")
 
 

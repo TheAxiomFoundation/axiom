@@ -24,7 +24,6 @@ import zipfile
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import date
-from io import BytesIO
 from pathlib import Path
 
 import httpx
@@ -102,7 +101,7 @@ class TXSection:
     text: str
     html: str
     url: str
-    subsections: list["TXSubsection"] = field(default_factory=list)
+    subsections: list[TXSubsection] = field(default_factory=list)
 
 
 @dataclass
@@ -111,7 +110,7 @@ class TXSubsection:
 
     identifier: str
     text: str
-    children: list["TXSubsection"] = field(default_factory=list)
+    children: list[TXSubsection] = field(default_factory=list)
 
 
 class TXStatutesError(Exception):
@@ -320,7 +319,7 @@ class TXStatutesClient:
         """Close the HTTP client."""
         self.client.close()  # pragma: no cover
 
-    def __enter__(self) -> "TXStatutesClient":
+    def __enter__(self) -> TXStatutesClient:
         return self  # pragma: no cover
 
     def __exit__(self, *args) -> None:

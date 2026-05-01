@@ -114,7 +114,7 @@ class ParsedDESubsection:
 
     identifier: str  # e.g., "a", "1", "A"
     text: str
-    children: list["ParsedDESubsection"] = field(default_factory=list)
+    children: list[ParsedDESubsection] = field(default_factory=list)
 
 
 @dataclass
@@ -129,7 +129,7 @@ class ParsedDESection:
     subchapter: str | None  # e.g., "I" or "General Provisions"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedDESubsection"] = field(default_factory=list)
+    subsections: list[ParsedDESubsection] = field(default_factory=list)
     history: str | None = None  # History note with citations
     source_url: str = ""
     effective_date: date | None = None
@@ -694,7 +694,7 @@ class DEConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "DEConverter":
+    def __enter__(self) -> DEConverter:
         return self
 
     def __exit__(self, *args) -> None:

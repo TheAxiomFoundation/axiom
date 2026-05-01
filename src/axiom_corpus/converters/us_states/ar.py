@@ -127,7 +127,7 @@ class ParsedARSection:
     chapter_title: str | None  # e.g., "Income Taxes"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedARSubsection"] = field(default_factory=list)
+    subsections: list[ParsedARSubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -139,7 +139,7 @@ class ParsedARSubsection:
 
     identifier: str  # e.g., "a", "1", "A"
     text: str
-    children: list["ParsedARSubsection"] = field(default_factory=list)
+    children: list[ParsedARSubsection] = field(default_factory=list)
 
 
 class ARConverterError(Exception):
@@ -644,7 +644,7 @@ class ARConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "ARConverter":
+    def __enter__(self) -> ARConverter:
         return self
 
     def __exit__(self, *args) -> None:

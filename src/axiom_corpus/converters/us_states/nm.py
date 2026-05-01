@@ -28,7 +28,6 @@ Example:
 
 import re
 import time
-from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import date
 
@@ -214,7 +213,7 @@ class ParsedNMSection:
     article_title: str | None  # e.g., "Income Tax General Provisions"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedNMSubsection"] = field(default_factory=list)
+    subsections: list[ParsedNMSubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -226,7 +225,7 @@ class ParsedNMSubsection:
 
     identifier: str  # e.g., "A", "1", "a"
     text: str
-    children: list["ParsedNMSubsection"] = field(default_factory=list)
+    children: list[ParsedNMSubsection] = field(default_factory=list)
 
 
 class NMConverterError(Exception):
@@ -745,7 +744,7 @@ class NMConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "NMConverter":
+    def __enter__(self) -> NMConverter:
         return self
 
     def __exit__(self, *args) -> None:

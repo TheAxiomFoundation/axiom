@@ -108,7 +108,7 @@ class CanonicalDocument:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "CanonicalDocument":
+    def from_dict(cls, data: dict) -> CanonicalDocument:
         """Create from dictionary (e.g., loaded from JSON)."""
         return cls(
             jurisdiction=data["jurisdiction"],

@@ -145,7 +145,7 @@ class ParsedGASection:
     article_title: str | None  # e.g., "Imposition, Rate, and Computation"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedGASubsection"] = field(default_factory=list)
+    subsections: list[ParsedGASubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -157,7 +157,7 @@ class ParsedGASubsection:
 
     identifier: str  # e.g., "a", "1", "A"
     text: str
-    children: list["ParsedGASubsection"] = field(default_factory=list)
+    children: list[ParsedGASubsection] = field(default_factory=list)
 
 
 class GAConverterError(Exception):
@@ -740,7 +740,7 @@ class GAConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "GAConverter":
+    def __enter__(self) -> GAConverter:
         return self
 
     def __exit__(self, *args) -> None:

@@ -13,10 +13,8 @@ Supported patterns:
 import logging
 import re
 import time
-from abc import ABC, abstractmethod
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
-from typing import Any, Callable
 
 import httpx
 from bs4 import BeautifulSoup
@@ -35,7 +33,7 @@ class StateSection:
     title: str  # Section heading
     text: str  # Full text content
     url: str  # Source URL
-    subsections: list["StateSubsection"] = field(default_factory=list)
+    subsections: list[StateSubsection] = field(default_factory=list)
     chapter: str | None = None
     history: str | None = None
 
@@ -51,7 +49,7 @@ class StateSubsection:
 
     identifier: str
     text: str
-    children: list["StateSubsection"] = field(default_factory=list)
+    children: list[StateSubsection] = field(default_factory=list)
 
 
 @dataclass

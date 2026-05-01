@@ -115,7 +115,7 @@ class ParsedMNSection:
     chapter_title: str  # e.g., "Individual Income Tax"
     text: str  # Full text content
     html: str  # Raw HTML
-    subdivisions: list["ParsedMNSubdivision"] = field(default_factory=list)
+    subdivisions: list[ParsedMNSubdivision] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -132,7 +132,7 @@ class ParsedMNSubdivision:
     identifier: str  # e.g., "1", "2", "3"
     heading: str | None  # e.g., "Scope" (from "Subd. 1. Scope.")
     text: str
-    clauses: list["ParsedMNClause"] = field(default_factory=list)
+    clauses: list[ParsedMNClause] = field(default_factory=list)
 
 
 @dataclass
@@ -141,7 +141,7 @@ class ParsedMNClause:
 
     identifier: str  # e.g., "a", "b", "c" or "1", "2", "3"
     text: str
-    children: list["ParsedMNClause"] = field(default_factory=list)
+    children: list[ParsedMNClause] = field(default_factory=list)
 
 
 class MNConverterError(Exception):
@@ -242,14 +242,6 @@ class MNConverter:
             return MN_TAX_CHAPTERS[chapter]
         if chapter in MN_WELFARE_CHAPTERS:
             return MN_WELFARE_CHAPTERS[chapter]
-
-        # Try integer lookup
-        try:  # pragma: no cover
-            chapter_int = int(chapter.rstrip("ABCDEFGHIJ"))  # pragma: no cover
-            if chapter_int in MN_TAX_CHAPTERS_INT:  # pragma: no cover
-                return MN_TAX_CHAPTERS_INT[chapter_int]  # pragma: no cover
-        except ValueError:  # pragma: no cover
-            pass
 
         return f"Chapter {chapter}"  # pragma: no cover
 
@@ -625,7 +617,7 @@ class MNConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "MNConverter":
+    def __enter__(self) -> MNConverter:
         return self
 
     def __exit__(self, *args) -> None:

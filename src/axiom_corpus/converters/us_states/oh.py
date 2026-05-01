@@ -103,7 +103,7 @@ class ParsedOHSection:
     title_name: str | None  # e.g., "Taxation"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedOHSubsection"] = field(default_factory=list)
+    subsections: list[ParsedOHSubsection] = field(default_factory=list)
     history: str | None = None  # History note / latest legislation
     source_url: str = ""
     effective_date: date | None = None
@@ -115,7 +115,7 @@ class ParsedOHSubsection:
 
     identifier: str  # e.g., "A", "1", "a"
     text: str
-    children: list["ParsedOHSubsection"] = field(default_factory=list)
+    children: list[ParsedOHSubsection] = field(default_factory=list)
 
 
 class OHConverterError(Exception):
@@ -593,7 +593,7 @@ class OHConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "OHConverter":
+    def __enter__(self) -> OHConverter:
         return self
 
     def __exit__(self, *args) -> None:

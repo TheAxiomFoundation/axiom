@@ -248,7 +248,7 @@ class NYLegislationClient:
         """Close the HTTP client."""
         self.client.close()  # pragma: no cover
 
-    def __enter__(self) -> "NYLegislationClient":
+    def __enter__(self) -> NYLegislationClient:
         return self  # pragma: no cover
 
     def __exit__(self, *args: Any) -> None:

@@ -171,7 +171,7 @@ class ParsedHISection:
     title_name: str | None  # e.g., "Taxation"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedHISubsection"] = field(default_factory=list)
+    subsections: list[ParsedHISubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -183,7 +183,7 @@ class ParsedHISubsection:
 
     identifier: str  # e.g., "a", "1", "A"
     text: str
-    children: list["ParsedHISubsection"] = field(default_factory=list)
+    children: list[ParsedHISubsection] = field(default_factory=list)
 
 
 class HIConverterError(Exception):
@@ -304,7 +304,7 @@ class HIConverter:
         if "." in section_part:
             # Some decimal sections might be in the same file as the base section
             # Try the exact decimal format first
-            decimal_part = section_part.replace(".", "_")  # pragma: no cover
+            section_part.replace(".", "_")  # pragma: no cover
             return (  # pragma: no cover
                 f"{BASE_URL}/{volume}/HRS{padded_chapter}/HRS_{padded_chapter}-{section_padded}.htm"
             )
@@ -669,10 +669,7 @@ class HIConverter:
         section_numbers = []
 
         # Parse chapter string for pattern matching
-        if isinstance(chapter, str):
-            chapter_pattern = chapter  # pragma: no cover
-        else:
-            chapter_pattern = str(chapter)
+        chapter_pattern = chapter if isinstance(chapter, str) else str(chapter)
 
         # Find section links: HRS_0235-0051.htm or similar
         pattern = re.compile(
@@ -761,7 +758,7 @@ class HIConverter:
             self._client.close()
             self._client = None
 
-    def __enter__(self) -> "HIConverter":
+    def __enter__(self) -> HIConverter:
         return self
 
     def __exit__(self, *args) -> None:

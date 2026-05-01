@@ -152,7 +152,7 @@ class ParsedAKSection:
     title_name: str  # e.g., "Revenue and Taxation"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedAKSubsection"] = field(default_factory=list)
+    subsections: list[ParsedAKSubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -164,7 +164,7 @@ class ParsedAKSubsection:
 
     identifier: str  # e.g., "a", "1", "A"
     text: str
-    children: list["ParsedAKSubsection"] = field(default_factory=list)
+    children: list[ParsedAKSubsection] = field(default_factory=list)
 
 
 class AKConverterError(Exception):
@@ -620,7 +620,7 @@ class AKConverter:
         except httpx.HTTPError as e:  # pragma: no cover
             raise AKConverterError(
                 f"Failed to fetch section {section_number}: {e}", url
-            )  # pragma: no cover
+            ) from e  # pragma: no cover
 
         # Parse the HTML for the specific section
         parsed = self._parse_section_html(html, section_number, url)
@@ -723,7 +723,7 @@ class AKConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "AKConverter":
+    def __enter__(self) -> AKConverter:
         return self
 
     def __exit__(self, *args) -> None:

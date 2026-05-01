@@ -31,16 +31,17 @@ Usage:
     xml_content = converter.download_legislation("act", "public", 2007, 97)
 """
 
+import contextlib
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
-from typing import Iterator, Literal, Optional
+from typing import Literal
 from xml.etree import ElementTree as ET
 
 import httpx
 from pydantic import BaseModel, Field
-
 
 # NZ legislation types
 NZLegislationType = Literal["act", "bill", "regulation", "sop"]
@@ -55,8 +56,8 @@ class NZProvision:
     label: str  # Section number, e.g., "1", "37A"
     heading: str  # Section title
     text: str = ""  # Direct text content
-    subprovisions: list["NZProvision"] = field(default_factory=list)
-    paragraphs: list["NZLabeledParagraph"] = field(default_factory=list)
+    subprovisions: list[NZProvision] = field(default_factory=list)
+    paragraphs: list[NZLabeledParagraph] = field(default_factory=list)
 
 
 @dataclass
@@ -65,7 +66,7 @@ class NZLabeledParagraph:
 
     label: str  # e.g., "a", "i"
     text: str
-    children: list["NZLabeledParagraph"] = field(default_factory=list)
+    children: list[NZLabeledParagraph] = field(default_factory=list)
 
 
 @dataclass
@@ -81,9 +82,9 @@ class NZLegislation:
 
     # Metadata
     title: str
-    short_title: Optional[str] = None
-    assent_date: Optional[date] = None
-    commencement_date: Optional[date] = None
+    short_title: str | None = None
+    assent_date: date | None = None
+    commencement_date: date | None = None
     stage: str = "in-force"  # in-force, repealed, etc.
 
     # Content
@@ -91,15 +92,15 @@ class NZLegislation:
     provisions: list[NZProvision] = field(default_factory=list)
 
     # Administrative
-    administering_ministry: Optional[str] = None
-    version_date: Optional[date] = None
+    administering_ministry: str | None = None
+    version_date: date | None = None
 
     @property
     def citation(self) -> str:
         """Return standard NZ citation format."""
-        type_name = self.legislation_type.title()
+        self.legislation_type.title()
         if self.legislation_type == "sop":
-            type_name = "Supplementary Order Paper"
+            pass
         return f"{self.title} {self.year} No {self.number}"
 
     @property
@@ -140,7 +141,7 @@ class NZPCOConverter:
             timeout: HTTP request timeout in seconds
         """
         self.timeout = timeout
-        self._client: Optional[httpx.Client] = None
+        self._client: httpx.Client | None = None
 
     @property
     def client(self) -> httpx.Client:
@@ -159,7 +160,7 @@ class NZPCOConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "NZPCOConverter":
+    def __enter__(self) -> NZPCOConverter:
         return self
 
     def __exit__(self, *args) -> None:
@@ -276,7 +277,7 @@ class NZPCOConverter:
             version_date=version_date,
         )
 
-    def _parse_provision(self, elem: ET.Element) -> Optional[NZProvision]:
+    def _parse_provision(self, elem: ET.Element) -> NZProvision | None:
         """Parse a <prov> element."""
         prov_id = elem.get("id", "")
 
@@ -329,7 +330,7 @@ class NZPCOConverter:
             paragraphs=paragraphs,
         )
 
-    def _parse_subprovision(self, elem: ET.Element) -> Optional[NZProvision]:
+    def _parse_subprovision(self, elem: ET.Element) -> NZProvision | None:
         """Parse a <subprov> element."""
         # Get label
         label_elem = elem.find("label")
@@ -364,7 +365,7 @@ class NZPCOConverter:
             paragraphs=paragraphs,
         )
 
-    def _parse_label_para(self, elem: ET.Element) -> Optional[NZLabeledParagraph]:
+    def _parse_label_para(self, elem: ET.Element) -> NZLabeledParagraph | None:
         """Parse a <label-para> element."""
         # Get label
         label_elem = elem.find("label")
@@ -412,7 +413,7 @@ class NZPCOConverter:
             children=children,
         )
 
-    def _find_parent(self, root: ET.Element, target: ET.Element) -> Optional[ET.Element]:
+    def _find_parent(self, root: ET.Element, target: ET.Element) -> ET.Element | None:
         """Find the parent of target within root's subtree."""
         for child in root:  # pragma: no cover
             if child == target:  # pragma: no cover
@@ -454,7 +455,7 @@ class NZPCOConverter:
 
         return " ".join(filter(None, parts))
 
-    def _parse_date(self, date_str: Optional[str]) -> Optional[date]:
+    def _parse_date(self, date_str: str | None) -> date | None:
         """Parse a date string in YYYY-MM-DD format."""
         if not date_str:
             return None
@@ -515,7 +516,7 @@ class NZPCOConverter:
 
         return items
 
-    def _parse_atom_entry(self, entry: ET.Element, ns: dict) -> Optional[NZRSSItem]:
+    def _parse_atom_entry(self, entry: ET.Element, ns: dict) -> NZRSSItem | None:
         """Parse an Atom <entry> element."""
         # Get ID (usually the URL)
         id_elem = entry.find("atom:id", ns)
@@ -563,7 +564,7 @@ class NZPCOConverter:
             status=status,
         )
 
-    def _parse_rss_item(self, item: ET.Element) -> Optional[NZRSSItem]:
+    def _parse_rss_item(self, item: ET.Element) -> NZRSSItem | None:
         """Parse an RSS 2.0 <item> element."""
         # Get link/guid
         link_elem = item.find("link")
@@ -582,13 +583,11 @@ class NZPCOConverter:
         pub_date_elem = item.find("pubDate")
         published = datetime.now()
         if pub_date_elem is not None and pub_date_elem.text:
-            try:
+            with contextlib.suppress(ValueError):
                 # RFC 822 format
                 published = datetime.strptime(
                     pub_date_elem.text.strip(), "%a, %d %b %Y %H:%M:%S %z"
                 )
-            except ValueError:
-                pass
 
         # Parse URL
         leg_type, subtype, year, number = self._parse_legislation_url(item_id)
@@ -604,7 +603,7 @@ class NZPCOConverter:
             number=number,
         )
 
-    def _parse_iso_datetime(self, dt_str: Optional[str]) -> Optional[datetime]:
+    def _parse_iso_datetime(self, dt_str: str | None) -> datetime | None:
         """Parse an ISO 8601 datetime string."""
         if not dt_str:
             return None  # pragma: no cover
@@ -661,7 +660,7 @@ class NZPCOConverter:
         year: int,
         number: int,
         version: str = "latest",
-    ) -> Optional[str]:
+    ) -> str | None:
         """Download legislation XML from legislation.govt.nz.
 
         Note: The website uses WAF protection which may block automated access.
@@ -762,7 +761,7 @@ if __name__ == "__main__":
 
         if legislation.provisions:
             prov = legislation.provisions[0]
-            print(f"\nFirst provision:")
+            print("\nFirst provision:")
             print(f"  Section {prov.label}: {prov.heading}")
             if prov.text:
                 print(f"  Text: {prov.text[:200]}...")

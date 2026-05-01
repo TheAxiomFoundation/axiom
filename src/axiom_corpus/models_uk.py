@@ -88,7 +88,7 @@ class UKCitation(BaseModel):
     model_config = {"extra": "forbid"}
 
     @classmethod
-    def from_string(cls, citation_str: str) -> "UKCitation":
+    def from_string(cls, citation_str: str) -> UKCitation:
         """Parse a UK legislation citation string.
 
         Args:
@@ -214,7 +214,7 @@ class UKSubsection(BaseModel):
     id: str | None = Field(None, description="Subsection identifier (e.g., '1', 'a', 'i')")
     heading: str | None = Field(None, description="Subsection heading if present")
     text: str = Field("", description="Text content")
-    children: list["UKSubsection"] = Field(
+    children: list[UKSubsection] = Field(
         default_factory=list, description="Child subsections/paragraphs"
     )
 

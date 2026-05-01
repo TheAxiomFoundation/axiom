@@ -156,7 +156,7 @@ class ParsedMSSection:
     chapter_title: str  # e.g., "Income Tax and Withholding"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedMSSubsection"] = field(default_factory=list)
+    subsections: list[ParsedMSSubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -168,7 +168,7 @@ class ParsedMSSubsection:
 
     identifier: str  # e.g., "1", "a", "A"
     text: str
-    children: list["ParsedMSSubsection"] = field(default_factory=list)
+    children: list[ParsedMSSubsection] = field(default_factory=list)
 
 
 class MSConverterError(Exception):
@@ -355,23 +355,22 @@ class MSConverter:
                 if child == section_elem:
                     started = True
                     continue
-                if started:
-                    if isinstance(child, Tag):
-                        # Stop at next section heading
-                        if child.name in ("h3", "h2"):
-                            break  # pragma: no cover
-                        # Also stop at subsection/annotation headers
-                        if child.name == "h4" and any(
-                            kw in child.get_text().lower()
-                            for kw in [
-                                "cross references",
-                                "research references",
-                                "judicial decisions",
-                            ]
-                        ):
-                            break  # pragma: no cover
-                        content_parts.append(child.get_text(separator="\n", strip=True))
-                        html_parts.append(str(child))
+                if started and isinstance(child, Tag):
+                    # Stop at next section heading
+                    if child.name in ("h3", "h2"):
+                        break  # pragma: no cover
+                    # Also stop at subsection/annotation headers
+                    if child.name == "h4" and any(
+                        kw in child.get_text().lower()
+                        for kw in [
+                            "cross references",
+                            "research references",
+                            "judicial decisions",
+                        ]
+                    ):
+                        break  # pragma: no cover
+                    content_parts.append(child.get_text(separator="\n", strip=True))
+                    html_parts.append(str(child))
         else:
             # Fallback: get siblings
             for sibling in section_elem.find_next_siblings():  # pragma: no cover
@@ -608,8 +607,6 @@ class MSConverter:
 
         # Find section navigation links for this chapter
         # Pattern: t{title}c{chapter}s{section_number}-snav
-        chapter_id = f"t{title}c{chapter:02d}"
-        chapter_id_alt = f"t{title}c{chapter}"
 
         # Also look for direct section IDs
         section_pattern = re.compile(rf"t{title}c0*{chapter}s({title}-{chapter}-[\w-]+)")
@@ -712,7 +709,7 @@ class MSConverter:
             self._client = None  # pragma: no cover
         self._title_cache.clear()
 
-    def __enter__(self) -> "MSConverter":
+    def __enter__(self) -> MSConverter:
         return self
 
     def __exit__(self, *args) -> None:

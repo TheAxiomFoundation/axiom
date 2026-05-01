@@ -124,7 +124,7 @@ class ParsedMASection:
     title_name: str  # e.g., "Taxation"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedMASubsection"] = field(default_factory=list)
+    subsections: list[ParsedMASubsection] = field(default_factory=list)
     history: str | None = None  # Amendment history
     source_url: str = ""
     effective_date: date | None = None
@@ -136,7 +136,7 @@ class ParsedMASubsection:
 
     identifier: str  # e.g., "a", "1", "A"
     text: str
-    children: list["ParsedMASubsection"] = field(default_factory=list)
+    children: list[ParsedMASubsection] = field(default_factory=list)
 
 
 class MAConverterError(Exception):
@@ -581,7 +581,7 @@ class MAConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "MAConverter":
+    def __enter__(self) -> MAConverter:
         return self
 
     def __exit__(self, *args) -> None:

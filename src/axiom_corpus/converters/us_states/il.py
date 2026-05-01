@@ -184,7 +184,7 @@ class ParsedILSection:
     act_name: str  # e.g., "Illinois Income Tax Act"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedILSubsection"] = field(default_factory=list)
+    subsections: list[ParsedILSubsection] = field(default_factory=list)
     history: str | None = None  # Source note (P.A. references)
     source_url: str = ""
     effective_date: date | None = None
@@ -196,7 +196,7 @@ class ParsedILSubsection:
 
     identifier: str  # e.g., "a", "1", "A"
     text: str
-    children: list["ParsedILSubsection"] = field(default_factory=list)
+    children: list[ParsedILSubsection] = field(default_factory=list)
 
 
 class ILConverterError(Exception):
@@ -689,7 +689,7 @@ class ILConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "ILConverter":
+    def __enter__(self) -> ILConverter:
         return self
 
     def __exit__(self, *args) -> None:

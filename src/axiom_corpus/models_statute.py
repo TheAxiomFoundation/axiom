@@ -143,7 +143,7 @@ class StatuteSubsection(BaseModel):
     identifier: str = Field(..., description="Subsection identifier (e.g., 'a', '1', 'A')")
     heading: str | None = Field(None, description="Subsection heading if present")
     text: str = Field(..., description="Text content of this subsection")
-    children: list["StatuteSubsection"] = Field(
+    children: list[StatuteSubsection] = Field(
         default_factory=list, description="Child subsections"
     )
 

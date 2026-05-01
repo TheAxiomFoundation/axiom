@@ -12,10 +12,11 @@ The eCFR XML uses a hierarchical DIV structure:
 Source: https://github.com/usgpo/bulk-data/blob/main/ECFR-XML-User-Guide.md
 """
 
+import contextlib
 import logging
 import re
+from collections.abc import Iterator
 from datetime import date
-from typing import Iterator, Optional
 from xml.etree import ElementTree as ET
 
 from axiom_corpus.models_regulation import (
@@ -27,7 +28,7 @@ from axiom_corpus.models_regulation import (
 logger = logging.getLogger(__name__)
 
 
-def extract_subsection_id(text: str) -> Optional[str]:
+def extract_subsection_id(text: str) -> str | None:
     """Extract subsection ID from paragraph text.
 
     Args:
@@ -42,7 +43,7 @@ def extract_subsection_id(text: str) -> Optional[str]:
     return None
 
 
-def extract_heading(text: str) -> Optional[str]:
+def extract_heading(text: str) -> str | None:
     """Extract heading from italic text in paragraph.
 
     Args:
@@ -109,10 +110,8 @@ def _parse_section_element(section_elem: ET.Element, authority: str = "") -> Reg
     if node:
         parts = node.split(":")
         if len(parts) >= 1:
-            try:
+            with contextlib.suppress(ValueError):
                 title = int(parts[0])
-            except ValueError:  # pragma: no cover
-                pass
 
     # Parse section number from N attribute
     section_match = re.search(r"§?\s*(\d+)\.(\d+(?:-\d+)?)", section_n)
@@ -332,7 +331,7 @@ class CFRParser:
                     )
                     continue  # pragma: no cover
 
-    def get_section(self, part: int, section: str) -> Optional[Regulation]:
+    def get_section(self, part: int, section: str) -> Regulation | None:
         """Get a specific section by part and section number.
 
         Args:

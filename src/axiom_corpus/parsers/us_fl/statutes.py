@@ -115,7 +115,7 @@ class FLSection:
     text: str
     html: str
     url: str
-    subsections: list["FLSubsection"] = field(default_factory=list)
+    subsections: list[FLSubsection] = field(default_factory=list)
 
 
 @dataclass
@@ -124,7 +124,7 @@ class FLSubsection:
 
     identifier: str  # e.g., "1", "a", "I"
     text: str
-    children: list["FLSubsection"] = field(default_factory=list)
+    children: list[FLSubsection] = field(default_factory=list)
 
 
 class FLStatutesError(Exception):
@@ -409,7 +409,7 @@ class FLStatutesClient:
         """Close the HTTP client."""
         self.client.close()  # pragma: no cover
 
-    def __enter__(self) -> "FLStatutesClient":
+    def __enter__(self) -> FLStatutesClient:
         return self  # pragma: no cover
 
     def __exit__(self, *args) -> None:
@@ -445,7 +445,7 @@ class FLStateCitation:
         return f"state/fl/{chapter}/{self.section}"  # pragma: no cover
 
     @classmethod
-    def from_string(cls, cite: str) -> "FLStateCitation":
+    def from_string(cls, cite: str) -> FLStateCitation:
         """Parse a citation string like 'Fla. Stat. section 212.05(1)(a)'.
 
         Handles formats:
@@ -470,7 +470,7 @@ class FLStateCitation:
 
         # Parse subsections like (1)(a)(I) into 1/a/I
         subsection = None  # pragma: no cover
-        remainder = cite[match.end() :]  # pragma: no cover
+        cite[match.end() :]  # pragma: no cover
         sub_pattern = r"\(([^)]+)\)"  # pragma: no cover
         subs = re.findall(sub_pattern, cite)  # pragma: no cover
         if subs:  # pragma: no cover

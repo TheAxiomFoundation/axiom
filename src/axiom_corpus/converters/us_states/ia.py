@@ -163,7 +163,7 @@ class ParsedIASection:
     title_roman: str | None  # e.g., "X"
     title_name: str | None  # e.g., "Financial Resources"
     text: str  # Full text content
-    subsections: list["ParsedIASubsection"] = field(default_factory=list)
+    subsections: list[ParsedIASubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -175,7 +175,7 @@ class ParsedIASubsection:
 
     identifier: str  # e.g., "1", "a", "A"
     text: str
-    children: list["ParsedIASubsection"] = field(default_factory=list)
+    children: list[ParsedIASubsection] = field(default_factory=list)
 
 
 class IAConverterError(Exception):
@@ -799,7 +799,7 @@ class IAConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "IAConverter":
+    def __enter__(self) -> IAConverter:
         return self
 
     def __exit__(self, *args) -> None:

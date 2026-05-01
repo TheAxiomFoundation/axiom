@@ -81,7 +81,7 @@ class ParsedORSection:
     chapter_title: str  # e.g., "Personal Income Tax"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedORSubsection"] = field(default_factory=list)
+    subsections: list[ParsedORSubsection] = field(default_factory=list)
     history: str | None = None  # History note like "[1969 c.493 §11; ...]"
     source_url: str = ""
     is_repealed: bool = False  # Section was repealed
@@ -93,7 +93,7 @@ class ParsedORSubsection:
 
     identifier: str  # e.g., "1", "a", "A", "i"
     text: str
-    children: list["ParsedORSubsection"] = field(default_factory=list)
+    children: list[ParsedORSubsection] = field(default_factory=list)
 
 
 class ORConverterError(Exception):
@@ -606,7 +606,7 @@ class ORConverter:
         """
         if chapters is None:  # pragma: no cover
             # Convert string keys to int, skipping any with letter suffixes like "308A"
-            chapters = [int(c) for c in OR_TAX_CHAPTERS.keys() if c.isdigit()]  # pragma: no cover
+            chapters = [int(c) for c in OR_TAX_CHAPTERS if c.isdigit()]  # pragma: no cover
 
         for chapter in chapters:  # pragma: no cover
             yield from self.iter_chapter(chapter)  # pragma: no cover
@@ -617,7 +617,7 @@ class ORConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "ORConverter":
+    def __enter__(self) -> ORConverter:
         return self
 
     def __exit__(self, *args) -> None:
@@ -661,7 +661,7 @@ def download_or_tax_chapters() -> Iterator[Section]:
     """
     with ORConverter() as converter:  # pragma: no cover
         # Convert string keys to int, skipping any with letter suffixes like "308A"
-        chapters = [int(c) for c in OR_TAX_CHAPTERS.keys() if c.isdigit()]  # pragma: no cover
+        chapters = [int(c) for c in OR_TAX_CHAPTERS if c.isdigit()]  # pragma: no cover
         yield from converter.iter_chapters(chapters)  # pragma: no cover
 
 
@@ -672,5 +672,5 @@ def download_or_welfare_chapters() -> Iterator[Section]:
         Section objects
     """
     with ORConverter() as converter:  # pragma: no cover
-        chapters = [int(c) for c in OR_WELFARE_CHAPTERS.keys()]  # pragma: no cover
+        chapters = [int(c) for c in OR_WELFARE_CHAPTERS]  # pragma: no cover
         yield from converter.iter_chapters(chapters)  # pragma: no cover

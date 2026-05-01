@@ -101,7 +101,7 @@ class ParsedVASection:
     article_name: str | None  # e.g., "Rates"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedVASubsection"] = field(default_factory=list)
+    subsections: list[ParsedVASubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -113,7 +113,7 @@ class ParsedVASubsection:
 
     identifier: str  # e.g., "A", "1", "a"
     text: str
-    children: list["ParsedVASubsection"] = field(default_factory=list)
+    children: list[ParsedVASubsection] = field(default_factory=list)
 
 
 class VAConverterError(Exception):
@@ -672,7 +672,7 @@ class VAConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "VAConverter":
+    def __enter__(self) -> VAConverter:
         return self
 
     def __exit__(self, *args) -> None:

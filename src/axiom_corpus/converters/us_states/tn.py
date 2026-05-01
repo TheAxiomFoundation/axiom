@@ -84,7 +84,7 @@ class ParsedTNSection:
     part_name: str | None  # e.g., "Miscellaneous Provisions"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedTNSubsection"] = field(default_factory=list)
+    subsections: list[ParsedTNSubsection] = field(default_factory=list)
     history: str | None = None  # History/Acts note
     cross_references: list[str] = field(default_factory=list)
     source_url: str = ""
@@ -96,7 +96,7 @@ class ParsedTNSubsection:
 
     identifier: str  # e.g., "a", "1", "A"
     text: str
-    children: list["ParsedTNSubsection"] = field(default_factory=list)
+    children: list[ParsedTNSubsection] = field(default_factory=list)
 
 
 class TNConverterError(Exception):
@@ -204,10 +204,10 @@ class TNConverter:
 
         try:
             return int(parts[0]), int(parts[1]), int(parts[2])
-        except ValueError:  # pragma: no cover
+        except ValueError as exc:  # pragma: no cover
             raise TNConverterError(
                 f"Invalid section number format: {section_number}"
-            )  # pragma: no cover
+            ) from exc  # pragma: no cover
 
     def _build_section_id(self, section_number: str) -> str:
         """Build the HTML ID for a section.
@@ -532,7 +532,7 @@ class TNConverter:
         try:
             html = self._get_title_html(title)
         except httpx.HTTPStatusError as e:  # pragma: no cover
-            raise TNConverterError(f"Failed to fetch title {title}: {e}", url)  # pragma: no cover
+            raise TNConverterError(f"Failed to fetch title {title}: {e}", url) from e  # pragma: no cover
 
         soup = BeautifulSoup(html, "html.parser")
         parsed = self._parse_section_html(soup, section_number, url)
@@ -548,7 +548,7 @@ class TNConverter:
         Returns:
             List of section numbers (e.g., ["67-1-101", "67-1-102", ...])
         """
-        url = self._build_title_url(title)
+        self._build_title_url(title)
         html = self._get_title_html(title)
         soup = BeautifulSoup(html, "html.parser")
 
@@ -617,7 +617,7 @@ class TNConverter:
             self._client = None  # pragma: no cover
         self._title_cache.clear()
 
-    def __enter__(self) -> "TNConverter":
+    def __enter__(self) -> TNConverter:
         return self
 
     def __exit__(self, *args) -> None:

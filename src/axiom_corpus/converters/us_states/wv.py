@@ -156,7 +156,7 @@ class ParsedWVSection:
     article_name: str | None  # e.g., "Personal Income Tax"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedWVSubsection"] = field(default_factory=list)
+    subsections: list[ParsedWVSubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -168,7 +168,7 @@ class ParsedWVSubsection:
 
     identifier: str  # e.g., "1", "a", "A"
     text: str
-    children: list["ParsedWVSubsection"] = field(default_factory=list)
+    children: list[ParsedWVSubsection] = field(default_factory=list)
 
 
 class WVConverterError(Exception):
@@ -684,7 +684,6 @@ class WVConverter:
         soup = BeautifulSoup(html, "html.parser")
 
         section_numbers = []
-        article_prefix = f"{chapter}-{article}-"
 
         # Find section links: /11-21-1/, /11-21-3/, etc.
         pattern = re.compile(rf"/({chapter}-{re.escape(article)}-[\d\w]+)/")
@@ -785,7 +784,7 @@ class WVConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "WVConverter":
+    def __enter__(self) -> WVConverter:
         return self
 
     def __exit__(self, *args) -> None:

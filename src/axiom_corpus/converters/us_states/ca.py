@@ -32,15 +32,14 @@ California has 29 codes:
 
 import re
 import time
-from datetime import datetime, timezone
+from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterator
 
 import httpx
 from bs4 import BeautifulSoup
 
 from axiom_corpus.models_statute import Statute, StatuteSubsection
-
 
 # California Code abbreviations and full names
 CA_CODES: dict[str, str] = {
@@ -280,7 +279,7 @@ class CAStateConverter:
             article=article,
             history=history,
             source_url=source_url,
-            retrieved_at=datetime.now(timezone.utc),
+            retrieved_at=datetime.now(UTC),
         )
 
     def _extract_structure(self, content_div, level: str) -> str | None:

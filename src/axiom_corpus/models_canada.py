@@ -53,7 +53,7 @@ class CanadaSubsection(BaseModel):
     label: str = Field(..., description="Label (e.g., '(1)', '(a)', '(i)')")
     marginal_note: str | None = Field(None, description="Marginal note if present")
     text: str = Field(..., description="Text content")
-    children: list["CanadaSubsection"] = Field(default_factory=list)
+    children: list[CanadaSubsection] = Field(default_factory=list)
     level: str = Field(
         "subsection",
         description="Level: subsection, paragraph, subparagraph, clause",

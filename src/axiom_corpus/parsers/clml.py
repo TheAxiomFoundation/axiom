@@ -10,9 +10,9 @@ Structure:
 Source: https://legislation.github.io/data-documentation/
 """
 
+import contextlib
 import re
 from datetime import date
-from typing import Optional
 from xml.etree import ElementTree as ET
 
 from axiom_corpus.models_uk import (
@@ -23,7 +23,6 @@ from axiom_corpus.models_uk import (
     UKSection,
     UKSubsection,
 )
-
 
 # CLML namespaces
 NAMESPACES = {
@@ -134,7 +133,7 @@ def _parse_subsections(parent: ET.Element, ns: dict) -> list[UKSubsection]:
     return subsections
 
 
-def _parse_citation_from_uri(uri: str) -> Optional[UKCitation]:
+def _parse_citation_from_uri(uri: str) -> UKCitation | None:
     """Parse a UKCitation from a DocumentURI."""
     if not uri:
         return None
@@ -177,14 +176,12 @@ def _parse_amendments(root: ET.Element, ns: dict) -> list[UKAmendment]:
                 date_match = re.search(r"(\d{1,2})\.(\d{1,2})\.(\d{4})", text)
                 eff_date = date.today()
                 if date_match:
-                    try:
+                    with contextlib.suppress(ValueError):
                         eff_date = date(
                             int(date_match.group(3)),
                             int(date_match.group(2)),
                             int(date_match.group(1)),
                         )
-                    except ValueError:  # pragma: no cover
-                        pass
 
                 # Extract citation path from URI
                 amending_act = ""
@@ -273,10 +270,8 @@ def parse_section(xml_str: str) -> UKSection:
     if enacted_elem is not None:
         date_str = enacted_elem.get("Date", "")
         if date_str:
-            try:
+            with contextlib.suppress(ValueError):
                 enacted_date = date.fromisoformat(date_str)
-            except ValueError:  # pragma: no cover
-                pass
 
     # Parse extent
     extent_str = root.get("RestrictExtent", "")
@@ -335,10 +330,8 @@ def parse_act_metadata(xml_str: str) -> UKAct:
     if enacted_elem is not None:
         date_str = enacted_elem.get("Date", "")
         if date_str:
-            try:
+            with contextlib.suppress(ValueError):
                 enacted_date = date.fromisoformat(date_str)
-            except ValueError:  # pragma: no cover
-                pass
 
     # Get commencement date
     commencement_elem = root.find(".//ukm:ComingIntoForce/ukm:DateTime", ns)
@@ -346,19 +339,15 @@ def parse_act_metadata(xml_str: str) -> UKAct:
     if commencement_elem is not None:
         date_str = commencement_elem.get("Date", "")
         if date_str:
-            try:
+            with contextlib.suppress(ValueError):
                 commencement_date = date.fromisoformat(date_str)
-            except ValueError:  # pragma: no cover
-                pass
 
     # Get section count from NumberOfProvisions
     section_count = None
     provisions = root.get("NumberOfProvisions")
     if provisions:
-        try:
+        with contextlib.suppress(ValueError):
             section_count = int(provisions)
-        except ValueError:  # pragma: no cover
-            pass
 
     # Parse parts
     parts = []

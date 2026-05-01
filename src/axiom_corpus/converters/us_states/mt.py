@@ -102,7 +102,7 @@ class ParsedMTSection:
     part_title: str  # e.g., "Rate and General Provisions"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedMTSubsection"] = field(default_factory=list)
+    subsections: list[ParsedMTSubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
 
@@ -113,7 +113,7 @@ class ParsedMTSubsection:
 
     identifier: str  # e.g., "1", "a", "i"
     text: str
-    children: list["ParsedMTSubsection"] = field(default_factory=list)
+    children: list[ParsedMTSubsection] = field(default_factory=list)
 
 
 class MTConverterError(Exception):
@@ -528,9 +528,8 @@ class MTConverter:
         # Find section citations in spans
         for span in soup.find_all("span", class_="citation"):
             citation = span.get_text(strip=True)
-            if re.match(r"\d+-\d+-\d+", citation):
-                if citation not in section_numbers:
-                    section_numbers.append(citation)
+            if re.match(r"\d+-\d+-\d+", citation) and citation not in section_numbers:
+                section_numbers.append(citation)
 
         return section_numbers
 
@@ -594,7 +593,7 @@ class MTConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "MTConverter":
+    def __enter__(self) -> MTConverter:
         return self
 
     def __exit__(self, *args) -> None:

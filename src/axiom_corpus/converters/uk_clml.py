@@ -35,7 +35,6 @@ import asyncio
 import re
 import time
 from pathlib import Path
-from typing import Optional, Union
 
 import httpx
 
@@ -57,7 +56,7 @@ class UKCLMLConverter:
 
     def __init__(
         self,
-        data_dir: Optional[Path] = None,
+        data_dir: Path | None = None,
         base_url: str = "https://www.legislation.gov.uk",
         rate_limit_delay: float = 0.2,
     ):
@@ -203,7 +202,7 @@ class UKCLMLConverter:
         ref: str,
         cache: bool = True,
         force: bool = False,
-    ) -> Union[UKSection, UKAct]:
+    ) -> UKSection | UKAct:
         """Fetch and parse UK legislation.
 
         Args:
@@ -239,7 +238,7 @@ class UKCLMLConverter:
         ref: str,
         cache: bool = True,
         force: bool = False,
-    ) -> Union[UKSection, UKAct]:
+    ) -> UKSection | UKAct:
         """Synchronous wrapper for fetch().
 
         Args:
@@ -296,7 +295,7 @@ class UKCLMLConverter:
 
 
 # Convenience function for quick access
-async def fetch_uk_legislation(ref: str) -> Union[UKSection, UKAct]:
+async def fetch_uk_legislation(ref: str) -> UKSection | UKAct:
     """Fetch UK legislation by reference.
 
     Args:

@@ -5,15 +5,13 @@ Downloads CFR titles from govinfo.gov and parses them into Regulation objects.
 Source: https://www.govinfo.gov/bulkdata/ECFR
 """
 
-import asyncio
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator, Optional
 
 import httpx
 
 from axiom_corpus.models_regulation import Regulation
 from axiom_corpus.parsers.cfr import CFRParser
-
 
 # CFR titles that contain regulations (1-50, with some gaps)
 CFR_TITLES = list(range(1, 51))
@@ -28,7 +26,7 @@ class ECFRFetcher:
 
     def __init__(
         self,
-        data_dir: Optional[Path] = None,
+        data_dir: Path | None = None,
         base_url: str = "https://www.govinfo.gov/bulkdata/ECFR",
     ):
         """Initialize the fetcher.
@@ -103,7 +101,7 @@ class ECFRFetcher:
     def parse_title(
         self,
         xml_path: Path,
-        parts: Optional[list[int]] = None,
+        parts: list[int] | None = None,
     ) -> Iterator[Regulation]:
         """Parse a downloaded CFR title XML file.
 
@@ -153,7 +151,7 @@ class ECFRFetcher:
 
 async def download_cfr_title(
     title: int,
-    data_dir: Optional[Path] = None,
+    data_dir: Path | None = None,
     force: bool = False,
 ) -> Path:
     """Convenience function to download a CFR title.

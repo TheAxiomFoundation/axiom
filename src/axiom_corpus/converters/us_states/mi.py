@@ -23,18 +23,17 @@ The Michigan XML format includes:
 Body text uses HTML-like tags: <Section-Body>, <Paragraph>, <P>, etc.
 """
 
+import contextlib
 import html
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from datetime import date, datetime
-from typing import Optional
+from datetime import date
 from xml.etree import ElementTree as ET
 
 import httpx
 
 from axiom_corpus.models import Citation, Section, Subsection
-
 
 # Base URLs for Michigan Legislature
 BASE_URL = "https://legislature.mi.gov/documents/mcl"
@@ -51,10 +50,10 @@ class MCLCitation:
 
     chapter: int
     section: str
-    subsection: Optional[str] = None
+    subsection: str | None = None
 
     @classmethod
-    def from_mcl_number(cls, mcl_number: str) -> "MCLCitation":
+    def from_mcl_number(cls, mcl_number: str) -> MCLCitation:
         """Parse MCL number like '206.30' or '206.30a'.
 
         Args:
@@ -103,7 +102,7 @@ class MCLSubsection:
 
     identifier: str  # e.g., "1", "a", "i"
     text: str
-    children: list["MCLSubsection"] = field(default_factory=list)
+    children: list[MCLSubsection] = field(default_factory=list)
 
 
 @dataclass
@@ -118,8 +117,8 @@ class MCLSection:
     repealed: bool = False
     history: list[MCLHistory] = field(default_factory=list)
     subsections: list[MCLSubsection] = field(default_factory=list)
-    editors_notes: Optional[str] = None
-    commentary: Optional[str] = None
+    editors_notes: str | None = None
+    commentary: str | None = None
 
 
 @dataclass
@@ -131,9 +130,9 @@ class MCLChapter:
     title: str
     repealed: bool = False
     sections: list[MCLSection] = field(default_factory=list)
-    act_name: Optional[str] = None
-    short_title: Optional[str] = None
-    long_title: Optional[str] = None
+    act_name: str | None = None
+    short_title: str | None = None
+    long_title: str | None = None
 
 
 def parse_body_text(body_text: str) -> tuple[str, list[MCLSubsection]]:
@@ -395,7 +394,7 @@ class MichiganConverter:
 
         return sections
 
-    def _parse_section(self, elem: ET.Element) -> Optional[MCLSection]:
+    def _parse_section(self, elem: ET.Element) -> MCLSection | None:
         """Parse a single section element.
 
         Args:
@@ -457,10 +456,8 @@ class MichiganConverter:
             # Parse effective date
             effective_date = None
             if eff_date_str and not eff_date_str.startswith("0001"):
-                try:
+                with contextlib.suppress(ValueError):
                     effective_date = date.fromisoformat(eff_date_str[:10])
-                except ValueError:  # pragma: no cover
-                    pass
 
             if not effective_date:  # pragma: no cover
                 continue
@@ -490,7 +487,7 @@ class MichiganConverter:
 
         return history_list
 
-    def _get_text(self, elem: ET.Element, tag: str) -> Optional[str]:
+    def _get_text(self, elem: ET.Element, tag: str) -> str | None:
         """Get text content of a child element.
 
         Args:

@@ -6,7 +6,6 @@ Handles both native text PDFs and scanned documents.
 
 import re
 from io import BytesIO
-from typing import Union
 
 import fitz  # PyMuPDF
 
@@ -26,7 +25,7 @@ class PDFTextExtractor:
         """
         self.clean_whitespace = clean_whitespace
 
-    def extract_text(self, pdf_content: Union[bytes, BytesIO]) -> str:
+    def extract_text(self, pdf_content: bytes | BytesIO) -> str:
         """Extract text from PDF bytes.
 
         Args:
@@ -105,7 +104,7 @@ class PDFTextExtractor:
 
         return text
 
-    def get_metadata(self, pdf_content: Union[bytes, BytesIO]) -> dict:
+    def get_metadata(self, pdf_content: bytes | BytesIO) -> dict:
         """Extract metadata from a PDF document.
 
         Args:

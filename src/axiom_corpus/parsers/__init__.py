@@ -15,11 +15,11 @@ from axiom_corpus.parsers.us.statutes import USLMParser
 # Generic state parser (new unified architecture)
 try:
     from axiom_corpus.parsers.generic.statutes import (
+        STATE_PARSERS,
         GenericStateParser,
         StateConfig,
         StateSection,
         StateSubsection,
-        STATE_PARSERS,
         get_parser_for_state,
         list_supported_states,
     )
@@ -50,8 +50,8 @@ try:
     from axiom_corpus.parsers.us_ca.statutes import (
         CA_CODES,
         CACodeParser,
-        CASection,
         CaliforniaStatutesParser,
+        CASection,
     )
 except ImportError:
     CA_CODES = {}
@@ -63,8 +63,8 @@ try:
     from axiom_corpus.parsers.us_fl.statutes import (
         FL_TAX_CHAPTERS,
         FL_WELFARE_CHAPTERS,
-        FLStatutesClient,
         FLSection,
+        FLStatutesClient,
     )
 except ImportError:
     FL_TAX_CHAPTERS = {}
@@ -75,8 +75,8 @@ except ImportError:
 try:
     from axiom_corpus.parsers.us_tx.statutes import (
         TX_CODES,
-        TXStatutesClient,
         TXSection,
+        TXStatutesClient,
     )
 except ImportError:
     TX_CODES = {}

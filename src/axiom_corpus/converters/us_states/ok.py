@@ -137,7 +137,7 @@ class ParsedOKSection:
     article: str | None  # e.g., "Article 1"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedOKSubsection"] = field(default_factory=list)
+    subsections: list[ParsedOKSubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -150,7 +150,7 @@ class ParsedOKSubsection:
 
     identifier: str  # e.g., "1", "a", "A"
     text: str
-    children: list["ParsedOKSubsection"] = field(default_factory=list)
+    children: list[ParsedOKSubsection] = field(default_factory=list)
 
 
 class OKConverterError(Exception):
@@ -686,7 +686,7 @@ class OKConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "OKConverter":
+    def __enter__(self) -> OKConverter:
         return self
 
     def __exit__(self, *args) -> None:

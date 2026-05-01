@@ -131,7 +131,7 @@ class ParsedWYSection:
     chapter_name: str | None  # e.g., "Ad Valorem Taxation"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedWYSubsection"] = field(default_factory=list)
+    subsections: list[ParsedWYSubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -143,7 +143,7 @@ class ParsedWYSubsection:
 
     identifier: str  # e.g., "a", "i", "A"
     text: str
-    children: list["ParsedWYSubsection"] = field(default_factory=list)
+    children: list[ParsedWYSubsection] = field(default_factory=list)
 
 
 class WYConverterError(Exception):
@@ -292,7 +292,7 @@ class WYConverter:
 
         # Extract section title from patterns like "39-13-101. Definitions."
         section_title = ""
-        title_pattern = re.compile(
+        re.compile(
             rf"{re.escape(section_number)}\.\s*([^.]+(?:\.[^.]+)*?)(?:\.\s*$|\.\s*\()"
         )
 
@@ -606,7 +606,7 @@ class WYConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "WYConverter":
+    def __enter__(self) -> WYConverter:
         return self
 
     def __exit__(self, *args) -> None:

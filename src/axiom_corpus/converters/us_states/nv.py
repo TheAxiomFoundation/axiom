@@ -107,7 +107,7 @@ class ParsedNVSection:
     title_name: str | None  # e.g., "Revenue and Taxation"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedNVSubsection"] = field(default_factory=list)
+    subsections: list[ParsedNVSubsection] = field(default_factory=list)
     history: str | None = None  # Source note / history
     source_url: str = ""
 
@@ -118,7 +118,7 @@ class ParsedNVSubsection:
 
     identifier: str  # e.g., "1", "a", "I"
     text: str
-    children: list["ParsedNVSubsection"] = field(default_factory=list)
+    children: list[ParsedNVSubsection] = field(default_factory=list)
 
 
 class NVConverterError(Exception):
@@ -640,7 +640,7 @@ class NVConverter:
             self._client = None  # pragma: no cover
         self._chapter_cache.clear()
 
-    def __enter__(self) -> "NVConverter":
+    def __enter__(self) -> NVConverter:
         return self
 
     def __exit__(self, *args) -> None:

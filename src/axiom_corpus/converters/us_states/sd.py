@@ -159,7 +159,7 @@ class ParsedSDSection:
     chapter_title: str | None  # e.g., "Department of Revenue"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedSDSubsection"] = field(default_factory=list)
+    subsections: list[ParsedSDSubsection] = field(default_factory=list)
     history: str | None = None  # Source/history note
     source_url: str = ""
     effective_date: date | None = None
@@ -172,7 +172,7 @@ class ParsedSDSubsection:
 
     identifier: str  # e.g., "1", "a", "A"
     text: str
-    children: list["ParsedSDSubsection"] = field(default_factory=list)
+    children: list[ParsedSDSubsection] = field(default_factory=list)
 
 
 class SDConverterError(Exception):
@@ -282,10 +282,7 @@ class SDConverter:
             title = title_str  # pragma: no cover
 
         # Chapter includes title and chapter number (e.g., "10-1", "28-7A")
-        if len(parts) >= 2:
-            chapter = f"{parts[0]}-{parts[1]}"
-        else:
-            chapter = parts[0]  # pragma: no cover
+        chapter = f"{parts[0]}-{parts[1]}" if len(parts) >= 2 else parts[0]
 
         return title, chapter
 
@@ -645,7 +642,7 @@ class SDConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "SDConverter":
+    def __enter__(self) -> SDConverter:
         return self
 
     def __exit__(self, *args) -> None:

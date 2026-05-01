@@ -18,7 +18,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from axiom_corpus.models_guidance import GuidanceType, RevenueProcedure
 from axiom_corpus.storage.guidance import GuidanceStorage
 
-
 # EITC-related Revenue Procedures with metadata
 EITC_REV_PROCS = [
     {
@@ -132,7 +131,7 @@ def add_rev_proc_metadata(db_path: str = "axiom.db") -> None:
             excerpt="Provides inflation-adjusted EITC amounts per IRC § 32(j)",
         )
 
-        print(f"  ✓ Stored and linked to IRC § 32")
+        print("  ✓ Stored and linked to IRC § 32")
 
 
 def main():

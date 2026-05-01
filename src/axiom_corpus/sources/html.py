@@ -11,7 +11,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from axiom_corpus.models_statute import Statute, StatuteSubsection
-from axiom_corpus.sources.base import SourceConfig, StatuteSource
+from axiom_corpus.sources.base import StatuteSource
 
 
 class HTMLSource(StatuteSource):

@@ -193,7 +193,7 @@ class ParsedMESection:
     part_title: str | None  # e.g., "Income Taxes"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedMESubsection"] = field(default_factory=list)
+    subsections: list[ParsedMESubsection] = field(default_factory=list)
     history: str | None = None  # Section history
     source_url: str = ""
     effective_date: date | None = None
@@ -206,7 +206,7 @@ class ParsedMESubsection:
     identifier: str  # e.g., "1", "1-A", "A", "a"
     heading: str | None  # Optional heading text
     text: str
-    children: list["ParsedMESubsection"] = field(default_factory=list)
+    children: list[ParsedMESubsection] = field(default_factory=list)
 
 
 class MEConverterError(Exception):
@@ -309,7 +309,6 @@ class MEConverter:
 
         # Extract section title from heading - usually in h3 or similar
         section_title = ""
-        title_heading = None
 
         # Look for pattern like "5219-S. Earned income credit"
         for heading in soup.find_all(["h1", "h2", "h3", "h4", "b", "strong"]):
@@ -319,7 +318,6 @@ class MEConverter:
             match = re.search(pattern, heading_text, re.IGNORECASE)
             if match:
                 section_title = match.group(1).strip()
-                title_heading = heading
                 break
 
         # Fallback: try to find the section number anywhere
@@ -332,7 +330,7 @@ class MEConverter:
                     break  # pragma: no cover
 
         # Get title info
-        title_name = ME_TITLES.get(title, f"Title {title}")
+        ME_TITLES.get(title, f"Title {title}")
 
         # Try to extract chapter info from navigation or breadcrumbs
         chapter_number = None
@@ -343,7 +341,7 @@ class MEConverter:
         # Look for chapter info in the page
         for link in soup.find_all("a"):
             href = link.get("href", "")
-            link_text = link.get_text(strip=True)
+            link.get_text(strip=True)
             # Match "Chapter 822" pattern
             if "ch" in href.lower():
                 ch_match = re.search(r"ch(\d+)", href.lower())
@@ -602,7 +600,7 @@ class MEConverter:
             if e.response.status_code == 404:  # pragma: no cover
                 raise MEConverterError(
                     f"Section {title} MRS {section_number} not found", url
-                )  # pragma: no cover
+                ) from e  # pragma: no cover
             raise  # pragma: no cover
         parsed = self._parse_section_html(html, title, section_number, url)
         return self._to_section(parsed)
@@ -690,7 +688,7 @@ class MEConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "MEConverter":
+    def __enter__(self) -> MEConverter:
         return self
 
     def __exit__(self, *args) -> None:

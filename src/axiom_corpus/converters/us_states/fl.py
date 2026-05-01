@@ -143,7 +143,7 @@ class ParsedFLSection:
     title_name: str | None  # e.g., "Taxation and Finance"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedFLSubsection"] = field(default_factory=list)
+    subsections: list[ParsedFLSubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -155,7 +155,7 @@ class ParsedFLSubsection:
 
     identifier: str  # e.g., "1", "a", "A"
     text: str
-    children: list["ParsedFLSubsection"] = field(default_factory=list)
+    children: list[ParsedFLSubsection] = field(default_factory=list)
 
 
 class FLConverterError(Exception):
@@ -650,7 +650,7 @@ class FLConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "FLConverter":
+    def __enter__(self) -> FLConverter:
         return self
 
     def __exit__(self, *args) -> None:

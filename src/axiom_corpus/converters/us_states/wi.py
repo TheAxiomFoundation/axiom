@@ -33,7 +33,6 @@ import time
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Optional
 
 import httpx
 from bs4 import BeautifulSoup
@@ -76,7 +75,7 @@ class ParsedWISection:
     subchapter: str | None  # e.g., "I" or "TAXATION OF INDIVIDUALS..."
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedWISubsection"] = field(default_factory=list)
+    subsections: list[ParsedWISubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -88,7 +87,7 @@ class ParsedWISubsection:
 
     identifier: str  # e.g., "1", "1m", "a", "1."
     text: str
-    children: list["ParsedWISubsection"] = field(default_factory=list)
+    children: list[ParsedWISubsection] = field(default_factory=list)
 
 
 class WIConverterError(Exception):
@@ -615,7 +614,7 @@ class WIConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "WIConverter":
+    def __enter__(self) -> WIConverter:
         return self
 
     def __exit__(self, *args) -> None:

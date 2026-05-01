@@ -196,7 +196,7 @@ class ParsedCTSection:
     title_name: str  # e.g., "Taxation"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedCTSubsection"] = field(default_factory=list)
+    subsections: list[ParsedCTSubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source: str | None = None  # Source/citation info
     annotations: list[str] = field(default_factory=list)
@@ -210,7 +210,7 @@ class ParsedCTSubsection:
     identifier: str  # e.g., "a", "1", "A"
     heading: str | None = None  # Optional subsection heading
     text: str = ""
-    children: list["ParsedCTSubsection"] = field(default_factory=list)
+    children: list[ParsedCTSubsection] = field(default_factory=list)
 
 
 class CTConverterError(Exception):
@@ -389,7 +389,7 @@ class CTConverter:
         )
 
         # Find chapter name from h2 element
-        h2 = soup.find("h2", class_="chap-no")
+        soup.find("h2", class_="chap-no")
         chap_name = soup.find("h2", class_="chap-name")
         if chap_name:
             chapter_title = chap_name.get_text(strip=True)
@@ -755,7 +755,7 @@ class CTConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "CTConverter":
+    def __enter__(self) -> CTConverter:
         return self
 
     def __exit__(self, *args) -> None:

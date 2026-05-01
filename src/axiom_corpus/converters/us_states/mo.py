@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 from datetime import date
 
 import httpx
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import BeautifulSoup
 
 from axiom_corpus.models import Citation, Section, Subsection
 
@@ -149,7 +149,7 @@ class ParsedMOSection:
     title_name: str | None  # e.g., "Taxation and Revenue"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedMOSubsection"] = field(default_factory=list)
+    subsections: list[ParsedMOSubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -161,7 +161,7 @@ class ParsedMOSubsection:
 
     identifier: str  # e.g., "1", "a", "A"
     text: str
-    children: list["ParsedMOSubsection"] = field(default_factory=list)
+    children: list[ParsedMOSubsection] = field(default_factory=list)
 
 
 class MOConverterError(Exception):
@@ -704,7 +704,7 @@ class MOConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "MOConverter":
+    def __enter__(self) -> MOConverter:
         return self
 
     def __exit__(self, *args) -> None:

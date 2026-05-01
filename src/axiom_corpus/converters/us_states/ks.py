@@ -79,7 +79,7 @@ class ParsedKSSection:
     article_title: str  # e.g., "Income Tax"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedKSSubsection"] = field(default_factory=list)
+    subsections: list[ParsedKSSubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -91,7 +91,7 @@ class ParsedKSSubsection:
 
     identifier: str  # e.g., "a", "1", "A"
     text: str
-    children: list["ParsedKSSubsection"] = field(default_factory=list)
+    children: list[ParsedKSSubsection] = field(default_factory=list)
 
 
 class KSConverterError(Exception):
@@ -546,7 +546,7 @@ class KSConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "KSConverter":
+    def __enter__(self) -> KSConverter:
         return self
 
     def __exit__(self, *args) -> None:

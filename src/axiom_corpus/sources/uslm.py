@@ -4,14 +4,12 @@ The US Code is published in USLM (United States Legislative Markup) XML format
 at uscode.house.gov. This adapter parses the XML and converts to unified Statute model.
 """
 
-import re
 from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 
 from axiom_corpus.models_statute import Statute, StatuteSubsection
 from axiom_corpus.sources.base import SourceConfig, StatuteSource
-
 
 # Federal codes (US Code titles)
 US_CODE_TITLES: dict[str, str] = {
@@ -217,13 +215,11 @@ class USLMSource(StatuteSource):
         """
         xml_file = self.download_title_xml(code)  # pragma: no cover
 
-        count = 0  # pragma: no cover
-        for section in self.parser.parse_file(xml_file):  # pragma: no cover
-            if max_sections and count >= max_sections:  # pragma: no cover
+        for count, section in enumerate(self.parser.parse_file(xml_file), 1):  # pragma: no cover
+            if max_sections and count > max_sections:  # pragma: no cover
                 return  # pragma: no cover
 
             statute = self._section_to_statute(section, code)  # pragma: no cover
-            count += 1  # pragma: no cover
             if progress_callback:  # pragma: no cover
                 progress_callback(count, section.citation.section)  # pragma: no cover
             yield statute  # pragma: no cover

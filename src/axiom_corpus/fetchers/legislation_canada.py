@@ -23,9 +23,9 @@ Usage:
 
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 import httpx
 

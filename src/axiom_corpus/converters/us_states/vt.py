@@ -139,7 +139,7 @@ class ParsedVTSection:
     section_title: str  # e.g., "Definitions"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedVTSubsection"] = field(default_factory=list)
+    subsections: list[ParsedVTSubsection] = field(default_factory=list)
     history: str | None = None  # Amendment history
     source_url: str = ""
     effective_date: date | None = None
@@ -151,7 +151,7 @@ class ParsedVTSubsection:
 
     identifier: str  # e.g., "1", "a", "A", "i"
     text: str
-    children: list["ParsedVTSubsection"] = field(default_factory=list)
+    children: list[ParsedVTSubsection] = field(default_factory=list)
 
 
 class VTConverterError(Exception):
@@ -655,7 +655,7 @@ class VTConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "VTConverter":
+    def __enter__(self) -> VTConverter:
         return self
 
     def __exit__(self, *args) -> None:

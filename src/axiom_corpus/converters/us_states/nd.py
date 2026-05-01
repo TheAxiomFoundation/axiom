@@ -28,13 +28,13 @@ Example:
 import re
 import time
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 
 import httpx
 from bs4 import BeautifulSoup
 
-from axiom_corpus.models import Citation, Section, Subsection
+from axiom_corpus.models import Citation, Section
 
 BASE_URL = "https://ndlegis.gov/cencode"
 
@@ -436,7 +436,7 @@ class NDConverter:
             chapter_name = ""
             for cell in cells[2:]:
                 text = cell.get_text(strip=True)
-                if text and not "Sections" in text:
+                if text and "Sections" not in text:
                     chapter_name = text
                     break
 
@@ -607,7 +607,7 @@ class NDConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "NDConverter":
+    def __enter__(self) -> NDConverter:
         return self
 
     def __exit__(self, *args) -> None:

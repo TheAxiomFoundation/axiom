@@ -96,7 +96,7 @@ class ParsedMDSection:
     section_title: str | None  # e.g., "State income tax rates" (if found)
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedMDSubsection"] = field(default_factory=list)
+    subsections: list[ParsedMDSubsection] = field(default_factory=list)
     history: str | None = None  # History note (not typically in MD statutes page)
     source_url: str = ""
 
@@ -107,7 +107,7 @@ class ParsedMDSubsection:
 
     identifier: str  # e.g., "a", "1", "i"
     text: str
-    children: list["ParsedMDSubsection"] = field(default_factory=list)
+    children: list[ParsedMDSubsection] = field(default_factory=list)
 
 
 class MDConverterError(Exception):
@@ -225,7 +225,7 @@ class MDConverter:
 
         # Decode HTML entities and clean up the text
         # Maryland uses &nbsp; for indentation and &sect; for section symbol
-        raw_text = statute_div.get_text(separator="\n", strip=True)
+        statute_div.get_text(separator="\n", strip=True)
 
         # Also parse the inner HTML to get cleaner text
         inner_soup = BeautifulSoup(statute_html, "html.parser")
@@ -472,7 +472,7 @@ class MDConverter:
         except Exception as e:  # pragma: no cover
             raise MDConverterError(
                 f"Failed to fetch sections for {article_code}: {e}", url
-            )  # pragma: no cover
+            ) from e  # pragma: no cover
 
         return [item["DisplayText"] for item in sections_data]
 
@@ -530,7 +530,7 @@ class MDConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "MDConverter":
+    def __enter__(self) -> MDConverter:
         return self
 
     def __exit__(self, *args) -> None:

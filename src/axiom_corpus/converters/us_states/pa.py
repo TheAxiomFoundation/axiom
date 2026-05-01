@@ -122,7 +122,7 @@ class ParsedPASection:
     chapter_title: str | None  # e.g., "Microenterprise Development"
     text: str  # Full text content
     html: str  # Raw HTML
-    subsections: list["ParsedPASubsection"] = field(default_factory=list)
+    subsections: list[ParsedPASubsection] = field(default_factory=list)
     history: str | None = None  # History note
     source_url: str = ""
     effective_date: date | None = None
@@ -136,7 +136,7 @@ class ParsedPASubsection:
     identifier: str  # e.g., "a", "1", "i"
     heading: str | None  # e.g., "General rule"
     text: str
-    children: list["ParsedPASubsection"] = field(default_factory=list)
+    children: list[ParsedPASubsection] = field(default_factory=list)
 
 
 class PAConverterError(Exception):
@@ -251,7 +251,7 @@ class PAConverter:
 
         # Look for section anchor patterns like "72c3116s"
         section_anchor = f"{title}c{section_number}s"
-        anchor_elem = soup.find("a", {"name": section_anchor})
+        soup.find("a", {"name": section_anchor})
 
         # Also try finding by section text pattern
         section_pattern = rf"§\s*{re.escape(section_number)}\."
@@ -276,17 +276,14 @@ class PAConverter:
         section_title = title_match.group(1).strip() if title_match else f"Section {section_number}"
 
         # Find section end (next section or end of document)
-        next_section = re.search(rf"§\s*\d+\.", after_section)
-        if next_section:
-            section_text = after_section[: next_section.start()]
-        else:
-            section_text = after_section
+        next_section = re.search(r"§\s*\d+\.", after_section)
+        section_text = after_section[:next_section.start()] if next_section else after_section
 
         # Extract chapter info if present
         chapter_number = None
         chapter_title = None
         chapter_match = re.search(
-            rf"CHAPTER\s+(\d+[A-Z]?)\s*\n\s*([^\n]+)", full_text[:section_start], re.IGNORECASE
+            r"CHAPTER\s+(\d+[A-Z]?)\s*\n\s*([^\n]+)", full_text[:section_start], re.IGNORECASE
         )
         if chapter_match:
             chapter_number = chapter_match.group(1)
@@ -610,7 +607,7 @@ class PAConverter:
             self._client.close()  # pragma: no cover
             self._client = None  # pragma: no cover
 
-    def __enter__(self) -> "PAConverter":
+    def __enter__(self) -> PAConverter:
         return self
 
     def __exit__(self, *args) -> None:
