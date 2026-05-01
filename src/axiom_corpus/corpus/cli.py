@@ -8,6 +8,7 @@ import os
 import sys
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 from axiom_corpus.corpus.analytics import (
     build_analytics_report,
@@ -19,7 +20,12 @@ from axiom_corpus.corpus.coverage import compare_provision_coverage
 from axiom_corpus.corpus.documents import extract_official_documents
 from axiom_corpus.corpus.ecfr import build_ecfr_inventory, ecfr_run_id, extract_ecfr
 from axiom_corpus.corpus.io import load_provisions, load_source_inventory
-from axiom_corpus.corpus.models import CorpusManifest, DocumentClass, ProvisionRecord
+from axiom_corpus.corpus.models import (
+    CorpusManifest,
+    CorpusSource,
+    DocumentClass,
+    ProvisionRecord,
+)
 from axiom_corpus.corpus.r2 import (
     DEFAULT_ARTIFACT_PREFIXES,
     build_artifact_report,
@@ -29,6 +35,7 @@ from axiom_corpus.corpus.r2 import (
 )
 from axiom_corpus.corpus.releases import ReleaseManifest, resolve_release_manifest_path
 from axiom_corpus.corpus.states import (
+    StateStatuteExtractReport,
     extract_cic_html_release,
     extract_cic_odt_release,
     extract_colorado_docx_release,
@@ -501,6 +508,275 @@ def _cmd_extract_colorado_docx(args: argparse.Namespace) -> int:
     return 0 if report.coverage.complete or args.allow_incomplete else 2
 
 
+def _cmd_extract_state_statutes(args: argparse.Namespace) -> int:
+    manifest_path = args.manifest
+    manifest = CorpusManifest.load(manifest_path)
+    manifest.require_unique_sources()
+    store = CorpusArtifactStore(args.base)
+    selected = [
+        source
+        for source in manifest.sources
+        if source.document_class == DocumentClass.STATUTE.value
+        and (not args.only_jurisdiction or source.jurisdiction in args.only_jurisdiction)
+        and (not args.only_source_id or source.source_id in args.only_source_id)
+    ]
+    if not selected:
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "version": manifest.version,
+                    "source_count": 0,
+                    "error": "no matching statute sources",
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 1
+
+    if args.dry_run:
+        plan_rows = [
+            _state_statute_plan_payload(
+                source,
+                manifest_path=manifest_path,
+                manifest_version=manifest.version,
+                limit_override=args.limit_per_source,
+            )
+            for source in selected
+        ]
+        print(
+            json.dumps(
+                {
+                    "dry_run": True,
+                    "version": manifest.version,
+                    "source_count": len(plan_rows),
+                    "rows": plan_rows,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0 if all(row["source_path_exists"] for row in plan_rows) else 1
+
+    rows: list[dict[str, Any]] = []
+    failures: list[dict[str, str]] = []
+    for source in selected:
+        try:
+            report = _extract_state_statute_source(
+                store,
+                manifest_path=manifest_path,
+                manifest_version=manifest.version,
+                source=source,
+                limit_override=args.limit_per_source,
+            )
+        except Exception as exc:
+            failures.append(
+                {
+                    "source_id": source.source_id,
+                    "jurisdiction": source.jurisdiction,
+                    "adapter": source.adapter,
+                    "error": str(exc),
+                }
+            )
+            continue
+        rows.append(
+            _state_statute_report_payload(
+                report,
+                source_id=source.source_id,
+                adapter=source.adapter,
+                version=source.version or manifest.version,
+            )
+        )
+
+    coverage_complete = bool(rows) and all(row["coverage_complete"] for row in rows)
+    payload = {
+        "version": manifest.version,
+        "source_count": len(selected),
+        "completed_count": len(rows),
+        "failed_count": len(failures),
+        "coverage_complete": coverage_complete,
+        "provisions_written": sum(int(row["provisions_written"]) for row in rows),
+        "rows": rows,
+        "failures": failures,
+    }
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    if failures:
+        return 1
+    return 0 if coverage_complete or args.allow_incomplete else 2
+
+
+def _extract_state_statute_source(
+    store: CorpusArtifactStore,
+    *,
+    manifest_path: Path,
+    manifest_version: str,
+    source: CorpusSource,
+    limit_override: int | None,
+) -> StateStatuteExtractReport:
+    options = _state_source_options(source)
+    adapter = _canonical_state_statute_adapter(source.adapter)
+    version = source.version or manifest_version
+    source_as_of = _optional_text(options.get("source_as_of"))
+    expression_date = _optional_text(options.get("expression_date"))
+    only_title = _optional_text(options.get("only_title"))
+    limit = limit_override if limit_override is not None else _optional_int(options.get("limit"))
+    if adapter == "dc-code":
+        return extract_dc_code(
+            store,
+            version=version,
+            source_dir=_required_manifest_path(manifest_path, options, "source_dir"),
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            limit=limit,
+        )
+    if adapter == "cic-html":
+        return extract_cic_html_release(
+            store,
+            jurisdiction=source.jurisdiction,
+            version=version,
+            release_dir=_required_manifest_path(manifest_path, options, "release_dir"),
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            limit=limit,
+        )
+    if adapter == "cic-odt":
+        return extract_cic_odt_release(
+            store,
+            jurisdiction=source.jurisdiction,
+            version=version,
+            release_dir=_required_manifest_path(manifest_path, options, "release_dir"),
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            limit=limit,
+        )
+    if adapter == "colorado-docx":
+        return extract_colorado_docx_release(
+            store,
+            version=version,
+            release_dir=_required_manifest_path(manifest_path, options, "release_dir"),
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            limit=limit,
+        )
+    raise ValueError(f"unsupported state statute adapter: {source.adapter}")
+
+
+def _state_statute_plan_payload(
+    source: CorpusSource,
+    *,
+    manifest_path: Path,
+    manifest_version: str,
+    limit_override: int | None,
+) -> dict[str, Any]:
+    options = _state_source_options(source)
+    adapter = _canonical_state_statute_adapter(source.adapter)
+    path_key = "source_dir" if adapter == "dc-code" else "release_dir"
+    source_path = _required_manifest_path(manifest_path, options, path_key)
+    return {
+        "source_id": source.source_id,
+        "jurisdiction": source.jurisdiction,
+        "document_class": source.document_class,
+        "adapter": adapter,
+        "version": source.version or manifest_version,
+        "source_path": str(source_path),
+        "source_path_exists": source_path.exists(),
+        "only_title": _optional_text(options.get("only_title")),
+        "limit": (
+            limit_override
+            if limit_override is not None
+            else _optional_int(options.get("limit"))
+        ),
+    }
+
+
+def _state_statute_report_payload(
+    report: StateStatuteExtractReport,
+    *,
+    source_id: str,
+    adapter: str,
+    version: str,
+) -> dict[str, Any]:
+    return {
+        "source_id": source_id,
+        "adapter": _canonical_state_statute_adapter(adapter),
+        "jurisdiction": report.jurisdiction,
+        "document_class": DocumentClass.STATUTE.value,
+        "version": version,
+        "title_count": report.title_count,
+        "container_count": report.container_count,
+        "section_count": report.section_count,
+        "skipped_source_count": report.skipped_source_count,
+        "error_count": len(report.errors),
+        "errors": list(report.errors[:20]),
+        "source_file_count": len(report.source_paths),
+        "provisions_written": report.provisions_written,
+        "inventory_path": str(report.inventory_path),
+        "provisions_path": str(report.provisions_path),
+        "coverage_path": str(report.coverage_path),
+        "coverage_complete": report.coverage.complete,
+        "source_count": report.coverage.source_count,
+        "provision_count": report.coverage.provision_count,
+        "matched_count": report.coverage.matched_count,
+        "missing_count": len(report.coverage.missing_from_provisions),
+        "extra_count": len(report.coverage.extra_provisions),
+    }
+
+
+def _state_source_options(source: CorpusSource) -> dict[str, Any]:
+    if source.options is None:
+        return {}
+    return dict(source.options)
+
+
+def _canonical_state_statute_adapter(adapter: str) -> str:
+    normalized = adapter.lower().replace("_", "-")
+    aliases = {
+        "dc": "dc-code",
+        "dc-code": "dc-code",
+        "dc-law-xml": "dc-code",
+        "cic-html": "cic-html",
+        "cic-state-code-html": "cic-html",
+        "cic-odt": "cic-odt",
+        "cic-state-code-odt": "cic-odt",
+        "colorado-docx": "colorado-docx",
+        "colorado-crs-docx": "colorado-docx",
+    }
+    if normalized not in aliases:
+        raise ValueError(f"unsupported state statute adapter: {adapter}")
+    return aliases[normalized]
+
+
+def _required_manifest_path(
+    manifest_path: Path,
+    options: dict[str, Any],
+    key: str,
+) -> Path:
+    value = options.get(key)
+    if value is None:
+        raise ValueError(f"missing required option: {key}")
+    path = Path(str(value))
+    if not path.is_absolute():
+        path = manifest_path.parent / path
+    return path
+
+
+def _optional_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    return str(value)
+
+
+def _optional_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    return int(value)
+
+
 def _cmd_extract_colorado_ccr(args: argparse.Namespace) -> int:
     store = CorpusArtifactStore(args.base)
     expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
@@ -830,6 +1106,19 @@ def build_parser() -> argparse.ArgumentParser:
     extract_colorado_docx_cmd.add_argument("--limit", type=int)
     extract_colorado_docx_cmd.add_argument("--allow-incomplete", action="store_true")
     extract_colorado_docx_cmd.set_defaults(func=_cmd_extract_colorado_docx)
+
+    extract_state_statutes_cmd = sub.add_parser(
+        "extract-state-statutes",
+        help="Run state statute extract adapters from a corpus manifest.",
+    )
+    extract_state_statutes_cmd.add_argument("--base", type=Path, required=True)
+    extract_state_statutes_cmd.add_argument("--manifest", type=Path, required=True)
+    extract_state_statutes_cmd.add_argument("--only-jurisdiction", action="append", default=[])
+    extract_state_statutes_cmd.add_argument("--only-source-id", action="append", default=[])
+    extract_state_statutes_cmd.add_argument("--limit-per-source", type=int)
+    extract_state_statutes_cmd.add_argument("--dry-run", action="store_true")
+    extract_state_statutes_cmd.add_argument("--allow-incomplete", action="store_true")
+    extract_state_statutes_cmd.set_defaults(func=_cmd_extract_state_statutes)
 
     extract_colorado_ccr_cmd = sub.add_parser(
         "extract-colorado-ccr",

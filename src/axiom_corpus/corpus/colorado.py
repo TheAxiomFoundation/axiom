@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, TextIO
 from urllib.parse import quote, urljoin
 
-import requests  # type: ignore[import-untyped]
+import requests
 from bs4 import BeautifulSoup
 
 from axiom_corpus.corpus.artifacts import CorpusArtifactStore

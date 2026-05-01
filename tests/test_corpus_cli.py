@@ -5,6 +5,7 @@ from axiom_corpus.corpus.coverage import ProvisionCoverageReport
 from axiom_corpus.corpus.documents import OfficialDocumentExtractReport
 from axiom_corpus.corpus.ecfr import EcfrExtractReport, EcfrInventory
 from axiom_corpus.corpus.models import ProvisionRecord, SourceInventoryItem
+from axiom_corpus.corpus.states import StateStatuteExtractReport
 from axiom_corpus.corpus.usc import UscExtractReport
 
 SAMPLE_USLM_CLI = """
@@ -380,6 +381,144 @@ def test_load_supabase_cli_replace_scope_dry_run(tmp_path, capsys):
     assert exit_code == 0
     assert payload["replace_scope"]["dry_run"] is True
     assert payload["rows_total"] == 1
+
+
+def test_extract_state_statutes_batch_cli(tmp_path, capsys, monkeypatch):
+    import axiom_corpus.corpus.cli as cli
+
+    base = tmp_path / "corpus"
+    html_release = tmp_path / "release76.2021.05.21"
+    odt_release = tmp_path / "release90.2023.03"
+    html_release.mkdir()
+    odt_release.mkdir()
+    manifest = tmp_path / "state-statutes.yaml"
+    manifest.write_text(
+        f"""
+version: "2026-04-29"
+sources:
+  - source_id: us-tn-tca
+    jurisdiction: us-tn
+    document_class: statute
+    adapter: cic-html
+    version: "2026-04-29"
+    options:
+      release_dir: {html_release.name}
+      source_as_of: "2021-05-21"
+  - source_id: us-va-code
+    jurisdiction: us-va
+    document_class: statute
+    adapter: cic-odt
+    version: "2026-04-29"
+    options:
+      release_dir: {odt_release.name}
+      source_as_of: "2023-03-01"
+"""
+    )
+    coverage = ProvisionCoverageReport(
+        jurisdiction="us-tn",
+        document_class="statute",
+        version="2026-04-29",
+        source_count=1,
+        provision_count=1,
+        matched_count=1,
+        missing_from_provisions=(),
+        extra_provisions=(),
+    )
+
+    def fake_html(*args, **kwargs):
+        assert kwargs["jurisdiction"] == "us-tn"
+        assert kwargs["release_dir"] == html_release
+        assert kwargs["source_as_of"] == "2021-05-21"
+        return StateStatuteExtractReport(
+            jurisdiction="us-tn",
+            title_count=1,
+            container_count=0,
+            section_count=1,
+            provisions_written=1,
+            inventory_path=base / "inventory/us-tn/statute/2026-04-29.json",
+            provisions_path=base / "provisions/us-tn/statute/2026-04-29.jsonl",
+            coverage_path=base / "coverage/us-tn/statute/2026-04-29.json",
+            coverage=coverage,
+            source_paths=(base / "sources/us-tn/statute/2026-04-29/title.html",),
+        )
+
+    def fake_odt(*args, **kwargs):
+        assert kwargs["jurisdiction"] == "us-va"
+        assert kwargs["release_dir"] == odt_release
+        assert kwargs["source_as_of"] == "2023-03-01"
+        return StateStatuteExtractReport(
+            jurisdiction="us-va",
+            title_count=1,
+            container_count=0,
+            section_count=1,
+            provisions_written=2,
+            inventory_path=base / "inventory/us-va/statute/2026-04-29.json",
+            provisions_path=base / "provisions/us-va/statute/2026-04-29.jsonl",
+            coverage_path=base / "coverage/us-va/statute/2026-04-29.json",
+            coverage=ProvisionCoverageReport(
+                jurisdiction="us-va",
+                document_class="statute",
+                version="2026-04-29",
+                source_count=2,
+                provision_count=2,
+                matched_count=2,
+                missing_from_provisions=(),
+                extra_provisions=(),
+            ),
+            source_paths=(base / "sources/us-va/statute/2026-04-29/title.odt",),
+        )
+
+    monkeypatch.setattr(cli, "extract_cic_html_release", fake_html)
+    monkeypatch.setattr(cli, "extract_cic_odt_release", fake_odt)
+
+    exit_code = main(
+        [
+            "extract-state-statutes",
+            "--base",
+            str(base),
+            "--manifest",
+            str(manifest),
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert payload["source_count"] == 2
+    assert payload["completed_count"] == 2
+    assert payload["provisions_written"] == 3
+    assert payload["coverage_complete"] is True
+
+
+def test_extract_state_statutes_batch_dry_run_reports_missing_sources(tmp_path, capsys):
+    manifest = tmp_path / "state-statutes.yaml"
+    manifest.write_text(
+        """
+version: "2026-04-29"
+sources:
+  - source_id: us-tn-tca
+    jurisdiction: us-tn
+    document_class: statute
+    adapter: cic-html
+    options:
+      release_dir: missing-release
+"""
+    )
+
+    exit_code = main(
+        [
+            "extract-state-statutes",
+            "--base",
+            str(tmp_path / "corpus"),
+            "--manifest",
+            str(manifest),
+            "--dry-run",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 1
+    assert payload["dry_run"] is True
+    assert payload["rows"][0]["source_path_exists"] is False
 
 
 def test_artifact_report_cli_accepts_release_name(tmp_path, capsys):

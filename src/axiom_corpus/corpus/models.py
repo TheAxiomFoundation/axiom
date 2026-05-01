@@ -12,7 +12,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any, Self
 
-import yaml  # type: ignore[import-untyped]
+import yaml
 
 
 class DocumentClass(StrEnum):
@@ -184,10 +184,14 @@ class CorpusSource:
     adapter: str
     source_url: str | None = None
     version: str | None = None
+    options: dict[str, Any] | None = None
     metadata: dict[str, Any] | None = None
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
+        options = data.get("options")
+        if options is not None and not isinstance(options, dict):
+            raise ValueError("source options must be a mapping")
         return cls(
             source_id=str(data["source_id"]),
             jurisdiction=str(data["jurisdiction"]),
@@ -195,6 +199,7 @@ class CorpusSource:
             adapter=str(data["adapter"]),
             source_url=data.get("source_url"),
             version=data.get("version"),
+            options=options,
             metadata=data.get("metadata"),
         )
 
@@ -239,6 +244,7 @@ class CorpusManifest:
                         "adapter": source.adapter,
                         "source_url": source.source_url,
                         "version": source.version,
+                        "options": source.options,
                         "metadata": source.metadata,
                     }
                     for source in self.sources

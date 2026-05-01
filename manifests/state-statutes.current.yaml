@@ -1,0 +1,121 @@
+version: "2026-04-29"
+sources:
+  - source_id: us-co-crs
+    jurisdiction: us-co
+    document_class: statute
+    adapter: colorado-docx
+    source_url: https://leg.colorado.gov/colorado-revised-statutes
+    options:
+      release_dir: ../data/statutes/us-co/release2025
+      source_as_of: "2025-09-16"
+      expression_date: "2025-09-16"
+    metadata:
+      source_authority: Colorado General Assembly
+
+  - source_id: us-dc-code
+    jurisdiction: us-dc
+    document_class: statute
+    adapter: dc-code
+    source_url: https://code.dccouncil.gov/us/dc/council/code
+    options:
+      source_dir: ../sources/dc/dc-law-xml/us/dc/council/code/titles
+      source_as_of: "2025-12-23"
+      expression_date: "2025-12-23"
+    metadata:
+      source_authority: Council of the District of Columbia
+
+  - source_id: us-ga-ocga
+    jurisdiction: us-ga
+    document_class: statute
+    adapter: cic-odt
+    source_url: https://public.resource.org/
+    options:
+      release_dir: ../data/statutes/us-ga/release86.2022.11
+      source_as_of: "2022-11-01"
+      expression_date: "2022-11-01"
+    metadata:
+      source_authority: Public.Resource.Org CIC state code release
+
+  - source_id: us-ky-krs
+    jurisdiction: us-ky
+    document_class: statute
+    adapter: cic-odt
+    source_url: https://public.resource.org/
+    options:
+      release_dir: ../data/statutes/us-ky/release88.2023.01
+      source_as_of: "2023-01-01"
+      expression_date: "2023-01-01"
+    metadata:
+      source_authority: Public.Resource.Org CIC state code release
+
+  - source_id: us-nc-statutes
+    jurisdiction: us-nc
+    document_class: statute
+    adapter: cic-odt
+    source_url: https://public.resource.org/
+    options:
+      release_dir: ../data/statutes/us-nc/release85.2023.06
+      source_as_of: "2023-06-01"
+      expression_date: "2023-06-01"
+    metadata:
+      source_authority: Public.Resource.Org CIC state code release
+
+  - source_id: us-nd-code
+    jurisdiction: us-nd
+    document_class: statute
+    adapter: cic-odt
+    source_url: https://public.resource.org/
+    options:
+      release_dir: ../data/statutes/us-nd/release81.2022.06
+      source_as_of: "2022-06-01"
+      expression_date: "2022-06-01"
+    metadata:
+      source_authority: Public.Resource.Org CIC state code release
+
+  - source_id: us-tn-tca
+    jurisdiction: us-tn
+    document_class: statute
+    adapter: cic-html
+    source_url: https://public.resource.org/
+    options:
+      release_dir: ../data/statutes/us-tn/release76.2021.05.21
+      source_as_of: "2021-05-21"
+      expression_date: "2021-05-21"
+    metadata:
+      source_authority: Public.Resource.Org CIC state code release
+
+  - source_id: us-va-code
+    jurisdiction: us-va
+    document_class: statute
+    adapter: cic-odt
+    source_url: https://public.resource.org/
+    options:
+      release_dir: ../data/statutes/us-va/release90.2023.03
+      source_as_of: "2023-03-01"
+      expression_date: "2023-03-01"
+    metadata:
+      source_authority: Public.Resource.Org CIC state code release
+
+  - source_id: us-vt-statutes
+    jurisdiction: us-vt
+    document_class: statute
+    adapter: cic-odt
+    source_url: https://public.resource.org/
+    options:
+      release_dir: ../data/statutes/us-vt/release88.2023.05
+      source_as_of: "2023-05-01"
+      expression_date: "2023-05-01"
+    metadata:
+      source_authority: Public.Resource.Org CIC state code release
+
+  - source_id: us-wy-statutes
+    jurisdiction: us-wy
+    document_class: statute
+    adapter: cic-odt
+    source_url: https://public.resource.org/
+    options:
+      release_dir: ../data/statutes/us-wy/release84.2022.10
+      source_as_of: "2022-10-01"
+      expression_date: "2022-10-01"
+    metadata:
+      source_authority: Public.Resource.Org CIC state code release

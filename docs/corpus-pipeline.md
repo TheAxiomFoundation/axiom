@@ -175,6 +175,28 @@ The SNAP rule manual is part of the CCR source as `10 CCR 2506-1`, so it is
 loaded under `us-co/regulation` with rule-manual metadata rather than as a
 separate corpus class.
 
+## State Statutes
+
+Production state statute ingestion should be manifest-driven so each active
+scope has a reproducible adapter, source path, source date, and corpus version.
+The current active state statute batch is tracked at
+`manifests/state-statutes.current.yaml`.
+
+```bash
+axiom-corpus-ingest extract-state-statutes \
+  --base data/corpus \
+  --manifest manifests/state-statutes.current.yaml \
+  --dry-run
+
+axiom-corpus-ingest extract-state-statutes \
+  --base data/corpus \
+  --manifest manifests/state-statutes.current.yaml
+```
+
+Use `--only-jurisdiction`, `--only-source-id`, and `--limit-per-source` for
+smoke runs or targeted rebuilds. Supported state statute adapters are
+`dc-code`, `cic-html`, `cic-odt`, and `colorado-docx`.
+
 Primary SNAP policy documents that are not codified in CCR can be ingested from
 an explicit official-document manifest. This is for primary sources such as
 state plans, waiver approvals, agency memoranda, and agency policy pages. Do not

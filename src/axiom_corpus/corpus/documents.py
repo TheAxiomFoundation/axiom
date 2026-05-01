@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any, Self, TextIO
 
 import fitz
-import requests  # type: ignore[import-untyped]
-import yaml  # type: ignore[import-untyped]
+import requests
+import yaml
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
