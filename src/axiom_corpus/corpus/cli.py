@@ -40,6 +40,7 @@ from axiom_corpus.corpus.states import (
     extract_cic_odt_release,
     extract_colorado_docx_release,
     extract_dc_code,
+    extract_minnesota_statutes,
     extract_ohio_revised_code,
     extract_texas_tcas,
 )
@@ -567,6 +568,35 @@ def _cmd_extract_ohio_revised_code(args: argparse.Namespace) -> int:
     return 0 if report.coverage.complete or args.allow_incomplete else 2
 
 
+def _cmd_extract_minnesota_statutes(args: argparse.Namespace) -> int:
+    store = CorpusArtifactStore(args.base)
+    expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
+    report = extract_minnesota_statutes(
+        store,
+        version=args.version,
+        source_dir=args.source_dir,
+        source_as_of=args.source_as_of,
+        expression_date=expression_date,
+        only_title=args.only_title,
+        limit=args.limit,
+        workers=args.workers,
+        download_dir=args.download_dir,
+    )
+    print(
+        json.dumps(
+            _state_statute_report_payload(
+                report,
+                source_id="us-mn-statutes",
+                adapter="minnesota-statutes",
+                version=args.version,
+            ),
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0 if report.coverage.complete or args.allow_incomplete else 2
+
+
 def _cmd_extract_state_statutes(args: argparse.Namespace) -> int:
     manifest_path = args.manifest
     manifest = CorpusManifest.load(manifest_path)
@@ -745,6 +775,18 @@ def _extract_state_statute_source(
             limit=limit,
             download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
         )
+    if adapter == "minnesota-statutes":
+        return extract_minnesota_statutes(
+            store,
+            version=version,
+            source_dir=_optional_manifest_path(manifest_path, options, "source_dir"),
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            limit=limit,
+            workers=_optional_int(options.get("workers")) or 4,
+            download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
+        )
     raise ValueError(f"unsupported state statute adapter: {source.adapter}")
 
 
@@ -760,7 +802,7 @@ def _state_statute_plan_payload(
     path_key = "source_dir" if adapter == "dc-code" else "release_dir"
     source_path = (
         _optional_manifest_path(manifest_path, options, "source_dir")
-        if adapter in {"ohio-revised-code", "texas-tcas"}
+        if adapter in {"minnesota-statutes", "ohio-revised-code", "texas-tcas"}
         else _required_manifest_path(manifest_path, options, path_key)
     )
     return {
@@ -834,6 +876,9 @@ def _canonical_state_statute_adapter(adapter: str) -> str:
         "ohio": "ohio-revised-code",
         "ohio-revised-code": "ohio-revised-code",
         "orc": "ohio-revised-code",
+        "minnesota": "minnesota-statutes",
+        "minnesota-statutes": "minnesota-statutes",
+        "mn": "minnesota-statutes",
         "texas-tcas": "texas-tcas",
         "texas-api": "texas-tcas",
         "tcas": "texas-tcas",
@@ -1227,6 +1272,22 @@ def build_parser() -> argparse.ArgumentParser:
     extract_ohio_revised_code_cmd.add_argument("--limit", type=int)
     extract_ohio_revised_code_cmd.add_argument("--allow-incomplete", action="store_true")
     extract_ohio_revised_code_cmd.set_defaults(func=_cmd_extract_ohio_revised_code)
+
+    extract_minnesota_statutes_cmd = sub.add_parser(
+        "extract-minnesota-statutes",
+        help="Snapshot official Minnesota Statutes HTML.",
+    )
+    extract_minnesota_statutes_cmd.add_argument("--base", type=Path, required=True)
+    extract_minnesota_statutes_cmd.add_argument("--version", required=True)
+    extract_minnesota_statutes_cmd.add_argument("--source-dir", type=Path)
+    extract_minnesota_statutes_cmd.add_argument("--download-dir", type=Path)
+    extract_minnesota_statutes_cmd.add_argument("--only-title")
+    extract_minnesota_statutes_cmd.add_argument("--source-as-of", "--as-of", dest="source_as_of")
+    extract_minnesota_statutes_cmd.add_argument("--expression-date")
+    extract_minnesota_statutes_cmd.add_argument("--limit", type=int)
+    extract_minnesota_statutes_cmd.add_argument("--workers", type=int, default=4)
+    extract_minnesota_statutes_cmd.add_argument("--allow-incomplete", action="store_true")
+    extract_minnesota_statutes_cmd.set_defaults(func=_cmd_extract_minnesota_statutes)
 
     extract_texas_tcas_cmd = sub.add_parser(
         "extract-texas-tcas",

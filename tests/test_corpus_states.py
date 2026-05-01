@@ -9,6 +9,7 @@ from axiom_corpus.corpus.states import (
     extract_cic_odt_release,
     extract_colorado_docx_release,
     extract_dc_code,
+    extract_minnesota_statutes,
     extract_ohio_revised_code,
     extract_texas_tcas,
     state_run_id,
@@ -210,6 +211,61 @@ SAMPLE_OHIO_CHAPTER = """<!DOCTYPE html>
 """
 
 
+SAMPLE_MINNESOTA_INDEX = """<!DOCTYPE html>
+<html>
+<body>
+  <table>
+    <tr>
+      <td><a href="/statutes/part/PUBLIC+WELFARE+AND+RELATED+ACTIVITIES">245 - 256B</a></td>
+      <td>PUBLIC WELFARE AND RELATED ACTIVITIES</td>
+    </tr>
+  </table>
+</body>
+</html>
+"""
+
+
+SAMPLE_MINNESOTA_PART = """<!DOCTYPE html>
+<html>
+<body>
+  <table>
+    <tr>
+      <td><a href="https://www.revisor.mn.gov/statutes/cite/256B">256B</a></td>
+      <td>Medical Assistance</td>
+    </tr>
+  </table>
+</body>
+</html>
+"""
+
+
+SAMPLE_MINNESOTA_CHAPTER = """<!DOCTYPE html>
+<html>
+<body>
+  <div id="xtend" class="statute">
+    <h2 class="chapter_title">CHAPTER 256B. MEDICAL ASSISTANCE</h2>
+    <div id="chapter_analysis">
+      <table>
+        <tr><td><a href="#stat.256B.01">256B.01</a></td><td>DEFINITIONS.</td></tr>
+        <tr><td><a href="#stat.256B.02">256B.02</a></td><td class="inactive">[Repealed]</td></tr>
+      </table>
+    </div>
+    <div class="section" id="stat.256B.01">
+      <h1 class="shn">256B.01 DEFINITIONS.</h1>
+      <div class="subd" id="stat.256B.01.1">
+        <a class="permalink" href="#stat.256B.01.1">§</a>
+        <h2 class="subd_no">Subdivision 1.<span class="headnote">Scope.</span></h2>
+        <p>Terms used in this chapter have the meanings given them.</p>
+        <p>See section <a href="/statutes/cite/256B.056">256B.056</a>.</p>
+      </div>
+    </div>
+    <div class="sr" id="stat.256B.02"><b>256B.02</b> [Repealed, 1974 c 1 s 1]</div>
+  </div>
+</body>
+</html>
+"""
+
+
 SAMPLE_TEXAS_HTML = """<html><body><pre xml:space="preserve">
 <p class="center" style="font-weight:bold;">TAX CODE</p>
 <p class="center" style="font-weight:bold;">TITLE 1. PROPERTY TAX CODE</p>
@@ -271,6 +327,18 @@ def _write_ohio_fixture(source_dir):
     (source_dir / "ohio-revised-code" / "index.html").write_text(SAMPLE_OHIO_INDEX)
     (title_dir / "title-51.html").write_text(SAMPLE_OHIO_TITLE)
     (chapter_dir / "chapter-5160.html").write_text(SAMPLE_OHIO_CHAPTER)
+
+
+def _write_minnesota_fixture(source_dir):
+    part_dir = source_dir / "minnesota-statutes-html" / "parts"
+    chapter_dir = source_dir / "minnesota-statutes-html" / "chapters"
+    part_dir.mkdir(parents=True)
+    chapter_dir.mkdir()
+    (source_dir / "minnesota-statutes-html" / "index.html").write_text(SAMPLE_MINNESOTA_INDEX)
+    (part_dir / "public-welfare-and-related-activities.html").write_text(
+        SAMPLE_MINNESOTA_PART
+    )
+    (chapter_dir / "chapter-256B.html").write_text(SAMPLE_MINNESOTA_CHAPTER)
 
 
 def _write_texas_fixture(source_dir):
@@ -479,6 +547,38 @@ def test_extract_ohio_revised_code_writes_state_records(tmp_path):
     assert "department of medicaid" in (records[3].body or "")
 
 
+def test_extract_minnesota_statutes_writes_state_records(tmp_path):
+    source_dir = tmp_path / "minnesota"
+    _write_minnesota_fixture(source_dir)
+    store = CorpusArtifactStore(tmp_path / "corpus")
+
+    report = extract_minnesota_statutes(
+        store,
+        version="2026-05-01",
+        source_dir=source_dir,
+        source_as_of="2026-05-01",
+        only_title="256B",
+    )
+
+    assert report.coverage.complete
+    assert report.title_count == 1
+    assert report.container_count == 2
+    assert report.section_count == 2
+    records = load_provisions(report.provisions_path)
+    assert [record.citation_path for record in records] == [
+        "us-mn/statute/part-public-welfare-and-related-activities",
+        "us-mn/statute/256B",
+        "us-mn/statute/256B.01",
+        "us-mn/statute/256B.02",
+    ]
+    assert records[1].heading == "MEDICAL ASSISTANCE"
+    assert records[2].heading == "DEFINITIONS"
+    assert records[2].metadata["references_to"] == ["us-mn/statute/256B.056"]
+    assert "Terms used in this chapter" in (records[2].body or "")
+    assert records[3].metadata["status"] == "inactive"
+    assert "[Repealed, 1974 c 1 s 1]" in (records[3].body or "")
+
+
 def test_extract_colorado_docx_release_writes_state_records(tmp_path):
     release_dir = tmp_path / "release2025"
     docx_dir = release_dir / "docx"
@@ -666,6 +766,31 @@ def test_extract_ohio_revised_code_cli_local_source(tmp_path, capsys):
 
     assert exit_code == 0
     assert '"jurisdiction": "us-oh"' in output
+    assert '"provisions_written": 4' in output
+
+
+def test_extract_minnesota_statutes_cli_local_source(tmp_path, capsys):
+    source_dir = tmp_path / "minnesota"
+    _write_minnesota_fixture(source_dir)
+    base = tmp_path / "corpus"
+
+    exit_code = main(
+        [
+            "extract-minnesota-statutes",
+            "--base",
+            str(base),
+            "--version",
+            "2026-05-01",
+            "--source-dir",
+            str(source_dir),
+            "--only-title",
+            "256B",
+        ]
+    )
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert '"jurisdiction": "us-mn"' in output
     assert '"provisions_written": 4' in output
 
 

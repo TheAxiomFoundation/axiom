@@ -48,6 +48,19 @@ sources:
     metadata:
       source_authority: Public.Resource.Org CIC state code release
 
+  - source_id: us-mn-statutes
+    jurisdiction: us-mn
+    document_class: statute
+    adapter: minnesota-statutes
+    source_url: https://www.revisor.mn.gov/statutes/
+    version: "2026-05-01"
+    options:
+      source_as_of: "2026-05-01"
+      expression_date: "2026-05-01"
+      workers: 6
+    metadata:
+      source_authority: Minnesota Office of the Revisor of Statutes
+
   - source_id: us-nc-statutes
     jurisdiction: us-nc
     document_class: statute

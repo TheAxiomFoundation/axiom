@@ -13,7 +13,7 @@ from datetime import date
 from io import BytesIO
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, quote, urljoin, urlparse
+from urllib.parse import parse_qs, quote, unquote_plus, urljoin, urlparse
 from xml.etree import ElementTree as ET
 
 import requests
@@ -34,6 +34,9 @@ COLORADO_DOCX_SOURCE_FORMAT = "colorado-crs-docx"
 OHIO_REVISED_CODE_BASE_URL = "https://codes.ohio.gov"
 OHIO_REVISED_CODE_SOURCE_FORMAT = "ohio-revised-code-html"
 OHIO_USER_AGENT = "axiom-corpus/0.1"
+MINNESOTA_STATUTES_BASE_URL = "https://www.revisor.mn.gov"
+MINNESOTA_STATUTES_SOURCE_FORMAT = "minnesota-statutes-html"
+MINNESOTA_USER_AGENT = "axiom-corpus/0.1"
 TEXAS_STATUTES_BASE_URL = "https://statutes.capitol.texas.gov"
 TEXAS_TCAS_API_BASE = "https://tcss.legis.texas.gov/api"
 TEXAS_TCAS_RESOURCE_BASE = "https://tcss.legis.texas.gov/resources"
@@ -209,6 +212,62 @@ class _OhioSection:
     @property
     def citation_path(self) -> str:
         return f"us-oh/statute/{self.section}"
+
+
+@dataclass(frozen=True)
+class _MinnesotaPart:
+    token: str
+    heading: str
+    href: str
+    ordinal: int
+
+    @property
+    def source_url(self) -> str:
+        return urljoin(MINNESOTA_STATUTES_BASE_URL, self.href)
+
+    @property
+    def citation_path(self) -> str:
+        return f"us-mn/statute/part-{_clean_path_token(self.token)}"
+
+
+@dataclass(frozen=True)
+class _MinnesotaChapter:
+    part: _MinnesotaPart
+    num: str
+    heading: str | None
+    href: str
+    ordinal: int
+
+    @property
+    def source_url(self) -> str:
+        return urljoin(MINNESOTA_STATUTES_BASE_URL, self.href)
+
+    @property
+    def full_source_url(self) -> str:
+        return f"{self.source_url.rstrip('/')}/full"
+
+    @property
+    def citation_path(self) -> str:
+        return f"us-mn/statute/{self.num}"
+
+
+@dataclass(frozen=True)
+class _MinnesotaSection:
+    chapter: _MinnesotaChapter
+    section: str
+    heading: str | None
+    body: str | None
+    source_id: str | None
+    status: str
+    references_to: tuple[str, ...]
+
+    @property
+    def source_url(self) -> str:
+        return f"{MINNESOTA_STATUTES_BASE_URL}/statutes/cite/{self.section}"
+
+    @property
+    def citation_path(self) -> str:
+        return f"us-mn/statute/{self.section}"
 
 
 @dataclass(frozen=True)
@@ -947,6 +1006,242 @@ def extract_ohio_revised_code(
 
     if not items:
         raise ValueError("no Ohio Revised Code provisions extracted")
+
+    inventory_path = store.inventory_path(jurisdiction, DocumentClass.STATUTE, run_id)
+    store.write_inventory(inventory_path, items)
+    provisions_path = store.provisions_path(jurisdiction, DocumentClass.STATUTE, run_id)
+    store.write_provisions(provisions_path, records)
+    coverage = compare_provision_coverage(
+        tuple(items),
+        tuple(records),
+        jurisdiction=jurisdiction,
+        document_class=DocumentClass.STATUTE.value,
+        version=run_id,
+    )
+    coverage_path = store.coverage_path(jurisdiction, DocumentClass.STATUTE, run_id)
+    store.write_json(coverage_path, coverage.to_mapping())
+    return StateStatuteExtractReport(
+        jurisdiction=jurisdiction,
+        title_count=title_count,
+        container_count=container_count,
+        section_count=section_count,
+        provisions_written=len(records),
+        inventory_path=inventory_path,
+        provisions_path=provisions_path,
+        coverage_path=coverage_path,
+        coverage=coverage,
+        source_paths=tuple(source_paths),
+        errors=tuple(errors),
+    )
+
+
+def extract_minnesota_statutes(
+    store: CorpusArtifactStore,
+    *,
+    version: str,
+    source_dir: str | Path | None = None,
+    source_as_of: str | None = None,
+    expression_date: date | str | None = None,
+    only_title: str | None = None,
+    limit: int | None = None,
+    workers: int = 4,
+    download_dir: str | Path | None = None,
+) -> StateStatuteExtractReport:
+    """Snapshot official Minnesota Statutes HTML and extract provisions."""
+    jurisdiction = "us-mn"
+    only_chapter = _minnesota_chapter_filter(only_title)
+    run_id = (
+        state_run_id(version, jurisdiction=jurisdiction, only_title=only_chapter, limit=limit)
+        if only_chapter or limit is not None
+        else version
+    )
+    source_root = Path(source_dir) if source_dir is not None else None
+    download_root = Path(download_dir) if download_dir is not None and source_root is None else None
+    source_as_of_text = source_as_of or version
+    expression_date_text = _date_text(expression_date, source_as_of_text)
+    session = _minnesota_session()
+
+    index_relative = "minnesota-statutes-html/index.html"
+    index_bytes = _load_minnesota_html(
+        session,
+        source_root,
+        download_root,
+        relative_name=index_relative,
+        url=f"{MINNESOTA_STATUTES_BASE_URL}/statutes/",
+    )
+    index_path = store.source_path(jurisdiction, DocumentClass.STATUTE, run_id, index_relative)
+    store.write_bytes(index_path, index_bytes)
+    source_paths: list[Path] = [index_path]
+
+    parts = _parse_minnesota_parts(index_bytes)
+    if not parts:
+        raise ValueError("no Minnesota Statutes parts found")
+
+    items: list[SourceInventoryItem] = []
+    records: list[ProvisionRecord] = []
+    errors: list[str] = []
+    remaining = limit
+    title_count = 0
+    container_count = 0
+    section_count = 0
+    seen_citation_paths: set[str] = set()
+    selected_parts: dict[str, _MinnesotaPart] = {}
+    chapters: list[_MinnesotaChapter] = []
+    part_sources: dict[str, tuple[str, str]] = {}
+
+    for part in parts:
+        part_relative = f"minnesota-statutes-html/parts/{_clean_path_token(part.token)}.html"
+        try:
+            part_bytes = _load_minnesota_html(
+                session,
+                source_root,
+                download_root,
+                relative_name=part_relative,
+                url=part.source_url,
+            )
+        except requests.RequestException as exc:
+            errors.append(f"part {part.heading}: {exc}")
+            continue
+        part_path = store.source_path(
+            jurisdiction,
+            DocumentClass.STATUTE,
+            run_id,
+            part_relative,
+        )
+        part_sha = store.write_bytes(part_path, part_bytes)
+        source_paths.append(part_path)
+        part_source_key = _state_source_key(jurisdiction, run_id, part_relative)
+        part_chapters = _parse_minnesota_chapters(part_bytes, part=part)
+        if only_chapter is not None:
+            part_chapters = tuple(chapter for chapter in part_chapters if chapter.num == only_chapter)
+        if not part_chapters:
+            continue
+        selected_parts[part.citation_path] = part
+        part_sources[part.citation_path] = (part_source_key, part_sha)
+        for chapter in part_chapters:
+            if chapter.citation_path not in seen_citation_paths:
+                chapters.append(chapter)
+                seen_citation_paths.add(chapter.citation_path)
+
+    seen_citation_paths.clear()
+    if not chapters:
+        raise ValueError(f"no Minnesota Statutes chapters selected for filter: {only_title!r}")
+
+    for part in selected_parts.values():
+        if remaining is not None and remaining <= 0:
+            break
+        source_key, source_sha = part_sources[part.citation_path]
+        part_container = _minnesota_part_container(part, source_path=source_key, sha256=source_sha)
+        seen_citation_paths.add(part_container.citation_path)
+        items.append(_container_inventory_item(part_container))
+        records.append(
+            _container_provision(
+                part_container,
+                version=run_id,
+                source_as_of=source_as_of_text,
+                expression_date=expression_date_text,
+            )
+        )
+        title_count += 1
+        container_count += 1
+        if remaining is not None:
+            remaining -= 1
+
+    if remaining is None or remaining > 0:
+        for chapter, chapter_bytes, error in _iter_minnesota_chapter_sources(
+            source_root,
+            download_root,
+            tuple(chapters),
+            workers=workers,
+        ):
+            if remaining is not None and remaining <= 0:
+                break
+            if error is not None:
+                errors.append(f"chapter {chapter.num}: {error}")
+                continue
+            if chapter_bytes is None:
+                continue
+            chapter_relative = _minnesota_chapter_relative(chapter)
+            chapter_path = store.source_path(
+                jurisdiction,
+                DocumentClass.STATUTE,
+                run_id,
+                chapter_relative,
+            )
+            chapter_sha = store.write_bytes(chapter_path, chapter_bytes)
+            source_paths.append(chapter_path)
+            chapter_source_key = _state_source_key(jurisdiction, run_id, chapter_relative)
+            parsed_heading, sections = _parse_minnesota_chapter_sections(
+                chapter_bytes,
+                chapter=chapter,
+            )
+            chapter_with_heading = _MinnesotaChapter(
+                part=chapter.part,
+                num=chapter.num,
+                heading=parsed_heading or chapter.heading,
+                href=chapter.href,
+                ordinal=chapter.ordinal,
+            )
+            chapter_container = _minnesota_chapter_container(
+                chapter_with_heading,
+                source_path=chapter_source_key,
+                sha256=chapter_sha,
+            )
+            if chapter_container.citation_path not in seen_citation_paths:
+                seen_citation_paths.add(chapter_container.citation_path)
+                items.append(_container_inventory_item(chapter_container))
+                records.append(
+                    _container_provision(
+                        chapter_container,
+                        version=run_id,
+                        source_as_of=source_as_of_text,
+                        expression_date=expression_date_text,
+                    )
+                )
+                container_count += 1
+                if remaining is not None:
+                    remaining -= 1
+
+            for section in sections:
+                if remaining is not None and remaining <= 0:
+                    break
+                if section.citation_path in seen_citation_paths:
+                    continue
+                seen_citation_paths.add(section.citation_path)
+                items.append(
+                    SourceInventoryItem(
+                        citation_path=section.citation_path,
+                        source_url=section.source_url,
+                        source_path=chapter_source_key,
+                        source_format=MINNESOTA_STATUTES_SOURCE_FORMAT,
+                        sha256=chapter_sha,
+                        metadata={
+                            "kind": "section",
+                            "chapter": section.chapter.num,
+                            "section": section.section,
+                            "heading": section.heading,
+                            "status": section.status,
+                            "parent_citation_path": section.chapter.citation_path,
+                            "source_id": section.source_id,
+                            "references_to": list(section.references_to),
+                        },
+                    )
+                )
+                records.append(
+                    _minnesota_section_provision(
+                        section,
+                        version=run_id,
+                        source_path=chapter_source_key,
+                        source_as_of=source_as_of_text,
+                        expression_date=expression_date_text,
+                    )
+                )
+                section_count += 1
+                if remaining is not None:
+                    remaining -= 1
+
+    if not items:
+        raise ValueError("no Minnesota Statutes provisions extracted")
 
     inventory_path = store.inventory_path(jurisdiction, DocumentClass.STATUTE, run_id)
     store.write_inventory(inventory_path, items)
@@ -1979,6 +2274,389 @@ def _ohio_section_provision(
             "latest_legislation": section.latest_legislation,
             "pdf_url": section.pdf_url,
             "last_updated": section.last_updated,
+            "references_to": list(section.references_to),
+        },
+    )
+
+
+def _minnesota_session() -> requests.Session:
+    session = requests.Session()
+    session.headers.update({"User-Agent": MINNESOTA_USER_AGENT})
+    return session
+
+
+def _load_minnesota_html(
+    session: requests.Session,
+    source_root: Path | None,
+    download_root: Path | None,
+    *,
+    relative_name: str,
+    url: str,
+) -> bytes:
+    if source_root is not None:
+        return (source_root / relative_name).read_bytes()
+    response: requests.Response | None = None
+    for attempt in range(5):
+        response = session.get(url, timeout=90)
+        if response.status_code != 429:
+            response.raise_for_status()
+            content = response.content
+            if download_root is not None:
+                path = download_root / relative_name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(content)
+            return content
+        retry_after = _retry_after_seconds(response.headers.get("Retry-After"))
+        time.sleep(retry_after if retry_after is not None else min(2**attempt, 30))
+    assert response is not None
+    response.raise_for_status()
+    return response.content
+
+
+def _parse_minnesota_parts(data: bytes) -> tuple[_MinnesotaPart, ...]:
+    soup = BeautifulSoup(data.decode("utf-8", errors="replace"), "html.parser")
+    parts: list[_MinnesotaPart] = []
+    seen: set[str] = set()
+    for row in soup.select("tr"):
+        if not isinstance(row, Tag):
+            continue
+        link = row.select_one('a[href*="/statutes/part/"]')
+        if not isinstance(link, Tag):
+            continue
+        href = str(link.get("href") or "")
+        token = _minnesota_part_token_from_href(href)
+        if token is None or token in seen:
+            continue
+        cells = [cell for cell in row.find_all("td") if isinstance(cell, Tag)]
+        heading = _clean_text(cells[1].get_text(" ", strip=True)) if len(cells) > 1 else None
+        heading = heading or _clean_text(link.get_text(" ", strip=True)) or token
+        parts.append(
+            _MinnesotaPart(
+                token=token,
+                heading=heading,
+                href=href,
+                ordinal=len(parts),
+            )
+        )
+        seen.add(token)
+    return tuple(parts)
+
+
+def _minnesota_part_token_from_href(href: str) -> str | None:
+    parsed = urlparse(href)
+    marker = "/statutes/part/"
+    if marker not in parsed.path:
+        return None
+    token = parsed.path.split(marker, 1)[1].strip("/")
+    for _ in range(2):
+        token = unquote_plus(token)
+    return _clean_text(token.replace("+", " ")) or None
+
+
+def _parse_minnesota_chapters(
+    data: bytes,
+    *,
+    part: _MinnesotaPart,
+) -> tuple[_MinnesotaChapter, ...]:
+    soup = BeautifulSoup(data.decode("utf-8", errors="replace"), "html.parser")
+    chapters: list[_MinnesotaChapter] = []
+    seen: set[str] = set()
+    for row in soup.select("tr"):
+        if not isinstance(row, Tag):
+            continue
+        link = row.select_one('a[href*="/statutes/cite/"]')
+        if not isinstance(link, Tag):
+            continue
+        href = str(link.get("href") or "")
+        chapter = _minnesota_chapter_from_href(href, link.get_text(" ", strip=True))
+        if chapter is None or chapter in seen:
+            continue
+        cells = [cell for cell in row.find_all("td") if isinstance(cell, Tag)]
+        heading = _clean_text(cells[1].get_text(" ", strip=True)) if len(cells) > 1 else None
+        chapters.append(
+            _MinnesotaChapter(
+                part=part,
+                num=chapter,
+                heading=heading or None,
+                href=href,
+                ordinal=len(chapters),
+            )
+        )
+        seen.add(chapter)
+    return tuple(chapters)
+
+
+def _minnesota_chapter_from_href(href: str, label: str) -> str | None:
+    parsed = urlparse(href)
+    match = re.fullmatch(r"/statutes/cite/(?P<chapter>\d+[A-Z]?)", parsed.path)
+    chapter = match.group("chapter") if match else _clean_text(label)
+    if re.fullmatch(r"\d+[A-Z]?", chapter or ""):
+        return str(chapter)
+    return None
+
+
+def _iter_minnesota_chapter_sources(
+    source_root: Path | None,
+    download_root: Path | None,
+    chapters: tuple[_MinnesotaChapter, ...],
+    *,
+    workers: int,
+) -> Iterator[tuple[_MinnesotaChapter, bytes | None, str | None]]:
+    if source_root is not None:
+        for chapter in chapters:
+            try:
+                yield chapter, (source_root / _minnesota_chapter_relative(chapter)).read_bytes(), None
+            except OSError as exc:
+                yield chapter, None, str(exc)
+        return
+
+    worker_count = max(1, workers)
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        yield from executor.map(
+            lambda chapter: _load_minnesota_chapter_source(download_root, chapter),
+            chapters,
+        )
+
+
+def _load_minnesota_chapter_source(
+    download_root: Path | None,
+    chapter: _MinnesotaChapter,
+) -> tuple[_MinnesotaChapter, bytes | None, str | None]:
+    try:
+        session = _minnesota_session()
+        data = _load_minnesota_html(
+            session,
+            None,
+            download_root,
+            relative_name=_minnesota_chapter_relative(chapter),
+            url=chapter.full_source_url,
+        )
+        return chapter, data, None
+    except requests.RequestException as exc:
+        return chapter, None, str(exc)
+
+
+def _minnesota_chapter_relative(chapter: _MinnesotaChapter) -> str:
+    return f"minnesota-statutes-html/chapters/chapter-{chapter.num}.html"
+
+
+def _parse_minnesota_chapter_sections(
+    data: bytes,
+    *,
+    chapter: _MinnesotaChapter,
+) -> tuple[str | None, tuple[_MinnesotaSection, ...]]:
+    soup = BeautifulSoup(data.decode("utf-8", errors="replace"), "html.parser")
+    root = soup.select_one("div#xtend.statute") or soup.select_one("div.statute")
+    if not isinstance(root, Tag):
+        raise ValueError(f"Minnesota chapter {chapter.num} page has no statute body")
+    parsed_heading = _minnesota_chapter_heading(root, chapter.num)
+    chapter_for_sections = _MinnesotaChapter(
+        part=chapter.part,
+        num=chapter.num,
+        heading=parsed_heading or chapter.heading,
+        href=chapter.href,
+        ordinal=chapter.ordinal,
+    )
+    sections: list[_MinnesotaSection] = []
+    seen: set[str] = set()
+    for section_tag in root.select("div.section, div.sr"):
+        if not isinstance(section_tag, Tag):
+            continue
+        section = _minnesota_section_from_tag(section_tag)
+        if section is None or section in seen:
+            continue
+        status = "active" if "section" in (section_tag.get("class") or []) else "inactive"
+        heading = (
+            _minnesota_active_section_heading(section_tag, section)
+            if status == "active"
+            else None
+        )
+        sections.append(
+            _MinnesotaSection(
+                chapter=chapter_for_sections,
+                section=section,
+                heading=heading,
+                body=_minnesota_section_body(section_tag, status=status),
+                source_id=str(section_tag.get("id") or f"stat.{section}"),
+                status=status,
+                references_to=_minnesota_references(section_tag, self_path=f"us-mn/statute/{section}"),
+            )
+        )
+        seen.add(section)
+    return parsed_heading, tuple(sections)
+
+
+def _minnesota_chapter_heading(root: Tag, chapter_num: str) -> str | None:
+    heading_tag = root.select_one("h2.chapter_title")
+    if not isinstance(heading_tag, Tag):
+        return None
+    text = _clean_text(heading_tag.get_text(" ", strip=True))
+    match = re.match(rf"^CHAPTER\s+{re.escape(chapter_num)}\.\s*(?P<heading>.+)$", text, re.I)
+    if match:
+        return _clean_text(match.group("heading")).rstrip(".") or None
+    return text or None
+
+
+def _minnesota_section_from_tag(tag: Tag) -> str | None:
+    source_id = str(tag.get("id") or "")
+    match = re.fullmatch(r"stat\.(?P<section>\d+[A-Z]?\.[0-9A-Za-z]+)", source_id)
+    if match:
+        return match.group("section")
+    text = _clean_text(tag.get_text(" ", strip=True))
+    match = re.match(r"^(?P<section>\d+[A-Z]?\.[0-9A-Za-z]+)\b", text)
+    return match.group("section") if match else None
+
+
+def _minnesota_active_section_heading(tag: Tag, section: str) -> str | None:
+    heading_tag = tag.select_one("h1.shn")
+    if not isinstance(heading_tag, Tag):
+        return None
+    text = _clean_text(heading_tag.get_text(" ", strip=True))
+    heading = re.sub(rf"^{re.escape(section)}\s*", "", text).strip()
+    return heading.rstrip(".") or None
+
+
+def _minnesota_section_body(tag: Tag, *, status: str) -> str | None:
+    copy = BeautifulSoup(str(tag), "html.parser")
+    for link in copy.select("a.permalink"):
+        link.decompose()
+    if status == "active":
+        heading = copy.select_one("h1.shn")
+        if isinstance(heading, Tag):
+            heading.decompose()
+    text = _clean_text(copy.get_text("\n", strip=True))
+    return text or None
+
+
+def _minnesota_references(tag: Tag, *, self_path: str) -> tuple[str, ...]:
+    refs: set[str] = set()
+    for link in tag.find_all("a"):
+        if not isinstance(link, Tag):
+            continue
+        ref = _minnesota_href_to_citation_path(str(link.get("href") or ""))
+        if ref and ref != self_path:
+            refs.add(ref)
+    return tuple(sorted(refs))
+
+
+def _minnesota_href_to_citation_path(href: str) -> str | None:
+    parsed = urlparse(href)
+    match = re.fullmatch(r"/statutes/cite/(?P<section>\d+[A-Z]?\.[0-9A-Za-z]+)", parsed.path)
+    if match:
+        return f"us-mn/statute/{match.group('section')}"
+    fragment_match = re.match(
+        r"stat\.(?P<section>\d+[A-Z]?\.[0-9A-Za-z]+)",
+        parsed.fragment,
+    )
+    if fragment_match:
+        return f"us-mn/statute/{fragment_match.group('section')}"
+    return None
+
+
+def _minnesota_chapter_filter(value: str | None) -> str | None:
+    if value is None:
+        return None
+    text = value.strip().upper().removeprefix("CHAPTER-").removeprefix("CHAPTER ")
+    if not re.fullmatch(r"\d+[A-Z]?", text):
+        raise ValueError(f"invalid Minnesota chapter filter: {value!r}")
+    return text
+
+
+def _minnesota_part_container(
+    part: _MinnesotaPart,
+    *,
+    source_path: str,
+    sha256: str,
+) -> _StateContainer:
+    return _StateContainer(
+        jurisdiction="us-mn",
+        title=part.token,
+        kind="part",
+        num=part.token,
+        heading=part.heading,
+        citation_path=part.citation_path,
+        parent_citation_path=None,
+        level=0,
+        ordinal=part.ordinal,
+        source_path=source_path,
+        source_url=part.source_url,
+        source_id=f"part-{_clean_path_token(part.token)}",
+        source_format=MINNESOTA_STATUTES_SOURCE_FORMAT,
+        sha256=sha256,
+        metadata={
+            "part": part.token,
+            "source_url": part.source_url,
+        },
+    )
+
+
+def _minnesota_chapter_container(
+    chapter: _MinnesotaChapter,
+    *,
+    source_path: str,
+    sha256: str,
+) -> _StateContainer:
+    return _StateContainer(
+        jurisdiction="us-mn",
+        title=chapter.num,
+        kind="chapter",
+        num=chapter.num,
+        heading=chapter.heading,
+        citation_path=chapter.citation_path,
+        parent_citation_path=chapter.part.citation_path,
+        level=1,
+        ordinal=_section_ordinal(chapter.num) or chapter.ordinal,
+        source_path=source_path,
+        source_url=chapter.full_source_url,
+        source_id=f"chapter-{chapter.num}",
+        source_format=MINNESOTA_STATUTES_SOURCE_FORMAT,
+        sha256=sha256,
+        metadata={
+            "part": chapter.part.token,
+            "chapter": chapter.num,
+            "source_url": chapter.full_source_url,
+        },
+    )
+
+
+def _minnesota_section_provision(
+    section: _MinnesotaSection,
+    *,
+    version: str,
+    source_path: str,
+    source_as_of: str,
+    expression_date: str,
+) -> ProvisionRecord:
+    return ProvisionRecord(
+        id=deterministic_provision_id(section.citation_path),
+        jurisdiction="us-mn",
+        document_class=DocumentClass.STATUTE.value,
+        citation_path=section.citation_path,
+        citation_label=f"Minn. Stat. § {section.section}",
+        heading=section.heading,
+        body=section.body,
+        version=version,
+        source_url=section.source_url,
+        source_path=source_path,
+        source_id=section.source_id,
+        source_format=MINNESOTA_STATUTES_SOURCE_FORMAT,
+        source_as_of=source_as_of,
+        expression_date=expression_date,
+        parent_citation_path=section.chapter.citation_path,
+        parent_id=deterministic_provision_id(section.chapter.citation_path),
+        level=2,
+        ordinal=_section_ordinal(section.section),
+        kind="section",
+        legal_identifier=f"Minn. Stat. § {section.section}",
+        identifiers={
+            "minnesota:chapter": section.chapter.num,
+            "minnesota:section": section.section,
+        },
+        metadata={
+            "part": section.chapter.part.token,
+            "chapter": section.chapter.num,
+            "section": section.section,
+            "status": section.status,
             "references_to": list(section.references_to),
         },
     )
