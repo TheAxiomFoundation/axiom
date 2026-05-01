@@ -14,6 +14,8 @@ from axiom_corpus.parsers.us.statutes import download_title
 from axiom_corpus.storage.guidance import GuidanceStorage
 
 console = Console()
+DEFAULT_ENCODING_MODEL = "claude-sonnet-4-20250514"
+DEFAULT_ENCODING_WORKSPACE = Path.home() / ".axiom" / "workspace"
 
 
 @click.group()
@@ -216,11 +218,14 @@ def refs(ctx: click.Context, citation: str):
     "--output",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path.home() / ".axiom" / "workspace",
+    default=DEFAULT_ENCODING_WORKSPACE,
     help="Output directory for encoded files",
 )
 @click.option(
-    "--model", "-m", default="claude-sonnet-4-20250514", help="Claude model to use for encoding"
+    "--model",
+    "-m",
+    default=DEFAULT_ENCODING_MODEL,
+    help="Claude model to use for encoding",
 )
 @click.pass_context
 def encode(ctx: click.Context, citation: str, output: Path, model: str):
@@ -367,11 +372,13 @@ def download_state(ctx: click.Context, state: str, law: tuple[str, ...], list_la
         axiom-corpus download-state tx                    # Download TX priority codes
         axiom-corpus download-state tx --law TX           # Download just Tax Code
     """
-    if state.lower() == "ny":
+    state_code = state.lower()
+
+    if state_code == "ny":
         _download_ny_state(ctx, law, list_laws)
-    elif state.lower() == "fl":
+    elif state_code == "fl":
         _download_fl_state(ctx, law, list_laws)
-    elif state.lower() == "tx":
+    elif state_code == "tx":
         _download_tx_state(ctx, law, list_laws)
     else:
         console.print(f"[red]State not supported:[/red] {state}")

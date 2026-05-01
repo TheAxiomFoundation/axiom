@@ -12,6 +12,8 @@ from anthropic import Anthropic
 
 from axiom_corpus.models import Section
 
+DEFAULT_MODEL = "claude-sonnet-4-20250514"
+
 
 @dataclass
 class Encoding:
@@ -97,7 +99,7 @@ Wrap tests in ```yaml ... ``` blocks.
 """
 
 
-def encode_section(section: Section, model: str = "claude-sonnet-4-20250514") -> Encoding:
+def encode_section(section: Section, model: str = DEFAULT_MODEL) -> Encoding:
     """Encode a statute section into RuleSpec using Claude.
 
     Args:
@@ -143,8 +145,10 @@ def encode_section(section: Section, model: str = "claude-sonnet-4-20250514") ->
         with contextlib.suppress(Exception):
             test_cases = yaml.safe_load(tests_yaml) or []
 
+    citation = f"{section.citation.title} USC § {section.citation.section}"
+
     return Encoding(
-        citation=f"{section.citation.title} USC § {section.citation.section}",
+        citation=citation,
         dsl=dsl,
         test_cases=test_cases if isinstance(test_cases, list) else [test_cases],
         encoded_by=f"claude-{model}",
@@ -167,7 +171,7 @@ def _extract_code_block(text: str, language: str) -> str:
 def encode_and_save(
     section: Section,
     output_dir: Path,
-    model: str = "claude-sonnet-4-20250514",
+    model: str = DEFAULT_MODEL,
 ) -> Encoding:
     """Encode a section and save to the local workspace.
 
@@ -188,11 +192,12 @@ def encode_and_save(
     section_dir.mkdir(parents=True, exist_ok=True)
 
     # Save statute text
-    (section_dir / "statute.md").write_text(
+    statute_text = (
         f"# {section.citation.title} USC § {section.citation.section}\n\n"
         f"## {section.section_title}\n\n"
         f"{section.text}\n"
     )
+    (section_dir / "statute.md").write_text(statute_text)
 
     # Save DSL
     (section_dir / "rules.yaml").write_text(encoding.dsl)
