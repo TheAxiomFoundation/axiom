@@ -19,7 +19,7 @@ class TestR2StorageInit:
             access_key_id="key123",
             secret_access_key="secret456",
         )
-        assert r2.bucket == "axiom"
+        assert r2.bucket == "axiom-corpus"
         mock_boto3.client.assert_called_once()
 
     @patch("axiom_corpus.storage.r2.boto3")
@@ -35,16 +35,26 @@ class TestR2StorageInit:
 
 class TestR2StorageFromConfig:
     @patch("axiom_corpus.storage.r2.boto3")
-    @patch("builtins.open", mock_open(read_data='{"endpoint_url": "https://r2.example.com", "access_key_id": "key", "secret_access_key": "secret", "bucket": "axiom"}'))
+    @patch(
+        "builtins.open",
+        mock_open(
+            read_data='{"endpoint_url": "https://r2.example.com", "access_key_id": "key", "secret_access_key": "secret", "bucket": "axiom-corpus"}'
+        ),
+    )
     def test_from_config_default_path(self, mock_boto3):
         r2 = R2Storage.from_config()
-        assert r2.bucket == "axiom"
+        assert r2.bucket == "axiom-corpus"
 
     @patch("axiom_corpus.storage.r2.boto3")
-    @patch("builtins.open", mock_open(read_data='{"endpoint_url": "https://r2.example.com", "access_key_id": "key", "secret_access_key": "secret"}'))
+    @patch(
+        "builtins.open",
+        mock_open(
+            read_data='{"endpoint_url": "https://r2.example.com", "access_key_id": "key", "secret_access_key": "secret"}'
+        ),
+    )
     def test_from_config_custom_path(self, mock_boto3):
         r2 = R2Storage.from_config(config_path="/custom/path.json")
-        assert r2.bucket == "axiom"  # default when not in config
+        assert r2.bucket == "axiom-corpus"  # default when not in config
 
     @patch("axiom_corpus.storage.r2.boto3")
     @patch("builtins.open", side_effect=FileNotFoundError)
@@ -65,7 +75,7 @@ class TestR2StorageUpload:
         assert key == "test/file.html"
         mock_client.put_object.assert_called_once()
         call_kwargs = mock_client.put_object.call_args[1]
-        assert call_kwargs["Bucket"] == "axiom"
+        assert call_kwargs["Bucket"] == "axiom-corpus"
         assert call_kwargs["Key"] == "test/file.html"
         assert call_kwargs["ContentType"] == "text/html; charset=utf-8"
 
@@ -214,9 +224,7 @@ class TestR2StorageQuery:
         from botocore.exceptions import ClientError
 
         mock_client = MagicMock()
-        mock_client.head_object.side_effect = ClientError(
-            {"Error": {"Code": "404"}}, "HeadObject"
-        )
+        mock_client.head_object.side_effect = ClientError({"Error": {"Code": "404"}}, "HeadObject")
         mock_boto3.client.return_value = mock_client
 
         r2 = R2Storage("https://r2.example.com", "key", "secret")

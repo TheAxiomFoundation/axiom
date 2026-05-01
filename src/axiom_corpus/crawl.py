@@ -67,7 +67,7 @@ from axiom_corpus.sources.specs import get_section_pattern
 
 # R2 config
 R2_ENDPOINT = "https://010d8d7f3b423be5ce36c7a5a49e91e4.r2.cloudflarestorage.com"
-R2_BUCKET = "axiom"
+R2_BUCKET = "axiom-corpus"
 
 # States with bulk downloads available from Archive.org/Public.Resource.org
 # Maps jurisdiction ID to Archive.org item identifier
@@ -616,8 +616,7 @@ class StateCrawler:
                 # Include jurisdiction so multi-state crawls are debuggable
                 # when errors surface in the aggregate summary.
                 self.stats.errors.append(
-                    f"[{self.config.jurisdiction}] Crawl {url}: "
-                    f"{type(e).__name__}: {e}"
+                    f"[{self.config.jurisdiction}] Crawl {url}: {type(e).__name__}: {e}"
                 )
                 return section_urls, child_links, depth
 
@@ -655,8 +654,7 @@ class StateCrawler:
                     if attempt == max_retries - 1:
                         self.stats.sections_failed += 1
                         self.stats.errors.append(
-                            f"[{self.config.jurisdiction}] Fetch {url}: "
-                            f"{type(e).__name__}: {e}"
+                            f"[{self.config.jurisdiction}] Fetch {url}: {type(e).__name__}: {e}"
                         )
                     await asyncio.sleep(1)
 
@@ -684,8 +682,7 @@ class StateCrawler:
             return True
         except Exception as e:
             self.stats.errors.append(
-                f"[{self.config.jurisdiction}] R2 upload {url}: "
-                f"{type(e).__name__}: {e}"
+                f"[{self.config.jurisdiction}] R2 upload {url}: {type(e).__name__}: {e}"
             )
             return False
 

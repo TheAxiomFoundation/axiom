@@ -34,7 +34,7 @@ class R2Storage:
         endpoint_url: str,
         access_key_id: str,
         secret_access_key: str,
-        bucket: str = "axiom",
+        bucket: str = "axiom-corpus",
     ):
         """Initialize R2 storage.
 
@@ -42,11 +42,11 @@ class R2Storage:
             endpoint_url: R2 S3-compatible endpoint
             access_key_id: R2 access key
             secret_access_key: R2 secret key
-            bucket: Bucket name (default: axiom)
+            bucket: Bucket name (default: axiom-corpus)
         """
         self.bucket = bucket
         self.client = boto3.client(
-            's3',
+            "s3",
             endpoint_url=endpoint_url,
             aws_access_key_id=access_key_id,
             aws_secret_access_key=secret_access_key,
@@ -72,7 +72,7 @@ class R2Storage:
             endpoint_url=creds["endpoint_url"],
             access_key_id=creds["access_key_id"],
             secret_access_key=creds["secret_access_key"],
-            bucket=creds.get("bucket", "axiom"),
+            bucket=creds.get("bucket", "axiom-corpus"),
         )
 
     def upload_raw(
@@ -94,25 +94,25 @@ class R2Storage:
             The object key
         """
         if isinstance(content, str):
-            content = content.encode('utf-8')
+            content = content.encode("utf-8")
 
         # Auto-detect content type
         if content_type is None:
-            if key.endswith('.html'):
-                content_type = 'text/html; charset=utf-8'
-            elif key.endswith('.xml'):
-                content_type = 'application/xml'
-            elif key.endswith('.pdf'):
-                content_type = 'application/pdf'
-            elif key.endswith('.json'):
-                content_type = 'application/json'
+            if key.endswith(".html"):
+                content_type = "text/html; charset=utf-8"
+            elif key.endswith(".xml"):
+                content_type = "application/xml"
+            elif key.endswith(".pdf"):
+                content_type = "application/pdf"
+            elif key.endswith(".json"):
+                content_type = "application/json"
             else:
-                content_type = 'application/octet-stream'
+                content_type = "application/octet-stream"
 
         # Build metadata
         upload_metadata = {
-            'uploaded-at': datetime.now(UTC).isoformat(),
-            'content-hash': hashlib.sha256(content).hexdigest()[:16],
+            "uploaded-at": datetime.now(UTC).isoformat(),
+            "content-hash": hashlib.sha256(content).hexdigest()[:16],
         }
         if metadata:
             upload_metadata.update(metadata)
@@ -148,14 +148,14 @@ class R2Storage:
             The R2 object key
         """
         # Normalize section_id for path safety
-        safe_id = section_id.replace('/', '-').replace('.', '-')
+        safe_id = section_id.replace("/", "-").replace(".", "-")
         key = f"us/statutes/states/{state.lower()}/{safe_id}.html"
 
         metadata = {
-            'source-url': source_url[:256],  # R2 metadata value limit
-            'state': state.lower(),
-            'section-id': section_id,
-            'fetched-at': (fetched_at or datetime.now(UTC)).isoformat(),
+            "source-url": source_url[:256],  # R2 metadata value limit
+            "state": state.lower(),
+            "section-id": section_id,
+            "fetched-at": (fetched_at or datetime.now(UTC)).isoformat(),
         }
 
         return self.upload_raw(key, html, metadata=metadata)
@@ -178,13 +178,13 @@ class R2Storage:
         Returns:
             The R2 object key
         """
-        safe_section = section.replace('/', '-')
+        safe_section = section.replace("/", "-")
         key = f"us/statutes/federal/{title}/{safe_section}.xml"
 
         metadata = {
-            'source-url': source_url[:256],
-            'title': str(title),
-            'section': section,
+            "source-url": source_url[:256],
+            "title": str(title),
+            "section": section,
         }
 
         return self.upload_raw(key, xml, metadata=metadata)
@@ -207,13 +207,13 @@ class R2Storage:
         Returns:
             The R2 object key
         """
-        ext = 'pdf' if content[:4] == b'%PDF' else 'html'
+        ext = "pdf" if content[:4] == b"%PDF" else "html"
         key = f"us/guidance/irs/{doc_type}/{doc_id}.{ext}"
 
         metadata = {
-            'source-url': source_url[:256],
-            'doc-type': doc_type,
-            'doc-id': doc_id,
+            "source-url": source_url[:256],
+            "doc-type": doc_type,
+            "doc-id": doc_id,
         }
 
         return self.upload_raw(key, content, metadata=metadata)
@@ -243,7 +243,7 @@ class R2Storage:
             Object content as bytes
         """
         response = self.client.get_object(Bucket=self.bucket, Key=key)
-        return response['Body'].read()
+        return response["Body"].read()
 
     def list_prefix(self, prefix: str, max_keys: int = 1000) -> list[dict[str, Any]]:
         """List objects with a given prefix.
@@ -260,7 +260,7 @@ class R2Storage:
             Prefix=prefix,
             MaxKeys=max_keys,
         )
-        return response.get('Contents', [])
+        return response.get("Contents", [])
 
     def get_state_stats(self, state: str) -> dict[str, int]:
         """Get statistics for a state's archived content.
@@ -274,17 +274,17 @@ class R2Storage:
         prefix = f"us/statutes/states/{state.lower()}/"
         objects = self.list_prefix(prefix)
         return {
-            'count': len(objects),
-            'total_bytes': sum(obj['Size'] for obj in objects),
+            "count": len(objects),
+            "total_bytes": sum(obj["Size"] for obj in objects),
         }
 
 
 # Convenience functions for scripts
 def get_r2() -> R2Storage:
-    """Get R2Storage for axiom bucket (legal documents)."""
+    """Get R2Storage for the Axiom corpus bucket."""
     return R2Storage.from_config()
 
 
 def get_r2_axiom() -> R2Storage:
-    """Get R2Storage for axiom bucket (legal documents - statutes, guidance, regulations)."""
+    """Get R2Storage for the Axiom corpus bucket."""
     return R2Storage.from_config()

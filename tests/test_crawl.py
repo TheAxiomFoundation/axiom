@@ -4,7 +4,6 @@ Tests cover the CrawlStats dataclass, section patterns, and crawl logic.
 All HTTP and R2 calls are mocked.
 """
 
-
 import pytest
 
 from axiom_corpus.crawl import (
@@ -20,7 +19,7 @@ class TestConstants:
         assert "r2.cloudflarestorage.com" in R2_ENDPOINT
 
     def test_r2_bucket(self):
-        assert R2_BUCKET == "axiom"
+        assert R2_BUCKET == "axiom-corpus"
 
 
 class TestSectionPatterns:
@@ -29,6 +28,7 @@ class TestSectionPatterns:
 
     def test_ohio_pattern(self):
         import re
+
         pattern = SECTION_PATTERNS.get("us-oh", "")
         if pattern:
             assert re.search(pattern, "/section-5747.02")
@@ -39,6 +39,7 @@ class TestSectionPatterns:
 
     def test_patterns_are_valid_regex(self):
         import re
+
         for state, pattern in SECTION_PATTERNS.items():
             try:
                 re.compile(pattern)
@@ -64,12 +65,14 @@ class TestCrawlStatsDataclass:
 
     def test_section_patterns_ohio(self):
         import re
+
         pattern = SECTION_PATTERNS.get("us-oh")
         if pattern:
             assert re.search(pattern, "/ohio-revised-code/section-5747.02")
 
     def test_section_patterns_florida(self):
         import re
+
         pattern = SECTION_PATTERNS.get("us-fl")
         if pattern:
             assert re.search(pattern, "/statutes/220.02")
