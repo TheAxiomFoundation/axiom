@@ -2,111 +2,64 @@
 
 ## Core Principle
 
-**Everything is organized by source document type.**
+`axiom-corpus` is organized around official source documents and normalized
+provision records. Encodings live outside this repo.
 
-- Statute documents → `catalog/statute/` and `sources/statutes/` in R2
-- Guidance documents → `catalog/guidance/` and `sources/guidance/` in R2
+- Source files are stored in R2 under `sources/`.
+- Inventories, provisions, and coverage reports are stored under
+  `inventory/`, `provisions/`, and `coverage/`.
+- Queryable source text is loaded into Supabase `corpus.provisions`.
+- RuleSpec `.yaml` files live in jurisdiction rules repos.
 
-Never mix document types. A guidance document (IRS Rev. Proc., USDA COLA memo) never lives in the statute path.
-
-## Repo Separation
+## Repository Split
 
 | Repo | Purpose |
-|------|---------|
-| **arch** | Archive tooling + document catalog (this repo) |
-| **rules-us** | Executable encodings (.yaml formulas, parameters.yaml, tests.yaml) |
+|---|---|
+| `axiom-corpus` | Source-document ingestion, corpus artifacts, Supabase loads |
+| `rules-*` | Jurisdiction RuleSpec YAML encodings and tests |
+| `axiom-encode` | Encoder, validation, source verification, CI helpers |
+| `axiom-foundation.org` | Axiom web app |
 
-## Arch Repo Structure
-
-```
-arch/
-├── catalog/                      # What's in R2
-│   ├── statute/
-│   │   ├── 26/63.yaml           # Metadata for sources/statutes/us/usc/26/63.xml
-│   │   └── 7/2017.yaml
-│   └── guidance/
-│       ├── irs/rev-proc-2023-34.yaml
-│       └── usda/fns/snap-fy2024-cola.yaml
-│
-├── scripts/                      # Archive tooling
-│   └── catalog_snap.py
-│
-└── docs/                         # Documentation
-```
-
-## R2 Bucket Structure
+## Corpus Artifact Layout
 
 ```
 axiom-corpus (R2 bucket)/
 ├── sources/
-│   ├── statutes/
-│   │   └── us/
-│   │       └── usc/
-│   │           ├── 26/63.xml        # USC Title 26 § 63
-│   │           └── 7/2017.xml       # USC Title 7 § 2017
-│   │
-│   ├── guidance/
-│   │   └── irs/
-│   │       ├── rev-proc/rev-proc-2023-34.pdf
-│   │       └── notices/notice-2024-01.pdf
-│   │
-│   ├── microdata/
-│   │   ├── cps-asec/
-│   │   └── acs/
-│   │
-│   └── crosstabs/
-│       └── soi/
+│   └── <jurisdiction>/<document_class>/<version>/...
+├── inventory/
+│   └── <jurisdiction>/<document_class>/<version>.json
+├── provisions/
+│   └── <jurisdiction>/<document_class>/<version>.jsonl
+├── coverage/
+│   └── <jurisdiction>/<document_class>/<version>.json
+└── analytics/
 ```
 
-See [R2 Setup Guide](../infrastructure/R2_SETUP.md) for full details.
+Local generated artifacts use the same structure under `data/corpus/`.
 
-## rules-us Structure (Encodings)
+## Supabase Layout
+
+Normalized source text is loaded into:
 
 ```
-rules-us/
-├── 26/                          # Title 26 statutes (path = citation)
-│   ├── 24/a/credit.yaml
-│   └── 63/c/standard_deduction.yaml
-│
-├── 7/                           # Title 7 statutes
-│   └── 2017/a/allotment.yaml
-│
-├── irs/                         # IRS guidance encodings
-│   └── rev-proc-2023-34/
-│       └── parameters.yaml      # Inflation-adjusted values
-│
-└── usda/fns/                    # USDA guidance encodings
-    └── snap-fy2024-cola/
-        └── parameters.yaml      # COLA-adjusted values
+corpus.provisions
 ```
 
-## Variable Precedence Logic
+Important fields:
 
-When a statute defines a base value but guidance provides an adjusted value:
-
-```yaml
-references {
-  # From statute encoding
-  base_amount: statute/26/63/c/2/basic_amounts
-
-  # From guidance encoding
-  adjusted_amount: guidance/irs/rev-proc-2023-34/standard_deduction
-}
-
-variable standard_deduction {
-  formula {
-    # Use guidance value if available, else statute base
-    return adjusted_amount ?? base_amount
-  }
-}
-```
+- `citation_path`: canonical corpus path, for example
+  `us/guidance/usda/fns/snap-fy2026-cola/page-1`
+- `source_path`: R2 object key for the source artifact
+- `body`: normalized provision or page text
+- `doc_type`: statute, regulation, policy, guidance, etc.
+- `source_as_of` and `expression_date`: source provenance dates
 
 ## Rules
 
-1. **Catalog entries reference their source document type only**
-   - `catalog/statute/26/63.yaml` → describes `sources/statutes/us/usc/26/63.xml` in R2
-   - `catalog/guidance/irs/...` → describes `sources/guidance/irs/...` in R2
-
-2. **Encodings live in rules-us, not here**
-
-3. **Archive tooling lives in scripts/ and src/arch/**
+1. Source artifacts and normalized provision rows belong here.
+2. RuleSpec encodings belong in rules repos.
+3. A source manifest may supply a `citation_path` when the default
+   source-id-derived path is not canonical enough.
+4. Reiterated values should be represented in RuleSpec metadata and verified
+   against `corpus.provisions`, not duplicated into the corpus schema.
+5. Do not keep obsolete generated database snapshots or old branded buckets.

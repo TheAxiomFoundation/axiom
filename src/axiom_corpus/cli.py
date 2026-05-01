@@ -216,7 +216,7 @@ def refs(ctx: click.Context, citation: str):
     "--output",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path.home() / ".rulespec" / "workspace",
+    default=Path.home() / ".axiom" / "workspace",
     help="Output directory for encoded files",
 )
 @click.option(
@@ -289,7 +289,7 @@ def validate(path: Path):
     - Test case format
 
     Example:
-        axiom validate ~/.rulespec/workspace/federal/statute/26/32
+        axiom validate ~/.axiom/workspace/federal/statute/26/32
     """
     # Find rules.yaml file
     rules_file = path / "rules.yaml" if path.is_dir() else path
@@ -382,7 +382,11 @@ def _download_ny_state(ctx: click.Context, law_codes: tuple[str, ...], list_laws
     """Download New York state statutes."""
     import os
 
-    from axiom_corpus.parsers.us_ny.statutes import NY_LAW_CODES, NYLegislationClient, download_ny_law
+    from axiom_corpus.parsers.us_ny.statutes import (
+        NY_LAW_CODES,
+        NYLegislationClient,
+        download_ny_law,
+    )
 
     # Check for API key
     if not os.environ.get("NY_LEGISLATION_API_KEY"):
@@ -578,8 +582,8 @@ def verify(path: Path, pe_var: str, tolerance: float, save: Path | None):
     to expected values from the DSL encoding.
 
     Examples:
-        axiom verify ~/.rulespec/workspace/federal/statute/26/32 -v eitc
-        axiom verify ~/.rulespec/workspace/federal/statute/26/24 -v ctc
+        axiom verify ~/.axiom/workspace/federal/statute/26/32 -v eitc
+        axiom verify ~/.axiom/workspace/federal/statute/26/24 -v ctc
     """
     from axiom_corpus.verifier import (
         print_verification_report,
@@ -1292,7 +1296,9 @@ def cfr_titles(ctx: click.Context):
     title_list = storage.list_cfr_titles()
 
     if not title_list:
-        console.print("[yellow]No CFR titles loaded. Use 'axiom ingest-cfr' to add titles.[/yellow]")
+        console.print(
+            "[yellow]No CFR titles loaded. Use 'axiom ingest-cfr' to add titles.[/yellow]"
+        )
         return
 
     table = Table(title="Code of Federal Regulations")
@@ -2044,7 +2050,9 @@ def sb_search(query: str, jurisdiction: str | None, limit: int):
         heading = r.heading or "(no heading)"
         if len(heading) > 40:
             heading = heading[:40] + "..."
-        table.add_row(r.jurisdiction.upper(), r.citation_path or r.source_path or r.id[:16], heading)
+        table.add_row(
+            r.jurisdiction.upper(), r.citation_path or r.source_path or r.id[:16], heading
+        )
 
     console.print(table)
 

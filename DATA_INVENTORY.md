@@ -1,7 +1,7 @@
-# Atlas Data Inventory
+# Axiom Corpus Data Inventory
 
 This document catalogs data sources that have been downloaded and scraped into
-the Atlas archive. **Treat existing caches as the source of truth** — don't
+the Axiom corpus. **Treat existing caches as the source of truth** — don't
 re-scrape unless upstream content has changed.
 
 **Last hand-curated:** 2026-04-16
@@ -24,10 +24,10 @@ re-scrape unless upstream content has changed.
 | Jurisdiction | Source | Format | Location | Status |
 |---|---|---|---|---|
 | US Code (federal) | uscode.house.gov | USLM XML | `data/uscode/` | Complete — 53 titles |
-| UK Public General Acts | legislation.gov.uk | CLML XML | `~/.arch/uk/ukpga/` | Complete — 3,240 acts, 1916-2025 [^counts] |
-| Canada federal statutes | laws-lois.justice.gc.ca | LIMS XML | `~/.arch/canada/` | Complete — 956 files [^counts] |
+| UK Public General Acts | legislation.gov.uk | CLML XML | `~/.axiom/uk/ukpga/` | Complete — 3,240 acts, 1916-2025 [^counts] |
+| Canada federal statutes | laws-lois.justice.gc.ca | LIMS XML | `~/.axiom/canada/` | Complete — 956 files [^counts] |
 | DC Code | lims.dccouncil.gov | DC XML | `sources/dc/dc-law-xml/` | Complete — 21,163 sections across 28,432 files |
-| 7 CFR 271–283 (SNAP) | ecfr.gov | eCFR XML | `arch.rules` (Supabase) | Complete — 210 rows, eCFR snapshot 2024-04-16, ingested 2026-04-16 via `scripts/ingest_cfr_parts.py` |
+| 7 CFR 271–283 (SNAP) | ecfr.gov | eCFR XML | `corpus.provisions` (Supabase) | Complete — 210 rows, eCFR snapshot 2024-04-16, ingested 2026-04-16 via `scripts/ingest_cfr_parts.py` |
 
 ### US states — complete
 
@@ -77,7 +77,7 @@ Content ingestion either hasn't run or hasn't produced usable output:
 `data/statutes/us-{code}/` contains HTML, but the captured pages are
 Tables of Contents or site navigation — **no section text was retrieved**.
 These need revised crawl patterns in
-`src/atlas/sources/specs/` and/or `src/atlas/crawl.py:SECTION_PATTERNS`
+`src/axiom_corpus/sources/specs/` and/or `src/axiom_corpus/crawl.py:SECTION_PATTERNS`
 before re-ingesting.
 
 | Jurisdiction | Symptom |
@@ -104,16 +104,16 @@ decisions before crawling.
 
 ## Data locations
 
-### `~/.arch/` (user cache directory)
+### `~/.axiom/` (user cache directory)
 
 | Directory | Contents | Count | Format | Status |
 |---|---|---|---|---|
-| `~/.arch/canada/` | Canada federal statutes | 956 files | LIMS XML | Complete |
-| `~/.arch/federal/` | US federal agency guidance | varies | HTML/PDF | Partial |
-| `~/.arch/irs/` | IRS guidance documents | varies | PDF | Partial |
-| `~/.arch/policyengine-us/` | State tax forms/instructions | ~40 states | PDF | Reference docs |
-| `~/.arch/uk/ukpga/` | UK Public General Acts | 3,240 files | CLML XML | Complete (1916-2025) |
-| `~/.arch/us-ca/` | California statutes | 3 files | HTML | Partial |
+| `~/.axiom/canada/` | Canada federal statutes | 956 files | LIMS XML | Complete |
+| `~/.axiom/federal/` | US federal agency guidance | varies | HTML/PDF | Partial |
+| `~/.axiom/irs/` | IRS guidance documents | varies | PDF | Partial |
+| `~/.axiom/policyengine-us/` | State tax forms/instructions | ~40 states | PDF | Reference docs |
+| `~/.axiom/uk/ukpga/` | UK Public General Acts | 3,240 files | CLML XML | Complete (1916-2025) |
+| `~/.axiom/us-ca/` | California statutes | 3 files | HTML | Partial |
 
 ### `data/` (repository data directory)
 
@@ -140,7 +140,7 @@ upstream or requires a revised crawl pattern rather than re-running the
 existing scraper.
 
 - **Alaska (AK)** — `akleg.gov` returns 404 pages for the patterns in
-  `SECTION_PATTERNS` at `src/atlas/crawl.py`. Needs a new crawl strategy
+  `SECTION_PATTERNS` at `src/axiom_corpus/crawl.py`. Needs a new crawl strategy
   (likely the legislature's document server, not the public site).
 - **Louisiana (LA)** — `legis.la.gov` serves statute text inside
   ASP.NET postback forms; the current crawler only captures the landing
@@ -160,12 +160,12 @@ existing scraper.
 - **Arkansas (AR) and Mississippi (MS)** — Both are LexisNexis-hosted.
   Archive.org has historical dumps for AR volumes but they are split
   across multiple items (not yet wired into `ARCHIVE_ORG_STATES` in
-  `src/atlas/crawl.py`).
+  `src/axiom_corpus/crawl.py`).
 
 ## RuleSpec source repositories
 
 RuleSpec repos should hold manifests, registry metadata, and YAML source
-materials. Do not push generated Akoma Ntoso/XML payloads to GitHub.
+materials. Do not push generated normalized source payloads to GitHub.
 
 ### Complete repositories
 
@@ -183,20 +183,20 @@ See "US states" tables above for per-jurisdiction status.
 ## Adding new data
 
 1. **Check this inventory first** — data may already exist
-2. **Use existing scrapers** in `src/atlas/parsers/` and `src/atlas/converters/`
-3. **Cache to `~/.arch/`** for reuse across workflows
+2. **Use existing scrapers** in `src/axiom_corpus/parsers/` and `src/axiom_corpus/converters/`
+3. **Cache to `~/.axiom/`** for reuse across workflows
 4. **Update this file** after scraping — include a status flag and date
 
 ## Converter reference
 
-Converters in `src/atlas/converters/`:
+Converters in `src/axiom_corpus/converters/`:
 
 | Converter | Input format | Output format |
 |---|---|---|
-| `uk_clml.py` | UK CLML XML | Atlas models |
-| `ca_laws.py` | Canada LIMS XML | Atlas models |
-| `ecfr.py` | eCFR XML | Atlas models |
-| `nz_pco.py` | NZ PCO XML | Atlas models |
+| `uk_clml.py` | UK CLML XML | Axiom corpus models |
+| `ca_laws.py` | Canada LIMS XML | Axiom corpus models |
+| `ecfr.py` | eCFR XML | Axiom corpus models |
+| `nz_pco.py` | NZ PCO XML | Axiom corpus models |
 | `us_states/*.py` | State HTML/XML | USLM XML |
 
-[^counts]: Counts last verified 2026-04-16 via `find ~/.arch/{uk/ukpga,canada} -maxdepth 1 -type f | wc -l`.
+[^counts]: Counts last verified 2026-04-16 via `find ~/.axiom/{uk/ukpga,canada} -maxdepth 1 -type f | wc -l`.

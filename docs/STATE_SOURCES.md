@@ -2,7 +2,8 @@
 
 ## Architecture Overview
 
-Arch uses a unified statute model with source adapters for each jurisdiction:
+Axiom Corpus uses a unified statute model with source adapters for each
+jurisdiction:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -16,8 +17,8 @@ Arch uses a unified statute model with source adapters for each jurisdiction:
 │    text="...",                  # Full text content                 │
 │  )                                                                  │
 ├─────────────────────────────────────────────────────────────────────┤
-│  Citation path: rules-us-ca/statute/RTC/17041.yaml                     │
-│  DB path:       us-ca/statute/RTC/17041                             │
+│  RuleSpec path: rules-us-ca/statute/RTC/17041.yaml                  │
+│  Corpus path:   us-ca/statute/RTC/17041                             │
 └─────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -39,7 +40,7 @@ Jurisdiction IDs match RuleSpec repo naming:
 
 ### Storage
 
-- **Supabase (Production)**: `arch.statutes` table with FTS via tsvector
+- **Supabase (Production)**: `corpus.provisions`
 - **SQLite (Local)**: For development and testing
 
 ## Priority Tiers

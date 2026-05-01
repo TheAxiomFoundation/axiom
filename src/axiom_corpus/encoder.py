@@ -173,7 +173,7 @@ def encode_and_save(
 
     Args:
         section: Section to encode
-        output_dir: Directory to save output (e.g., ~/.rulespec/workspace)
+        output_dir: Directory to save output (e.g., ~/.axiom/workspace)
         model: Claude model to use
 
     Returns:
