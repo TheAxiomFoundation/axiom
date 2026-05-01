@@ -17,12 +17,12 @@ Sources:
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 from axiom_corpus.models import Section
 
 
-class StateCode(str, Enum):
+class StateCode(StrEnum):
     """US state and territory codes."""
 
     AL = "AL"  # Alabama

@@ -8,14 +8,14 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, Self
 
 import yaml  # type: ignore[import-untyped]
 
 
-class DocumentClass(str, Enum):
+class DocumentClass(StrEnum):
     """Policy document class for corpus records."""
 
     STATUTE = "statute"

@@ -14,12 +14,12 @@ Citation paths use slashes like RuleSpec engine:
 """
 
 from datetime import date, datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator
 
 
-class JurisdictionType(str, Enum):
+class JurisdictionType(StrEnum):
     """Type of jurisdiction."""
 
     FEDERAL = "federal"
@@ -28,7 +28,7 @@ class JurisdictionType(str, Enum):
     LOCAL = "local"
 
 
-class CodeType(str, Enum):
+class CodeType(StrEnum):
     """Type of legal code."""
 
     STATUTE = "statute"

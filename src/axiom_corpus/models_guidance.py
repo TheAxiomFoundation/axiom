@@ -1,12 +1,12 @@
 """Data models for IRS guidance documents (Revenue Procedures, Revenue Rulings, Notices)."""
 
 from datetime import date
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class GuidanceType(str, Enum):
+class GuidanceType(StrEnum):
     """Types of IRS guidance documents."""
 
     REV_PROC = "revenue_procedure"
