@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 import zipfile
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
@@ -12,7 +13,7 @@ from datetime import date
 from io import BytesIO
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, quote, urlparse
+from urllib.parse import parse_qs, quote, urljoin, urlparse
 from xml.etree import ElementTree as ET
 
 import requests
@@ -30,6 +31,9 @@ DC_XML_SOURCE_FORMAT = "dc-law-xml"
 CIC_HTML_SOURCE_FORMAT = "cic-state-code-html"
 CIC_ODT_SOURCE_FORMAT = "cic-state-code-odt"
 COLORADO_DOCX_SOURCE_FORMAT = "colorado-crs-docx"
+OHIO_REVISED_CODE_BASE_URL = "https://codes.ohio.gov"
+OHIO_REVISED_CODE_SOURCE_FORMAT = "ohio-revised-code-html"
+OHIO_USER_AGENT = "axiom-corpus/0.1"
 TEXAS_STATUTES_BASE_URL = "https://statutes.capitol.texas.gov"
 TEXAS_TCAS_API_BASE = "https://tcss.legis.texas.gov/api"
 TEXAS_TCAS_RESOURCE_BASE = "https://tcss.legis.texas.gov/resources"
@@ -152,6 +156,59 @@ class _ColoradoSection:
         if self.variant:
             return f"{self.base_citation_path}@{self.variant}"
         return self.base_citation_path
+
+
+@dataclass(frozen=True)
+class _OhioTitle:
+    token: str
+    num: str
+    heading: str
+    href: str
+
+    @property
+    def source_url(self) -> str:
+        return urljoin(OHIO_REVISED_CODE_BASE_URL, self.href)
+
+    @property
+    def citation_path(self) -> str:
+        if self.token == "general-provisions":
+            return "us-oh/statute/general-provisions"
+        return f"us-oh/statute/title-{self.num}"
+
+
+@dataclass(frozen=True)
+class _OhioChapter:
+    title: _OhioTitle
+    num: str
+    heading: str | None
+    href: str
+
+    @property
+    def source_url(self) -> str:
+        return urljoin(OHIO_REVISED_CODE_BASE_URL, self.href)
+
+    @property
+    def citation_path(self) -> str:
+        return f"us-oh/statute/chapter-{self.num}"
+
+
+@dataclass(frozen=True)
+class _OhioSection:
+    chapter: _OhioChapter
+    section: str
+    heading: str | None
+    body: str | None
+    source_url: str
+    source_id: str | None
+    effective_date: str | None
+    latest_legislation: str | None
+    pdf_url: str | None
+    last_updated: str | None
+    references_to: tuple[str, ...]
+
+    @property
+    def citation_path(self) -> str:
+        return f"us-oh/statute/{self.section}"
 
 
 @dataclass(frozen=True)
@@ -700,6 +757,222 @@ def extract_dc_code(
         coverage_path=coverage_path,
         coverage=coverage,
         source_paths=tuple(source_paths),
+    )
+
+
+def extract_ohio_revised_code(
+    store: CorpusArtifactStore,
+    *,
+    version: str,
+    source_dir: str | Path | None = None,
+    source_as_of: str | None = None,
+    expression_date: date | str | None = None,
+    only_title: str | None = None,
+    limit: int | None = None,
+    download_dir: str | Path | None = None,
+) -> StateStatuteExtractReport:
+    """Snapshot official Ohio Revised Code HTML and extract provisions."""
+    jurisdiction = "us-oh"
+    only_title_token = _ohio_title_filter(only_title)
+    run_id = (
+        state_run_id(version, jurisdiction=jurisdiction, only_title=only_title_token, limit=limit)
+        if only_title_token or limit is not None
+        else version
+    )
+    source_root = Path(source_dir) if source_dir is not None else None
+    download_root = Path(download_dir) if download_dir is not None and source_root is None else None
+    source_as_of_text = source_as_of or version
+    expression_date_text = _date_text(expression_date, source_as_of_text)
+    session = _ohio_session()
+
+    index_relative = "ohio-revised-code/index.html"
+    index_bytes = _load_ohio_html(
+        session,
+        source_root,
+        download_root,
+        relative_name=index_relative,
+        url=f"{OHIO_REVISED_CODE_BASE_URL}/ohio-revised-code",
+    )
+    index_path = store.source_path(
+        jurisdiction,
+        DocumentClass.STATUTE,
+        run_id,
+        index_relative,
+    )
+    index_sha = store.write_bytes(index_path, index_bytes)
+    del index_sha
+    source_paths: list[Path] = [index_path]
+    titles = _parse_ohio_titles(index_bytes)
+    if only_title_token is not None:
+        titles = tuple(title for title in titles if title.token == only_title_token)
+    if not titles:
+        raise ValueError(f"no Ohio Revised Code titles selected for filter: {only_title!r}")
+
+    items: list[SourceInventoryItem] = []
+    records: list[ProvisionRecord] = []
+    errors: list[str] = []
+    remaining = limit
+    title_count = 0
+    container_count = 0
+    section_count = 0
+    seen_citation_paths: set[str] = set()
+
+    for title in titles:
+        if remaining is not None and remaining <= 0:
+            break
+        title_relative = f"ohio-revised-code/titles/{_ohio_title_file_token(title)}.html"
+        title_bytes = _load_ohio_html(
+            session,
+            source_root,
+            download_root,
+            relative_name=title_relative,
+            url=title.source_url,
+        )
+        title_path = store.source_path(
+            jurisdiction,
+            DocumentClass.STATUTE,
+            run_id,
+            title_relative,
+        )
+        title_sha = store.write_bytes(title_path, title_bytes)
+        source_paths.append(title_path)
+        title_source_key = _state_source_key(jurisdiction, run_id, title_relative)
+
+        title_container = _ohio_title_container(
+            title,
+            source_path=title_source_key,
+            sha256=title_sha,
+        )
+        if title_container.citation_path not in seen_citation_paths:
+            seen_citation_paths.add(title_container.citation_path)
+            items.append(_container_inventory_item(title_container))
+            records.append(
+                _container_provision(
+                    title_container,
+                    version=run_id,
+                    source_as_of=source_as_of_text,
+                    expression_date=expression_date_text,
+                )
+            )
+            title_count += 1
+            container_count += 1
+            if remaining is not None:
+                remaining -= 1
+
+        chapters = _parse_ohio_chapters(title_bytes, title=title)
+        for chapter in chapters:
+            if remaining is not None and remaining <= 0:
+                break
+            chapter_relative = f"ohio-revised-code/chapters/chapter-{chapter.num}.html"
+            try:
+                chapter_bytes = _load_ohio_html(
+                    session,
+                    source_root,
+                    download_root,
+                    relative_name=chapter_relative,
+                    url=chapter.source_url,
+                )
+            except requests.RequestException as exc:
+                errors.append(f"chapter {chapter.num}: {exc}")
+                continue
+            chapter_path = store.source_path(
+                jurisdiction,
+                DocumentClass.STATUTE,
+                run_id,
+                chapter_relative,
+            )
+            chapter_sha = store.write_bytes(chapter_path, chapter_bytes)
+            source_paths.append(chapter_path)
+            chapter_source_key = _state_source_key(jurisdiction, run_id, chapter_relative)
+            chapter_container = _ohio_chapter_container(
+                chapter,
+                source_path=chapter_source_key,
+                sha256=chapter_sha,
+            )
+            if chapter_container.citation_path not in seen_citation_paths:
+                seen_citation_paths.add(chapter_container.citation_path)
+                items.append(_container_inventory_item(chapter_container))
+                records.append(
+                    _container_provision(
+                        chapter_container,
+                        version=run_id,
+                        source_as_of=source_as_of_text,
+                        expression_date=expression_date_text,
+                    )
+                )
+                container_count += 1
+                if remaining is not None:
+                    remaining -= 1
+
+            for section in _parse_ohio_sections(chapter_bytes, chapter=chapter):
+                if remaining is not None and remaining <= 0:
+                    break
+                if section.citation_path in seen_citation_paths:
+                    continue
+                seen_citation_paths.add(section.citation_path)
+                item = SourceInventoryItem(
+                    citation_path=section.citation_path,
+                    source_url=section.source_url,
+                    source_path=chapter_source_key,
+                    source_format=OHIO_REVISED_CODE_SOURCE_FORMAT,
+                    sha256=chapter_sha,
+                    metadata={
+                        "kind": "section",
+                        "title": chapter.title.num,
+                        "chapter": chapter.num,
+                        "section": section.section,
+                        "heading": section.heading,
+                        "effective_date": section.effective_date,
+                        "latest_legislation": section.latest_legislation,
+                        "pdf_url": section.pdf_url,
+                        "last_updated": section.last_updated,
+                        "references_to": list(section.references_to),
+                        "source_id": section.source_id,
+                        "parent_citation_path": chapter.citation_path,
+                    },
+                )
+                records.append(
+                    _ohio_section_provision(
+                        section,
+                        version=run_id,
+                        source_path=chapter_source_key,
+                        source_as_of=source_as_of_text,
+                        expression_date=expression_date_text,
+                    )
+                )
+                items.append(item)
+                section_count += 1
+                if remaining is not None:
+                    remaining -= 1
+
+    if not items:
+        raise ValueError("no Ohio Revised Code provisions extracted")
+
+    inventory_path = store.inventory_path(jurisdiction, DocumentClass.STATUTE, run_id)
+    store.write_inventory(inventory_path, items)
+    provisions_path = store.provisions_path(jurisdiction, DocumentClass.STATUTE, run_id)
+    store.write_provisions(provisions_path, records)
+    coverage = compare_provision_coverage(
+        tuple(items),
+        tuple(records),
+        jurisdiction=jurisdiction,
+        document_class=DocumentClass.STATUTE.value,
+        version=run_id,
+    )
+    coverage_path = store.coverage_path(jurisdiction, DocumentClass.STATUTE, run_id)
+    store.write_json(coverage_path, coverage.to_mapping())
+    return StateStatuteExtractReport(
+        jurisdiction=jurisdiction,
+        title_count=title_count,
+        container_count=container_count,
+        section_count=section_count,
+        provisions_written=len(records),
+        inventory_path=inventory_path,
+        provisions_path=provisions_path,
+        coverage_path=coverage_path,
+        coverage=coverage,
+        source_paths=tuple(source_paths),
+        errors=tuple(errors),
     )
 
 
@@ -1352,6 +1625,361 @@ def _dc_section_provision(
             "section": document.section,
             "references_to": list(document.references_to),
             "annotations": list(document.annotations),
+        },
+    )
+
+
+def _ohio_session() -> requests.Session:
+    session = requests.Session()
+    session.headers.update({"User-Agent": OHIO_USER_AGENT})
+    return session
+
+
+def _load_ohio_html(
+    session: requests.Session,
+    source_root: Path | None,
+    download_root: Path | None,
+    *,
+    relative_name: str,
+    url: str,
+) -> bytes:
+    if source_root is not None:
+        return (source_root / relative_name).read_bytes()
+    response: requests.Response | None = None
+    for attempt in range(6):
+        response = session.get(url, timeout=60)
+        if response.status_code != 429:
+            response.raise_for_status()
+            content = response.content
+            if download_root is not None:
+                path = download_root / relative_name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(content)
+            time.sleep(0.25)
+            return content
+        retry_after = _retry_after_seconds(response.headers.get("Retry-After"))
+        time.sleep(retry_after if retry_after is not None else min(2**attempt, 30))
+    assert response is not None
+    response.raise_for_status()
+    content = response.content
+    if download_root is not None:
+        path = download_root / relative_name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+    return content
+
+
+def _retry_after_seconds(value: str | None) -> float | None:
+    if not value:
+        return None
+    try:
+        return max(float(value), 0)
+    except ValueError:
+        return None
+
+
+def _parse_ohio_titles(html_bytes: bytes) -> tuple[_OhioTitle, ...]:
+    soup = BeautifulSoup(html_bytes.decode("utf-8", errors="replace"), "html.parser")
+    titles: dict[str, _OhioTitle] = {}
+    for link in soup.select('a[href*="ohio-revised-code/"]'):
+        if not isinstance(link, Tag):
+            continue
+        href = _ohio_path_from_href(
+            str(link.get("href") or ""),
+            f"{OHIO_REVISED_CODE_BASE_URL}/ohio-revised-code",
+        )
+        text = _clean_text(link.get_text(" ", strip=True))
+        if href == "/ohio-revised-code/general-provisions":
+            titles.setdefault(
+                "general-provisions",
+                _OhioTitle(
+                    token="general-provisions",
+                    num="general-provisions",
+                    heading="General Provisions",
+                    href=href,
+                ),
+            )
+            continue
+        match = re.fullmatch(r"/ohio-revised-code/title-(?P<num>\d+)", href)
+        if not match:
+            continue
+        title_num = match.group("num")
+        heading_match = re.match(rf"Title\s+{re.escape(title_num)}\s*\|\s*(?P<heading>.+)", text)
+        heading = heading_match.group("heading") if heading_match else text
+        titles.setdefault(
+            title_num,
+            _OhioTitle(token=title_num, num=title_num, heading=heading, href=href),
+        )
+    return tuple(sorted(titles.values(), key=lambda title: _ohio_title_sort_key(title.token)))
+
+
+def _parse_ohio_chapters(
+    html_bytes: bytes,
+    *,
+    title: _OhioTitle,
+) -> tuple[_OhioChapter, ...]:
+    soup = BeautifulSoup(html_bytes.decode("utf-8", errors="replace"), "html.parser")
+    chapters: dict[str, _OhioChapter] = {}
+    for link in soup.select('a[href*="chapter-"]'):
+        if not isinstance(link, Tag):
+            continue
+        href = _ohio_path_from_href(str(link.get("href") or ""), title.source_url)
+        match = re.fullmatch(r"/ohio-revised-code/chapter-(?P<num>[0-9A-Za-z.]+)", href)
+        if not match:
+            continue
+        chapter_num = match.group("num")
+        text = _clean_text(link.get_text(" ", strip=True))
+        heading_match = re.match(
+            rf"Chapter\s+{re.escape(chapter_num)}\s*\|\s*(?P<heading>.+)",
+            text,
+        )
+        heading = heading_match.group("heading") if heading_match else text
+        chapters.setdefault(
+            chapter_num,
+            _OhioChapter(title=title, num=chapter_num, heading=heading, href=href),
+        )
+    return tuple(sorted(chapters.values(), key=lambda chapter: _section_ordinal(chapter.num) or 0))
+
+
+def _ohio_path_from_href(href: str, base_url: str) -> str:
+    return urlparse(urljoin(base_url, href)).path
+
+
+def _parse_ohio_sections(
+    html_bytes: bytes,
+    *,
+    chapter: _OhioChapter,
+) -> tuple[_OhioSection, ...]:
+    soup = BeautifulSoup(html_bytes.decode("utf-8", errors="replace"), "html.parser")
+    sections: list[_OhioSection] = []
+    for content in soup.select("div.list-content"):
+        if not isinstance(content, Tag):
+            continue
+        head = content.select_one(".content-head-text a")
+        body_tag = content.select_one("section.laws-body")
+        if not isinstance(head, Tag) or not isinstance(body_tag, Tag):
+            continue
+        header_text = _clean_text(head.get_text(" ", strip=True))
+        parsed = _parse_ohio_section_header(header_text)
+        if parsed is None:
+            continue
+        section_num, heading = parsed
+        source_url = urljoin(chapter.source_url, str(head.get("href") or ""))
+        body = _ohio_laws_body_text(body_tag)
+        effective_date, latest_legislation, pdf_url = _ohio_section_info(content)
+        sections.append(
+            _OhioSection(
+                chapter=chapter,
+                section=section_num,
+                heading=heading,
+                body=body,
+                source_url=source_url,
+                source_id=f"section-{section_num}",
+                effective_date=effective_date,
+                latest_legislation=latest_legislation,
+                pdf_url=pdf_url,
+                last_updated=_ohio_last_updated(body_tag),
+                references_to=_ohio_references(body_tag),
+            )
+        )
+    return tuple(sections)
+
+
+def _parse_ohio_section_header(text: str) -> tuple[str, str | None] | None:
+    match = re.match(
+        r"^Section\s+(?P<section>[0-9A-Za-z.]+)\s*\|\s*(?P<heading>.*)$",
+        text,
+    )
+    if not match:
+        return None
+    heading = _clean_text(match.group("heading")).rstrip(".")
+    return match.group("section"), heading or None
+
+
+def _ohio_laws_body_text(body_tag: Tag) -> str | None:
+    body_span = body_tag.find("span")
+    root = body_span if isinstance(body_span, Tag) else body_tag
+    paragraphs = [
+        _clean_text(paragraph.get_text(" ", strip=True))
+        for paragraph in root.find_all("p")
+        if isinstance(paragraph, Tag)
+    ]
+    text = "\n".join(paragraph for paragraph in paragraphs if paragraph)
+    return text or None
+
+
+def _ohio_section_info(content: Tag) -> tuple[str | None, str | None, str | None]:
+    effective_date = None
+    latest_legislation = None
+    pdf_url = None
+    for module in content.select(".laws-section-info-module"):
+        if not isinstance(module, Tag):
+            continue
+        label_tag = module.select_one(".label")
+        value_tag = module.select_one(".value")
+        if not isinstance(label_tag, Tag) or not isinstance(value_tag, Tag):
+            continue
+        label = _clean_text(label_tag.get_text(" ", strip=True)).rstrip(":").lower()
+        if label == "effective":
+            effective_date = _clean_text(value_tag.get_text(" ", strip=True)) or None
+        elif label == "latest legislation":
+            latest_legislation = _clean_text(value_tag.get_text(" ", strip=True)) or None
+        elif label == "pdf":
+            link = value_tag.find("a")
+            if isinstance(link, Tag):
+                href = str(link.get("href") or "")
+                if href:
+                    pdf_url = urljoin(OHIO_REVISED_CODE_BASE_URL, href)
+    return effective_date, latest_legislation, pdf_url
+
+
+def _ohio_last_updated(body_tag: Tag) -> str | None:
+    notice = body_tag.select_one(".laws-notice p")
+    if not isinstance(notice, Tag):
+        return None
+    return _clean_text(notice.get_text(" ", strip=True)) or None
+
+
+def _ohio_references(body_tag: Tag) -> tuple[str, ...]:
+    refs: set[str] = set()
+    for link in body_tag.select("a.section-link"):
+        if not isinstance(link, Tag):
+            continue
+        ref = _ohio_reference_from_href(str(link.get("href") or ""))
+        if ref:
+            refs.add(ref)
+    return tuple(sorted(refs))
+
+
+def _ohio_reference_from_href(href: str) -> str | None:
+    match = re.search(r"/ohio-revised-code/section-(?P<section>[0-9A-Za-z.]+)$", href)
+    if not match:
+        return None
+    return f"us-oh/statute/{match.group('section')}"
+
+
+def _ohio_title_filter(only_title: str | None) -> str | None:
+    if only_title is None:
+        return None
+    token = only_title.strip().lower()
+    if token in {"general", "general-provisions"}:
+        return "general-provisions"
+    return _clean_title_token(only_title)
+
+
+def _ohio_title_file_token(title: _OhioTitle) -> str:
+    if title.token == "general-provisions":
+        return "general-provisions"
+    return f"title-{title.num}"
+
+
+def _ohio_title_sort_key(token: str) -> tuple[int, str]:
+    if token == "general-provisions":
+        return (0, "")
+    return (1, f"{_title_sort_key(token)[0]:04d}-{_title_sort_key(token)[1]}")
+
+
+def _ohio_title_container(
+    title: _OhioTitle,
+    *,
+    source_path: str,
+    sha256: str,
+) -> _StateContainer:
+    return _StateContainer(
+        jurisdiction="us-oh",
+        title=title.num,
+        kind="title",
+        num=title.num,
+        heading=title.heading,
+        citation_path=title.citation_path,
+        parent_citation_path=None,
+        level=0,
+        ordinal=_ordinal(title.num),
+        source_path=source_path,
+        source_url=title.source_url,
+        source_id=f"title-{title.token}",
+        source_format=OHIO_REVISED_CODE_SOURCE_FORMAT,
+        sha256=sha256,
+        metadata={
+            "title": title.num,
+            "title_token": title.token,
+            "source_url": title.source_url,
+        },
+    )
+
+
+def _ohio_chapter_container(
+    chapter: _OhioChapter,
+    *,
+    source_path: str,
+    sha256: str,
+) -> _StateContainer:
+    return _StateContainer(
+        jurisdiction="us-oh",
+        title=chapter.title.num,
+        kind="chapter",
+        num=chapter.num,
+        heading=chapter.heading,
+        citation_path=chapter.citation_path,
+        parent_citation_path=chapter.title.citation_path,
+        level=1,
+        ordinal=_section_ordinal(chapter.num),
+        source_path=source_path,
+        source_url=chapter.source_url,
+        source_id=f"chapter-{chapter.num}",
+        source_format=OHIO_REVISED_CODE_SOURCE_FORMAT,
+        sha256=sha256,
+        metadata={
+            "title": chapter.title.num,
+            "chapter": chapter.num,
+            "source_url": chapter.source_url,
+        },
+    )
+
+
+def _ohio_section_provision(
+    section: _OhioSection,
+    *,
+    version: str,
+    source_path: str,
+    source_as_of: str,
+    expression_date: str,
+) -> ProvisionRecord:
+    return ProvisionRecord(
+        id=deterministic_provision_id(section.citation_path),
+        jurisdiction="us-oh",
+        document_class=DocumentClass.STATUTE.value,
+        citation_path=section.citation_path,
+        citation_label=f"Ohio Rev. Code § {section.section}",
+        heading=section.heading,
+        body=section.body,
+        version=version,
+        source_url=section.source_url,
+        source_path=source_path,
+        source_id=section.source_id,
+        source_format=OHIO_REVISED_CODE_SOURCE_FORMAT,
+        source_as_of=source_as_of,
+        expression_date=expression_date,
+        parent_citation_path=section.chapter.citation_path,
+        parent_id=deterministic_provision_id(section.chapter.citation_path),
+        level=2,
+        ordinal=_section_ordinal(section.section),
+        kind="section",
+        legal_identifier=f"Ohio Rev. Code § {section.section}",
+        identifiers={
+            "ohio:title": section.chapter.title.num,
+            "ohio:chapter": section.chapter.num,
+            "ohio:section": section.section,
+        },
+        metadata={
+            "title": section.chapter.title.num,
+            "chapter": section.chapter.num,
+            "section": section.section,
+            "effective_date": section.effective_date,
+            "latest_legislation": section.latest_legislation,
+            "pdf_url": section.pdf_url,
+            "last_updated": section.last_updated,
+            "references_to": list(section.references_to),
         },
     )
 

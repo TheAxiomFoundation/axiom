@@ -72,6 +72,18 @@ sources:
     metadata:
       source_authority: Public.Resource.Org CIC state code release
 
+  - source_id: us-oh-revised-code
+    jurisdiction: us-oh
+    document_class: statute
+    adapter: ohio-revised-code
+    source_url: https://codes.ohio.gov/ohio-revised-code
+    version: "2026-05-01"
+    options:
+      source_as_of: "2026-05-01"
+      expression_date: "2026-05-01"
+    metadata:
+      source_authority: Ohio Legislative Service Commission
+
   - source_id: us-tn-tca
     jurisdiction: us-tn
     document_class: statute

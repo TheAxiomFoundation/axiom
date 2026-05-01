@@ -554,6 +554,39 @@ sources:
     assert payload["rows"][0]["source_path_exists"] is True
 
 
+def test_extract_state_statutes_batch_dry_run_allows_live_ohio_source(tmp_path, capsys):
+    manifest = tmp_path / "state-statutes.yaml"
+    manifest.write_text(
+        """
+version: "2026-05-01"
+sources:
+  - source_id: us-oh-revised-code
+    jurisdiction: us-oh
+    document_class: statute
+    adapter: ohio-revised-code
+    source_url: https://codes.ohio.gov/ohio-revised-code
+"""
+    )
+
+    exit_code = main(
+        [
+            "extract-state-statutes",
+            "--base",
+            str(tmp_path / "corpus"),
+            "--manifest",
+            str(manifest),
+            "--dry-run",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert payload["dry_run"] is True
+    assert payload["rows"][0]["adapter"] == "ohio-revised-code"
+    assert payload["rows"][0]["source_path"] is None
+    assert payload["rows"][0]["source_path_exists"] is True
+
+
 def test_artifact_report_cli_accepts_release_name(tmp_path, capsys):
     from axiom_corpus.corpus.artifacts import CorpusArtifactStore
 

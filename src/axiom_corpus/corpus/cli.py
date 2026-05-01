@@ -40,6 +40,7 @@ from axiom_corpus.corpus.states import (
     extract_cic_odt_release,
     extract_colorado_docx_release,
     extract_dc_code,
+    extract_ohio_revised_code,
     extract_texas_tcas,
 )
 from axiom_corpus.corpus.supabase import (
@@ -538,6 +539,34 @@ def _cmd_extract_texas_tcas(args: argparse.Namespace) -> int:
     return 0 if report.coverage.complete or args.allow_incomplete else 2
 
 
+def _cmd_extract_ohio_revised_code(args: argparse.Namespace) -> int:
+    store = CorpusArtifactStore(args.base)
+    expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
+    report = extract_ohio_revised_code(
+        store,
+        version=args.version,
+        source_dir=args.source_dir,
+        source_as_of=args.source_as_of,
+        expression_date=expression_date,
+        only_title=args.only_title,
+        limit=args.limit,
+        download_dir=args.download_dir,
+    )
+    print(
+        json.dumps(
+            _state_statute_report_payload(
+                report,
+                source_id="us-oh-revised-code",
+                adapter="ohio-revised-code",
+                version=args.version,
+            ),
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0 if report.coverage.complete or args.allow_incomplete else 2
+
+
 def _cmd_extract_state_statutes(args: argparse.Namespace) -> int:
     manifest_path = args.manifest
     manifest = CorpusManifest.load(manifest_path)
@@ -705,6 +734,17 @@ def _extract_state_statute_source(
             workers=_optional_int(options.get("workers")) or 4,
             download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
         )
+    if adapter == "ohio-revised-code":
+        return extract_ohio_revised_code(
+            store,
+            version=version,
+            source_dir=_optional_manifest_path(manifest_path, options, "source_dir"),
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            limit=limit,
+            download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
+        )
     raise ValueError(f"unsupported state statute adapter: {source.adapter}")
 
 
@@ -720,7 +760,7 @@ def _state_statute_plan_payload(
     path_key = "source_dir" if adapter == "dc-code" else "release_dir"
     source_path = (
         _optional_manifest_path(manifest_path, options, "source_dir")
-        if adapter == "texas-tcas"
+        if adapter in {"ohio-revised-code", "texas-tcas"}
         else _required_manifest_path(manifest_path, options, path_key)
     )
     return {
@@ -791,6 +831,9 @@ def _canonical_state_statute_adapter(adapter: str) -> str:
         "cic-state-code-odt": "cic-odt",
         "colorado-docx": "colorado-docx",
         "colorado-crs-docx": "colorado-docx",
+        "ohio": "ohio-revised-code",
+        "ohio-revised-code": "ohio-revised-code",
+        "orc": "ohio-revised-code",
         "texas-tcas": "texas-tcas",
         "texas-api": "texas-tcas",
         "tcas": "texas-tcas",
@@ -1169,6 +1212,21 @@ def build_parser() -> argparse.ArgumentParser:
     extract_colorado_docx_cmd.add_argument("--limit", type=int)
     extract_colorado_docx_cmd.add_argument("--allow-incomplete", action="store_true")
     extract_colorado_docx_cmd.set_defaults(func=_cmd_extract_colorado_docx)
+
+    extract_ohio_revised_code_cmd = sub.add_parser(
+        "extract-ohio-revised-code",
+        help="Snapshot official Ohio Revised Code HTML.",
+    )
+    extract_ohio_revised_code_cmd.add_argument("--base", type=Path, required=True)
+    extract_ohio_revised_code_cmd.add_argument("--version", required=True)
+    extract_ohio_revised_code_cmd.add_argument("--source-dir", type=Path)
+    extract_ohio_revised_code_cmd.add_argument("--download-dir", type=Path)
+    extract_ohio_revised_code_cmd.add_argument("--only-title")
+    extract_ohio_revised_code_cmd.add_argument("--source-as-of", "--as-of", dest="source_as_of")
+    extract_ohio_revised_code_cmd.add_argument("--expression-date")
+    extract_ohio_revised_code_cmd.add_argument("--limit", type=int)
+    extract_ohio_revised_code_cmd.add_argument("--allow-incomplete", action="store_true")
+    extract_ohio_revised_code_cmd.set_defaults(func=_cmd_extract_ohio_revised_code)
 
     extract_texas_tcas_cmd = sub.add_parser(
         "extract-texas-tcas",

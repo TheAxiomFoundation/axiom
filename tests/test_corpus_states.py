@@ -9,6 +9,7 @@ from axiom_corpus.corpus.states import (
     extract_cic_odt_release,
     extract_colorado_docx_release,
     extract_dc_code,
+    extract_ohio_revised_code,
     extract_texas_tcas,
     state_run_id,
 )
@@ -124,6 +125,91 @@ SAMPLE_COLORADO_VARIANT_PARAGRAPHS = [
 ]
 
 
+SAMPLE_OHIO_INDEX = """<!DOCTYPE html>
+<html>
+<body>
+  <main>
+    <a href="/ohio-revised-code/general-provisions">General Provisions</a>
+    <a href="/ohio-revised-code/title-51">Title 51 | Public Welfare</a>
+  </main>
+</body>
+</html>
+"""
+
+
+SAMPLE_OHIO_TITLE = """<!DOCTYPE html>
+<html>
+<body>
+  <main>
+    <h1>Title 51 | Public Welfare</h1>
+    <a href="/ohio-revised-code/chapter-5160">Chapter 5160 | Medical Assistance Programs</a>
+  </main>
+</body>
+</html>
+"""
+
+
+SAMPLE_OHIO_CHAPTER = """<!DOCTYPE html>
+<html>
+<body>
+  <main>
+    <h1>Chapter 5160 | Medical Assistance Programs</h1>
+    <div class="list-content">
+      <span class="content-head">
+        <span class="content-head-text">
+          <a href="section-5160.01">Section 5160.01 <span>|</span> Definitions.</a>
+        </span>
+      </span>
+      <div class="content-body">
+        <div class="laws-section-info">
+          <div class="laws-section-info-module">
+            <div class="label">Effective:</div>
+            <div class="value">September 29, 2013</div>
+          </div>
+          <div class="laws-section-info-module">
+            <div class="label">Latest Legislation: </div>
+            <div class="value">House Bill 59 - 130th General Assembly</div>
+          </div>
+          <div class="laws-section-info-module no-print">
+            <div class="label">PDF:</div>
+            <div class="value"><a href="/assets/laws/revised-code/authenticated/51/5160/5160.01.pdf">Download Authenticated PDF</a></div>
+          </div>
+        </div>
+        <section class="laws-body">
+          <span>
+            <p>As used in this chapter:</p>
+            <p>(A) "Medicaid managed care organization" has the same meaning as in section <a class="section-link" href="/ohio-revised-code/section-5167.01">5167.01</a> of the Revised Code.</p>
+          </span>
+        </section>
+      </div>
+    </div>
+    <div class="list-content">
+      <span class="content-head">
+        <span class="content-head-text">
+          <a href="section-5160.011">Section 5160.011 <span>|</span> References to department.</a>
+        </span>
+      </span>
+      <div class="content-body">
+        <div class="laws-section-info">
+          <div class="laws-section-info-module">
+            <div class="label">Effective:</div>
+            <div class="value">January 1, 2025</div>
+          </div>
+        </div>
+        <section class="laws-body">
+          <span>
+            <p>References are deemed to refer to the department of medicaid.</p>
+          </span>
+          <div class="laws-notice"><p>Last updated January 1, 2025 at 5:35 AM</p></div>
+        </section>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
+"""
+
+
 SAMPLE_TEXAS_HTML = """<html><body><pre xml:space="preserve">
 <p class="center" style="font-weight:bold;">TAX CODE</p>
 <p class="center" style="font-weight:bold;">TITLE 1. PROPERTY TAX CODE</p>
@@ -175,6 +261,16 @@ def _write_pdf(path, text):
     page.insert_text((72, 72), text)
     document.save(path)
     document.close()
+
+
+def _write_ohio_fixture(source_dir):
+    title_dir = source_dir / "ohio-revised-code" / "titles"
+    chapter_dir = source_dir / "ohio-revised-code" / "chapters"
+    title_dir.mkdir(parents=True)
+    chapter_dir.mkdir()
+    (source_dir / "ohio-revised-code" / "index.html").write_text(SAMPLE_OHIO_INDEX)
+    (title_dir / "title-51.html").write_text(SAMPLE_OHIO_TITLE)
+    (chapter_dir / "chapter-5160.html").write_text(SAMPLE_OHIO_CHAPTER)
 
 
 def _write_texas_fixture(source_dir):
@@ -353,6 +449,36 @@ def test_extract_texas_tcas_writes_state_records(tmp_path):
     assert "Code Construction Act" in records[-1].body
 
 
+def test_extract_ohio_revised_code_writes_state_records(tmp_path):
+    source_dir = tmp_path / "ohio"
+    _write_ohio_fixture(source_dir)
+    store = CorpusArtifactStore(tmp_path / "corpus")
+
+    report = extract_ohio_revised_code(
+        store,
+        version="2026-05-01",
+        source_dir=source_dir,
+        source_as_of="2026-05-01",
+        only_title="51",
+    )
+
+    assert report.coverage.complete
+    assert report.title_count == 1
+    assert report.container_count == 2
+    assert report.section_count == 2
+    records = load_provisions(report.provisions_path)
+    assert [record.citation_path for record in records] == [
+        "us-oh/statute/title-51",
+        "us-oh/statute/chapter-5160",
+        "us-oh/statute/5160.01",
+        "us-oh/statute/5160.011",
+    ]
+    assert records[2].metadata["references_to"] == ["us-oh/statute/5167.01"]
+    assert records[2].metadata["effective_date"] == "September 29, 2013"
+    assert records[3].metadata["last_updated"] == "Last updated January 1, 2025 at 5:35 AM"
+    assert "department of medicaid" in (records[3].body or "")
+
+
 def test_extract_colorado_docx_release_writes_state_records(tmp_path):
     release_dir = tmp_path / "release2025"
     docx_dir = release_dir / "docx"
@@ -516,6 +642,31 @@ def test_extract_texas_tcas_cli_local_source(tmp_path, capsys):
     assert exit_code == 0
     assert '"jurisdiction": "us-tx"' in output
     assert '"provisions_written": 7' in output
+
+
+def test_extract_ohio_revised_code_cli_local_source(tmp_path, capsys):
+    source_dir = tmp_path / "ohio"
+    _write_ohio_fixture(source_dir)
+    base = tmp_path / "corpus"
+
+    exit_code = main(
+        [
+            "extract-ohio-revised-code",
+            "--base",
+            str(base),
+            "--version",
+            "2026-05-01",
+            "--source-dir",
+            str(source_dir),
+            "--only-title",
+            "51",
+        ]
+    )
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert '"jurisdiction": "us-oh"' in output
+    assert '"provisions_written": 4' in output
 
 
 def test_extract_cic_state_html_cli(tmp_path, capsys):
