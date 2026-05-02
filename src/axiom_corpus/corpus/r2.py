@@ -7,7 +7,7 @@ import json
 import mimetypes
 import os
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -182,6 +182,33 @@ class ArtifactScopeRow:
 
 
 @dataclass(frozen=True)
+class ArtifactSupabaseGroup:
+    jurisdiction: str
+    document_class: str
+    scope_count: int
+    versions: tuple[str, ...]
+    provision_count: int
+    supabase_count: int
+
+    def to_mapping(self) -> dict[str, Any]:
+        return {
+            "jurisdiction": self.jurisdiction,
+            "document_class": self.document_class,
+            "scope_count": self.scope_count,
+            "versions": list(self.versions),
+            "provision_count": self.provision_count,
+            "supabase_count": self.supabase_count,
+            "supabase_matches_provisions": self.supabase_count == self.provision_count,
+            "mismatch_reasons": list(self.mismatch_reasons()),
+        }
+
+    def mismatch_reasons(self) -> tuple[str, ...]:
+        if self.supabase_count != self.provision_count:
+            return ("supabase_count_mismatch",)
+        return ()
+
+
+@dataclass(frozen=True)
 class ArtifactReport:
     local_root: Path
     prefixes: tuple[str, ...]
@@ -192,11 +219,13 @@ class ArtifactReport:
     remote_bytes: int | None
     remote_by_prefix: dict[str, dict[str, int]] | None
     rows: tuple[ArtifactScopeRow, ...]
+    supabase_groups: tuple[ArtifactSupabaseGroup, ...] = ()
     release_name: str | None = None
     release_scope_count: int | None = None
 
     def to_mapping(self) -> dict[str, Any]:
         mismatch_rows = [row for row in self.rows if row.mismatch_reasons()]
+        supabase_mismatches = [group for group in self.supabase_groups if group.mismatch_reasons()]
         payload = {
             "local_root": str(self.local_root),
             "prefixes": list(self.prefixes),
@@ -209,6 +238,10 @@ class ArtifactReport:
             "scope_count": len(self.rows),
             "mismatch_count": len(mismatch_rows),
             "mismatches": [row.to_mapping() for row in mismatch_rows],
+            "supabase_group_count": len(self.supabase_groups),
+            "supabase_mismatch_count": len(supabase_mismatches),
+            "supabase_mismatches": [group.to_mapping() for group in supabase_mismatches],
+            "supabase_groups": [group.to_mapping() for group in self.supabase_groups],
             "rows": [row.to_mapping() for row in self.rows],
         }
         if self.release_name is not None:
@@ -430,6 +463,7 @@ def build_artifact_report(
         release_scopes=release_scope_keys,
         supabase_counts=supabase_counts,
     )
+    supabase_groups = _build_supabase_groups(rows, supabase_counts)
     return ArtifactReport(
         local_root=root_path,
         prefixes=prefix_tuple,
@@ -444,6 +478,7 @@ def build_artifact_report(
             _summarize_remote_by_prefix(scoped_remote) if scoped_remote is not None else None
         ),
         rows=rows,
+        supabase_groups=supabase_groups,
         release_name=release_name,
         release_scope_count=len(release_scope_keys) if release_scope_keys is not None else None,
     )
@@ -498,7 +533,7 @@ def _build_scope_rows(
     if remote is not None:
         for remote_artifact in remote.values():
             _merge_remote_scope(builders, remote_artifact)
-    rows: list[ArtifactScopeRow] = []
+    visible_keys = []
     for key in sorted(builders):
         row_jurisdiction, row_document_class, row_version = key
         if version is not None and row_version != version:
@@ -509,7 +544,18 @@ def _build_scope_rows(
             continue
         if release_scopes is not None and key not in release_scopes:
             continue
+        visible_keys.append(key)
+    group_counts = Counter(
+        (row_jurisdiction, row_document_class)
+        for row_jurisdiction, row_document_class, _ in visible_keys
+    )
+    rows: list[ArtifactScopeRow] = []
+    for key in visible_keys:
+        row_jurisdiction, row_document_class, row_version = key
         data = builders[key]
+        supabase_count = None
+        if group_counts[(row_jurisdiction, row_document_class)] == 1:
+            supabase_count = supabase_counts.get((row_jurisdiction, row_document_class))
         rows.append(
             ArtifactScopeRow(
                 jurisdiction=row_jurisdiction,
@@ -537,10 +583,38 @@ def _build_scope_rows(
                 matched_count=data.get("matched_count"),
                 missing_count=data.get("missing_count"),
                 extra_count=data.get("extra_count"),
-                supabase_count=supabase_counts.get((row_jurisdiction, row_document_class)),
+                supabase_count=supabase_count,
             )
         )
     return tuple(rows)
+
+
+def _build_supabase_groups(
+    rows: tuple[ArtifactScopeRow, ...],
+    supabase_counts: Mapping[tuple[str, str], int],
+) -> tuple[ArtifactSupabaseGroup, ...]:
+    if not supabase_counts:
+        return ()
+    grouped: dict[tuple[str, str], list[ArtifactScopeRow]] = defaultdict(list)
+    for row in rows:
+        grouped[(row.jurisdiction, row.document_class)].append(row)
+    groups: list[ArtifactSupabaseGroup] = []
+    for key in sorted(grouped):
+        supabase_count = supabase_counts.get(key)
+        if supabase_count is None:
+            continue
+        scope_rows = grouped[key]
+        groups.append(
+            ArtifactSupabaseGroup(
+                jurisdiction=key[0],
+                document_class=key[1],
+                scope_count=len(scope_rows),
+                versions=tuple(row.version for row in scope_rows),
+                provision_count=sum(row.provision_count or 0 for row in scope_rows),
+                supabase_count=supabase_count,
+            )
+        )
+    return tuple(groups)
 
 
 def _merge_local_scope(

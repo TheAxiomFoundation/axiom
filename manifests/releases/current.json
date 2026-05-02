@@ -8,6 +8,16 @@
       "version": "2026-05-01-snap-fy2026-cola"
     },
     {
+      "document_class": "guidance",
+      "jurisdiction": "us",
+      "version": "2026-05-02-irs-rev-proc-2025-32"
+    },
+    {
+      "document_class": "guidance",
+      "jurisdiction": "us",
+      "version": "2026-05-02-snap-fy2026-income-eligibility-standards"
+    },
+    {
       "document_class": "statute",
       "jurisdiction": "us",
       "version": "2026-04-29"
@@ -21,6 +31,11 @@
       "document_class": "policy",
       "jurisdiction": "us-co",
       "version": "2026-04-30"
+    },
+    {
+      "document_class": "statute",
+      "jurisdiction": "us-ca",
+      "version": "2026-05-01"
     },
     {
       "document_class": "regulation",
@@ -49,6 +64,11 @@
     },
     {
       "document_class": "statute",
+      "jurisdiction": "us-mn",
+      "version": "2026-05-01"
+    },
+    {
+      "document_class": "statute",
       "jurisdiction": "us-nc",
       "version": "2026-04-29"
     },
@@ -59,8 +79,18 @@
     },
     {
       "document_class": "statute",
+      "jurisdiction": "us-oh",
+      "version": "2026-05-01"
+    },
+    {
+      "document_class": "statute",
       "jurisdiction": "us-tn",
       "version": "2026-04-29"
+    },
+    {
+      "document_class": "statute",
+      "jurisdiction": "us-tx",
+      "version": "2026-05-01"
     },
     {
       "document_class": "statute",

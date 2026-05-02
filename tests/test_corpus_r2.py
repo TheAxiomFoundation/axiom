@@ -248,6 +248,77 @@ def test_artifact_report_flags_r2_and_supabase_mismatches(tmp_path):
     }
 
 
+def test_artifact_report_compares_supabase_counts_across_release_scopes(tmp_path):
+    store = CorpusArtifactStore(tmp_path / "corpus")
+    for version, count in (("2026-05-01-a", 1), ("2026-05-02-b", 2)):
+        records = [
+            ProvisionRecord(
+                jurisdiction="us",
+                document_class="guidance",
+                citation_path=f"us/guidance/{version}/{index}",
+                body="Text.",
+            )
+            for index in range(count)
+        ]
+        store.write_inventory(
+            store.inventory_path("us", "guidance", version),
+            [SourceInventoryItem(citation_path=record.citation_path) for record in records],
+        )
+        store.write_provisions(store.provisions_path("us", "guidance", version), records)
+        store.write_json(
+            store.coverage_path("us", "guidance", version),
+            {
+                "complete": True,
+                "source_count": count,
+                "provision_count": count,
+                "matched_count": count,
+                "missing_from_provisions": [],
+                "extra_provisions": [],
+            },
+        )
+    counts = tmp_path / "counts.json"
+    counts.write_text(
+        json.dumps(
+            {
+                "rows": [
+                    {
+                        "jurisdiction": "us",
+                        "document_class": "guidance",
+                        "provision_count": 3,
+                    }
+                ]
+            }
+        )
+    )
+
+    report = build_artifact_report(
+        store.root,
+        prefixes=("inventory", "provisions", "coverage"),
+        supabase_counts_path=counts,
+        release_scopes=(
+            ("us", "guidance", "2026-05-01-a"),
+            ("us", "guidance", "2026-05-02-b"),
+        ),
+    )
+    payload = report.to_mapping()
+
+    assert [row.supabase_count for row in report.rows] == [None, None]
+    assert payload["mismatch_count"] == 0
+    assert payload["supabase_mismatch_count"] == 0
+    assert payload["supabase_groups"] == [
+        {
+            "document_class": "guidance",
+            "jurisdiction": "us",
+            "mismatch_reasons": [],
+            "provision_count": 3,
+            "scope_count": 2,
+            "supabase_count": 3,
+            "supabase_matches_provisions": True,
+            "versions": ["2026-05-01-a", "2026-05-02-b"],
+        }
+    ]
+
+
 def test_sync_artifacts_to_r2_can_scope_uploads(tmp_path):
     store = CorpusArtifactStore(tmp_path / "corpus")
     store.write_inventory(

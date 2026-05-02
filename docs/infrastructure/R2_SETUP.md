@@ -129,10 +129,13 @@ axiom-corpus-ingest sync-r2 \
 # Compare local artifacts, R2 objects, coverage, and Supabase counts
 axiom-corpus-ingest artifact-report \
   --base data/corpus \
-  --release current \
   --supabase-counts data/corpus/snapshots/provision-counts-2026-04-30.json \
   --include-r2
 ```
+
+Unscoped artifact reports auto-use `manifests/releases/current.json` when it
+exists. Add `--all-scopes` when you need an exhaustive diagnostic report that
+includes old probes and superseded snapshots.
 
 ## Related Documentation
 

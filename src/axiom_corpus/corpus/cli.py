@@ -860,9 +860,7 @@ def _state_statute_plan_payload(
         "source_path_exists": True if source_path is None else source_path.exists(),
         "only_title": _optional_text(options.get("only_title")),
         "limit": (
-            limit_override
-            if limit_override is not None
-            else _optional_int(options.get("limit"))
+            limit_override if limit_override is not None else _optional_int(options.get("limit"))
         ),
     }
 
@@ -1146,8 +1144,13 @@ def _cmd_artifact_report(args: argparse.Namespace) -> int:
     prefixes = tuple(args.prefix or DEFAULT_ARTIFACT_PREFIXES)
     release = None
     release_path = None
-    if args.release:
-        release_path = resolve_release_manifest_path(args.base, args.release)
+    release_name = args.release
+    if release_name is None and not args.all_scopes and not _artifact_scope_filter_supplied(args):
+        current_release = resolve_release_manifest_path(args.base, "current")
+        if current_release.exists():
+            release_name = "current"
+    if release_name:
+        release_path = resolve_release_manifest_path(args.base, release_name)
         release = ReleaseManifest.load(release_path)
     if args.include_r2:
         config = load_r2_config(
@@ -1186,6 +1189,10 @@ def _cmd_artifact_report(args: argparse.Namespace) -> int:
         payload["written_to"] = str(args.output)
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
+
+
+def _artifact_scope_filter_supplied(args: argparse.Namespace) -> bool:
+    return any((args.version, args.jurisdiction, args.document_class))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1560,12 +1567,18 @@ def build_parser() -> argparse.ArgumentParser:
     artifact_report.add_argument("--base", type=Path, required=True)
     artifact_report.add_argument("--version")
     artifact_report.add_argument("--jurisdiction")
-    artifact_report.add_argument(
+    release_group = artifact_report.add_mutually_exclusive_group()
+    release_group.add_argument(
         "--release",
         help=(
             "Release manifest name or path. Names resolve to "
             "<base>/releases/<name>.json or manifests/releases/<name>.json."
         ),
+    )
+    release_group.add_argument(
+        "--all-scopes",
+        action="store_true",
+        help="Report every discovered scope instead of auto-using the current release.",
     )
     artifact_report.add_argument(
         "--document-class",

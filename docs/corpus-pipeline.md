@@ -67,15 +67,16 @@ and Supabase count snapshots by `jurisdiction + document_class + version`:
 ```bash
 axiom-corpus-ingest artifact-report \
   --base data/corpus \
-  --release current \
   --supabase-counts data/corpus/snapshots/provision-counts-2026-04-30.json \
   --include-r2 \
   --output data/corpus/analytics/artifact-report-2026-04-30.json
 ```
 
 Named releases resolve to `data/corpus/releases/<name>.json` first, then the
-tracked `manifests/releases/<name>.json`. Use releases for production checks so
-old probes and superseded source snapshots do not create report noise.
+tracked `manifests/releases/<name>.json`. Unscoped reports auto-use the
+`current` release when it exists, so production dashboards exclude old probes
+and superseded source snapshots by default. Use `--release <name>` for a
+specific release, or `--all-scopes` for an exhaustive diagnostic report.
 
 ## Federal eCFR
 
