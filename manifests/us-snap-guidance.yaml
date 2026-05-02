@@ -17,3 +17,21 @@ documents:
       fiscal_year: "2026"
       effective_start: "2025-10-01"
       effective_end: "2026-09-30"
+  - source_id: snap-fy2026-income-eligibility-standards
+    jurisdiction: us
+    document_class: guidance
+    citation_path: us/guidance/usda/fns/snap-fy2026-income-eligibility-standards
+    title: SNAP FY 2026 Income Eligibility Standards
+    source_url: https://www.fns.usda.gov/snap/allotment/cola/fy26
+    download_url: https://fns-prod.azureedge.us/sites/default/files/resource-files/snap-fy26-incomeEligibilityStandards.pdf
+    source_format: pdf
+    source_as_of: "2025-08-14"
+    expression_date: "2025-10-01"
+    metadata:
+      primary_source: true
+      source_authority: USDA Food and Nutrition Service
+      document_subtype: income_eligibility_guidance
+      program: SNAP
+      fiscal_year: "2026"
+      effective_start: "2025-10-01"
+      effective_end: "2026-09-30"

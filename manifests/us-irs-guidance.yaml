@@ -1,0 +1,18 @@
+documents:
+  - source_id: irs-rev-proc-2025-32
+    jurisdiction: us
+    document_class: guidance
+    citation_path: us/guidance/irs/rev-proc-2025-32
+    title: Rev. Proc. 2025-32
+    source_url: https://www.irs.gov/irb/2025-45_IRB
+    download_url: https://www.irs.gov/pub/irs-drop/rp-25-32.pdf
+    source_format: pdf
+    source_as_of: "2025-10-17"
+    expression_date: "2026-01-01"
+    metadata:
+      primary_source: true
+      source_authority: Internal Revenue Service
+      document_subtype: revenue_procedure
+      document_number: Rev. Proc. 2025-32
+      irb_citation: 2025-45 IRB
+      tax_year: "2026"
