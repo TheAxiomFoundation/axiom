@@ -8,6 +8,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 CLAIMS_ROOT = ROOT / "claims"
 FRIENDLY_CONCEPT_ID = re.compile(r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$")
+ABSOLUTE_TARGET_ID = re.compile(r"^[a-z][a-z0-9_.-]*:[^\s]+$")
 
 
 def iter_claim_records() -> list[tuple[Path, int, dict[str, Any]]]:
@@ -36,6 +37,10 @@ def test_claim_subjects_use_legal_or_rulespec_pointers() -> None:
 
         subject_type = str(subject.get("type") or "")
         subject_id = str(subject.get("id") or "")
+        if not ABSOLUTE_TARGET_ID.match(subject_id):
+            invalid.append(
+                f"{path.relative_to(ROOT)}:{line_number}: non-absolute subject id `{subject_id}`"
+            )
         if subject_type == "concept":
             invalid.append(
                 f"{path.relative_to(ROOT)}:{line_number}: concept subject `{subject_id}`"
