@@ -221,6 +221,22 @@ Use `--only-jurisdiction`, `--only-source-id`, and `--limit-per-source` for
 smoke runs or targeted rebuilds. Supported state statute adapters are
 `dc-code`, `cic-html`, `cic-odt`, and `colorado-docx`.
 
+Use `state-statute-completion` for the production completion view across all
+50 states plus DC. The report compares expected jurisdictions against the
+current release, local source-first artifacts, optional R2 objects, Supabase
+count snapshots, and the latest `validate-release` output. It distinguishes
+productionized states from local-but-unpromoted, Supabase-only legacy, partial,
+and missing source-first extractions.
+
+```bash
+axiom-corpus-ingest state-statute-completion \
+  --base data/corpus \
+  --release current \
+  --supabase-counts data/corpus/snapshots/provision-counts-2026-05-02.json \
+  --include-r2 \
+  --output data/corpus/analytics/state-statute-completion-current.json
+```
+
 Primary SNAP policy documents that are not codified in CCR can be ingested from
 an explicit official-document manifest. This is for primary sources such as
 state plans, waiver approvals, agency memoranda, and agency policy pages. Do not

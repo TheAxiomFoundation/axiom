@@ -37,6 +37,9 @@ from axiom_corpus.corpus.r2 import (
 )
 from axiom_corpus.corpus.release_quality import validate_release
 from axiom_corpus.corpus.releases import ReleaseManifest, resolve_release_manifest_path
+from axiom_corpus.corpus.state_statute_completion import (
+    build_state_statute_completion_report,
+)
 from axiom_corpus.corpus.states import (
     StateStatuteExtractReport,
     extract_california_codes_bulk,
@@ -1256,6 +1259,54 @@ def _cmd_validate_release(args: argparse.Namespace) -> int:
     return 0 if report.ok else 2
 
 
+def _cmd_state_statute_completion(args: argparse.Namespace) -> int:
+    release_path = resolve_release_manifest_path(args.base, args.release)
+    release = ReleaseManifest.load(release_path)
+    prefixes = tuple(args.prefix or DEFAULT_RELEASE_ARTIFACT_PREFIXES)
+    validation_report_path = args.validation_report
+    if validation_report_path is None:
+        candidate = args.base / "analytics" / f"validate-release-{release.name}.json"
+        if candidate.exists():
+            validation_report_path = candidate
+    if args.include_r2:
+        config = load_r2_config(
+            credential_path=args.credentials_file,
+            bucket=args.bucket,
+            endpoint_url=args.endpoint_url,
+        )
+        artifact_report = build_artifact_report_with_r2(
+            args.base,
+            config=config,
+            prefixes=prefixes,
+            document_class=DocumentClass.STATUTE.value,
+            supabase_counts_path=args.supabase_counts,
+        )
+    else:
+        artifact_report = build_artifact_report(
+            args.base,
+            prefixes=prefixes,
+            document_class=DocumentClass.STATUTE.value,
+            supabase_counts_path=args.supabase_counts,
+        )
+    report = build_state_statute_completion_report(
+        args.base,
+        release=release,
+        artifact_report=artifact_report,
+        supabase_counts_path=args.supabase_counts,
+        validation_report_path=validation_report_path,
+    )
+    payload = report.to_mapping()
+    payload["release_path"] = str(release_path)
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+        payload["written_to"] = str(args.output)
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    if args.require_complete and not report.complete:
+        return 2
+    return 0
+
+
 def _artifact_scope_filter_supplied(args: argparse.Namespace) -> bool:
     return any((args.version, args.jurisdiction, args.document_class))
 
@@ -1702,6 +1753,40 @@ def build_parser() -> argparse.ArgumentParser:
     validate_release_cmd.add_argument("--max-issues", type=int, default=200)
     validate_release_cmd.add_argument("--output", type=Path)
     validate_release_cmd.set_defaults(func=_cmd_validate_release)
+
+    state_statute_completion = sub.add_parser(
+        "state-statute-completion",
+        help="Classify 50-state plus DC statute ingestion against the current release.",
+    )
+    state_statute_completion.add_argument("--base", type=Path, required=True)
+    state_statute_completion.add_argument("--release", default="current")
+    state_statute_completion.add_argument("--supabase-counts", type=Path)
+    state_statute_completion.add_argument(
+        "--validation-report",
+        type=Path,
+        help=(
+            "validate-release JSON output. Defaults to "
+            "<base>/analytics/validate-release-<release>.json when present."
+        ),
+    )
+    state_statute_completion.add_argument(
+        "--prefix",
+        action="append",
+        choices=list(DEFAULT_RELEASE_ARTIFACT_PREFIXES),
+        default=[],
+        help="Top-level artifact prefix to inspect. Defaults to release content prefixes.",
+    )
+    state_statute_completion.add_argument("--include-r2", action="store_true")
+    state_statute_completion.add_argument("--bucket")
+    state_statute_completion.add_argument("--endpoint-url")
+    state_statute_completion.add_argument("--credentials-file", type=Path)
+    state_statute_completion.add_argument("--output", type=Path)
+    state_statute_completion.add_argument(
+        "--require-complete",
+        action="store_true",
+        help="Exit nonzero unless every expected state/DC statute is productionized and validated.",
+    )
+    state_statute_completion.set_defaults(func=_cmd_state_statute_completion)
 
     return parser
 
