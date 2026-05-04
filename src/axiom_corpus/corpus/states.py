@@ -339,6 +339,13 @@ class _NebraskaChapter:
         return urljoin(f"{NEBRASKA_STATUTES_BASE_URL}/", self.href)
 
     @property
+    def full_source_url(self) -> str:
+        return urljoin(
+            f"{NEBRASKA_STATUTES_BASE_URL}/",
+            f"laws-index/chap{int(self.num):02d}-full.html",
+        )
+
+    @property
     def citation_path(self) -> str:
         return f"us-ne/statute/{self.num}"
 
@@ -1677,7 +1684,8 @@ def extract_nebraska_revised_statutes(
     container_count = 0
     section_count = 0
     seen_citation_paths: set[str] = set()
-    section_targets: list[_NebraskaSectionTarget] = []
+    # Full chapter HTML is the Nebraska extraction unit; keep the shared CLI option accepted.
+    del workers
 
     for chapter in chapters:
         if remaining is not None and remaining <= 0:
@@ -1689,7 +1697,7 @@ def extract_nebraska_revised_statutes(
                 source_root,
                 download_root,
                 relative_name=chapter_relative,
-                url=chapter.source_url,
+                url=chapter.full_source_url,
             )
         except (OSError, requests.RequestException) as exc:
             errors.append(f"chapter {chapter.num}: {exc}")
@@ -1703,10 +1711,9 @@ def extract_nebraska_revised_statutes(
         chapter_sha = store.write_bytes(chapter_path, chapter_bytes)
         source_paths.append(chapter_path)
         chapter_source_key = _state_source_key(jurisdiction, run_id, chapter_relative)
-        parsed_heading = _parse_nebraska_chapter_heading(chapter_bytes, chapter.num)
         chapter_with_heading = _NebraskaChapter(
             num=chapter.num,
-            heading=parsed_heading or chapter.heading,
+            heading=chapter.heading,
             href=chapter.href,
             ordinal=chapter.ordinal,
         )
@@ -1731,40 +1738,12 @@ def extract_nebraska_revised_statutes(
             if remaining is not None:
                 remaining -= 1
 
-        for target in _parse_nebraska_section_targets(chapter_bytes, chapter=chapter_with_heading):
-            if remaining is not None and len(section_targets) >= remaining:
-                break
-            section_targets.append(target)
-
-    if remaining is None or remaining > 0:
-        for target, section_bytes, error in _iter_nebraska_section_sources(
-            source_root,
-            download_root,
-            tuple(section_targets),
-            workers=workers,
-        ):
+        sections = _parse_nebraska_chapter_sections(chapter_bytes, chapter=chapter_with_heading)
+        if not sections:
+            errors.append(f"chapter {chapter.num}: no sections parsed")
+        for section in sections:
             if remaining is not None and remaining <= 0:
                 break
-            if error is not None:
-                errors.append(f"section {target.section}: {error}")
-                continue
-            if section_bytes is None:
-                continue
-            section_relative = _nebraska_section_relative(target)
-            section_path = store.source_path(
-                jurisdiction,
-                DocumentClass.STATUTE,
-                run_id,
-                section_relative,
-            )
-            section_sha = store.write_bytes(section_path, section_bytes)
-            source_paths.append(section_path)
-            section_source_key = _state_source_key(jurisdiction, run_id, section_relative)
-            try:
-                section = _parse_nebraska_section(section_bytes, target=target)
-            except ValueError as exc:
-                errors.append(f"section {target.section}: {exc}")
-                continue
             if section.citation_path in seen_citation_paths:
                 continue
             seen_citation_paths.add(section.citation_path)
@@ -1772,9 +1751,9 @@ def extract_nebraska_revised_statutes(
                 SourceInventoryItem(
                     citation_path=section.citation_path,
                     source_url=section.source_url,
-                    source_path=section_source_key,
+                    source_path=chapter_source_key,
                     source_format=NEBRASKA_STATUTES_SOURCE_FORMAT,
-                    sha256=section_sha,
+                    sha256=chapter_sha,
                     metadata={
                         "kind": "section",
                         "chapter": section.target.chapter.num,
@@ -1792,7 +1771,7 @@ def extract_nebraska_revised_statutes(
                 _nebraska_section_provision(
                     section,
                     version=run_id,
-                    source_path=section_source_key,
+                    source_path=chapter_source_key,
                     source_as_of=source_as_of_text,
                     expression_date=expression_date_text,
                 )
@@ -3458,6 +3437,10 @@ def _load_nebraska_html(
 ) -> bytes:
     if source_root is not None:
         return (source_root / relative_name).read_bytes()
+    if download_root is not None:
+        cached_path = download_root / relative_name
+        if cached_path.exists():
+            return cached_path.read_bytes()
     response: requests.Response | None = None
     for attempt in range(5):
         response = session.get(url, timeout=90)
@@ -3488,6 +3471,7 @@ def _parse_nebraska_chapters(data: bytes) -> tuple[_NebraskaChapter, ...]:
         if chapter is None or chapter in seen:
             continue
         heading = _nebraska_chapter_link_heading(link.get_text(" ", strip=True), chapter)
+        heading = heading or _nebraska_chapter_sibling_heading(link)
         chapters.append(
             _NebraskaChapter(
                 num=chapter,
@@ -3519,211 +3503,148 @@ def _nebraska_chapter_link_heading(text: str, chapter: str) -> str | None:
     return heading or None
 
 
-def _parse_nebraska_chapter_heading(data: bytes, chapter: str) -> str | None:
-    soup = BeautifulSoup(data.decode("utf-8", errors="replace"), "html.parser")
-    for tag in soup.select(".card-header, h1"):
-        if not isinstance(tag, Tag):
+def _nebraska_chapter_sibling_heading(link: Tag) -> str | None:
+    parent = link.find_parent("span")
+    if not isinstance(parent, Tag):
+        return None
+    for sibling in parent.find_next_siblings("span"):
+        if not isinstance(sibling, Tag):
             continue
-        text = _clean_text(tag.get_text(" ", strip=True))
-        match = re.search(
-            rf"Revised Statutes Chapter\s+0*{re.escape(chapter)}\s*-\s*(?P<heading>.+)$",
-            text,
-            re.I,
-        )
-        if match:
-            return _clean_text(match.group("heading")) or None
+        text = _clean_text(sibling.get_text(" ", strip=True))
+        if text:
+            return text
     return None
 
 
-def _parse_nebraska_section_targets(
+def _parse_nebraska_chapter_sections(
     data: bytes,
     *,
     chapter: _NebraskaChapter,
-) -> tuple[_NebraskaSectionTarget, ...]:
+) -> tuple[_NebraskaSection, ...]:
     soup = BeautifulSoup(data.decode("utf-8", errors="replace"), "html.parser")
-    targets: list[_NebraskaSectionTarget] = []
+    sections: list[_NebraskaSection] = []
     seen: set[str] = set()
-    for link in soup.select('a[href*="statutes.php?statute="]'):
-        if not isinstance(link, Tag):
+    for ordinal, root in enumerate(soup.select("div.printwidth")):
+        if not isinstance(root, Tag):
             continue
-        href = str(link.get("href") or "")
-        token = _nebraska_section_from_href(href)
-        if token is None or token in seen:
+        parsed = _parse_nebraska_full_chapter_section(root, chapter=chapter, ordinal=ordinal)
+        if parsed is None or parsed.section in seen:
             continue
-        token_chapter = token.split("-", 1)[0]
-        if token_chapter != chapter.num:
-            continue
-        targets.append(
-            _NebraskaSectionTarget(
-                chapter=chapter,
-                section=token,
-                heading=_nebraska_section_target_heading(link),
-                href=href,
-                ordinal=_section_ordinal(token) or len(targets),
-            )
-        )
-        seen.add(token)
-    return tuple(targets)
+        sections.append(parsed)
+        seen.add(parsed.section)
+    return tuple(sections)
 
 
-def _nebraska_section_from_href(href: str) -> str | None:
-    query = parse_qs(urlparse(href).query)
-    raw = query.get("statute", [None])[0]
-    if raw is None or not re.fullmatch(r"\d+[A-Za-z]?(?:-[0-9A-Za-z.]+)+", raw):
+def _parse_nebraska_full_chapter_section(
+    root: Tag,
+    *,
+    chapter: _NebraskaChapter,
+    ordinal: int,
+) -> _NebraskaSection | None:
+    section_heading = root.find("strong")
+    if not isinstance(section_heading, Tag):
         return None
-    left, rest = raw.split("-", 1)
-    return f"{int(left)}-{rest}"
-
-
-def _nebraska_section_target_heading(link: Tag) -> str | None:
-    row = link.find_parent("td")
-    if isinstance(row, Tag):
-        for span in row.find_all("span", recursive=False):
-            if not isinstance(span, Tag):
-                continue
-            if span.find("a"):
-                continue
-            text = _clean_text(span.get_text(" ", strip=True))
-            if text:
-                return text.rstrip(".") or None
-    text = _clean_text(link.parent.get_text(" ", strip=True) if link.parent else "")
-    text = re.sub(r"^View Statute\s*", "", text, flags=re.I)
-    text = re.sub(rf"^{re.escape(_clean_text(link.get_text(' ', strip=True)))}\s*", "", text)
-    text = re.sub(r"^[0-9A-Za-z.-]+\s*", "", text)
-    return text.rstrip(".") or None
-
-
-def _iter_nebraska_section_sources(
-    source_root: Path | None,
-    download_root: Path | None,
-    targets: tuple[_NebraskaSectionTarget, ...],
-    *,
-    workers: int,
-) -> Iterator[tuple[_NebraskaSectionTarget, bytes | None, str | None]]:
-    if source_root is not None:
-        for target in targets:
-            try:
-                yield target, (source_root / _nebraska_section_relative(target)).read_bytes(), None
-            except OSError as exc:
-                yield target, None, str(exc)
-        return
-
-    worker_count = max(1, workers)
-    with ThreadPoolExecutor(max_workers=worker_count) as executor:
-        yield from executor.map(
-            lambda target: _load_nebraska_section_source(download_root, target),
-            targets,
-        )
-
-
-def _load_nebraska_section_source(
-    download_root: Path | None,
-    target: _NebraskaSectionTarget,
-) -> tuple[_NebraskaSectionTarget, bytes | None, str | None]:
-    try:
-        session = _nebraska_session()
-        data = _load_nebraska_html(
-            session,
-            None,
-            download_root,
-            relative_name=_nebraska_section_relative(target),
-            url=target.source_url,
-        )
-        return target, data, None
-    except requests.RequestException as exc:
-        return target, None, str(exc)
-
-
-def _nebraska_chapter_relative(chapter: _NebraskaChapter) -> str:
-    return f"nebraska-revised-statutes-html/chapters/chapter-{chapter.num}.html"
-
-
-def _nebraska_section_relative(target: _NebraskaSectionTarget) -> str:
-    return f"nebraska-revised-statutes-html/sections/{_clean_path_token(target.section)}.html"
-
-
-def _parse_nebraska_section(
-    data: bytes,
-    *,
-    target: _NebraskaSectionTarget,
-) -> _NebraskaSection:
-    soup = BeautifulSoup(data.decode("utf-8", errors="replace"), "html.parser")
-    root = soup.select_one("div.statute")
-    if not isinstance(root, Tag):
-        raise ValueError(f"Nebraska section {target.section} page has no statute body")
-    section = _nebraska_section_number(root) or target.section
-    heading = _nebraska_section_heading(root) or target.heading
-    body = _nebraska_section_body(root)
+    parts = _nebraska_section_heading_parts(section_heading.get_text(" ", strip=True))
+    if parts is None:
+        return None
+    section, heading = parts
+    if section.split("-", 1)[0] != chapter.num:
+        return None
+    target = _NebraskaSectionTarget(
+        chapter=chapter,
+        section=section,
+        heading=heading,
+        href=f"/laws/statutes.php?statute={quote(section, safe=',.-')}",
+        ordinal=_section_ordinal(section) or ordinal,
+    )
     status = "repealed" if (heading or "").lower().startswith("repealed") else "active"
     return _NebraskaSection(
         target=target,
         section=section,
         heading=heading,
-        body=body,
+        body=_nebraska_full_chapter_section_body(root),
         status=status,
         source_history=_nebraska_source_history(root),
         references_to=_nebraska_references(root, self_path=target.citation_path),
     )
 
 
-def _nebraska_section_number(root: Tag) -> str | None:
-    heading = root.find("h2")
-    if not isinstance(heading, Tag):
+def _nebraska_section_heading_parts(text: str) -> tuple[str, str | None] | None:
+    cleaned = _clean_text(text)
+    match = re.match(
+        r"^(?P<section>\d+[A-Za-z]?(?:-[0-9A-Za-z]+(?:[.,][0-9A-Za-z]+)*)+)\.\s*(?P<heading>.*)$",
+        cleaned,
+    )
+    if not match:
         return None
-    text = _clean_text(heading.get_text(" ", strip=True)).rstrip(".")
-    match = re.match(r"(?P<section>\d+[A-Za-z]?(?:-[0-9A-Za-z.]+)+)$", text)
-    return match.group("section") if match else None
+    heading = _clean_text(match.group("heading")).rstrip(".") or None
+    return match.group("section"), heading
 
 
-def _nebraska_section_heading(root: Tag) -> str | None:
-    heading = root.find("h3")
-    if not isinstance(heading, Tag):
+def _nebraska_section_from_href(href: str) -> str | None:
+    query = parse_qs(urlparse(href).query)
+    raw = query.get("statute", [None])[0]
+    if raw is None or not re.fullmatch(
+        r"\d+[A-Za-z]?(?:-[0-9A-Za-z]+(?:[.,][0-9A-Za-z]+)*)+",
+        raw,
+    ):
         return None
-    return _clean_text(heading.get_text(" ", strip=True)).rstrip(".") or None
+    left, rest = raw.split("-", 1)
+    return f"{int(left)}-{rest}"
 
 
-def _nebraska_section_body(root: Tag) -> str | None:
+def _nebraska_chapter_relative(chapter: _NebraskaChapter) -> str:
+    return f"nebraska-revised-statutes-html/chapters/chapter-{chapter.num}-full.html"
+
+
+def _nebraska_full_chapter_section_body(root: Tag) -> str | None:
     paragraphs = [
         _clean_text(paragraph.get_text(" ", strip=True))
-        for paragraph in root.select("p.text-justify")
-        if isinstance(paragraph, Tag)
+        for paragraph in root.find_all("p")
+        if isinstance(paragraph, Tag) and not _nebraska_is_metadata_child(paragraph, root)
     ]
     text = "\n".join(paragraph for paragraph in paragraphs if paragraph).strip()
     return text or None
 
 
+def _nebraska_is_metadata_child(tag: Tag, root: Tag) -> bool:
+    for parent in tag.parents:
+        if parent is root:
+            return False
+        if not isinstance(parent, Tag):
+            continue
+        classes = set(parent.get("class") or ())
+        if classes.intersection({"source", "cross", "anno"}):
+            return True
+    return False
+
+
 def _nebraska_source_history(root: Tag) -> tuple[str, ...]:
-    source_heading = None
-    for heading in root.find_all("h2"):
-        if isinstance(heading, Tag) and _clean_text(heading.get_text(" ", strip=True)).lower() == "source":
-            source_heading = heading
-            break
-    if not isinstance(source_heading, Tag):
-        return ()
-    source_block = source_heading.find_parent("div")
+    source_block = root.find("div", class_="source")
     if not isinstance(source_block, Tag):
         return ()
+    text = _clean_text(source_block.get_text(" ", strip=True))
+    text = re.sub(r"^Source:\s*", "", text, flags=re.I)
     history: list[str] = []
-    for item in source_block.find_all("li"):
-        if not isinstance(item, Tag):
+    parts = text.split(";")
+    for index, part in enumerate(parts):
+        cleaned = _clean_text(part)
+        if not cleaned:
             continue
-        text = _clean_text(item.get_text(" ", strip=True))
-        if text:
-            history.append(text)
+        if index < len(parts) - 1:
+            cleaned = f"{cleaned};"
+        history.append(cleaned)
     return tuple(history)
 
 
 def _nebraska_references(root: Tag, *, self_path: str) -> tuple[str, ...]:
     refs: set[str] = set()
-    for paragraph in root.select("p.text-justify"):
-        if not isinstance(paragraph, Tag):
+    for link in root.find_all("a"):
+        if not isinstance(link, Tag):
             continue
-        for link in paragraph.find_all("a"):
-            if not isinstance(link, Tag):
-                continue
-            ref = _nebraska_href_to_citation_path(str(link.get("href") or ""))
-            if ref and ref != self_path:
-                refs.add(ref)
+        ref = _nebraska_href_to_citation_path(str(link.get("href") or ""))
+        if ref and ref != self_path:
+            refs.add(ref)
     return tuple(sorted(refs))
 
 
@@ -3761,13 +3682,13 @@ def _nebraska_chapter_container(
         level=0,
         ordinal=_section_ordinal(chapter.num) or chapter.ordinal,
         source_path=source_path,
-        source_url=chapter.source_url,
+        source_url=chapter.full_source_url,
         source_id=f"chapter-{chapter.num}",
         source_format=NEBRASKA_STATUTES_SOURCE_FORMAT,
         sha256=sha256,
         metadata={
             "chapter": chapter.num,
-            "source_url": chapter.source_url,
+            "source_url": chapter.full_source_url,
         },
     )
 
@@ -5169,7 +5090,7 @@ def _title_from_colorado_supplement_path(path: Path) -> str | None:
 
 
 def _pdf_text(data: bytes) -> str:
-    import fitz
+    import fitz  # type: ignore[import-untyped]
 
     with fitz.open(stream=data, filetype="pdf") as document:
         text = "\n".join(page.get_text("text", sort=True) for page in document)

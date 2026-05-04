@@ -83,7 +83,6 @@ sources:
     options:
       source_as_of: "2026-05-04"
       expression_date: "2026-05-04"
-      workers: 4
     metadata:
       source_authority: Nebraska Legislature
 
