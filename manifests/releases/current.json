@@ -109,6 +109,11 @@
     },
     {
       "document_class": "statute",
+      "jurisdiction": "us-wa",
+      "version": "2026-05-04"
+    },
+    {
+      "document_class": "statute",
       "jurisdiction": "us-wy",
       "version": "2026-04-29"
     }
