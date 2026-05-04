@@ -245,6 +245,11 @@ count snapshots, and the latest `validate-release` output. It distinguishes
 productionized states from local-but-unpromoted, Supabase-only legacy, partial,
 and missing source-first extractions.
 
+Use `docs/agent-ingestion-runbook.md` and
+`manifests/state-statute-agent-queue.yaml` when assigning parallel agent work.
+The queue separates validated states, release-repair states, and states that
+are ready for one-agent-per-jurisdiction source-first adapter work.
+
 ```bash
 axiom-corpus-ingest state-statute-completion \
   --base data/corpus \
