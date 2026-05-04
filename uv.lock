@@ -218,7 +218,7 @@ requires-dist = [
     { name = "sqlalchemy", marker = "extra == 'postgres'", specifier = ">=2.0" },
     { name = "sqlite-utils", specifier = ">=3.35" },
     { name = "supabase", specifier = ">=2.27.0" },
-    { name = "towncrier", marker = "extra == 'dev'", specifier = ">=23.0" },
+    { name = "towncrier", marker = "extra == 'dev'", specifier = ">=24.8.0" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0" },
     { name = "types-requests", marker = "extra == 'dev'", specifier = ">=2.32" },
     { name = "uvicorn", specifier = ">=0.27" },

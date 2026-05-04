@@ -52,7 +52,7 @@ dev = [
     "types-PyYAML>=6.0",
     "types-requests>=2.32",
     "pre-commit>=3.6",
-    "towncrier>=23.0",
+    "towncrier>=24.8.0",
 ]
 postgres = [
     "sqlalchemy>=2.0",
@@ -104,31 +104,37 @@ markers = [
 ]
 
 [tool.towncrier]
-name = "axiom-corpus"
 package = "axiom_corpus"
 package_dir = "src"
-directory = "changes"
+directory = "changelog.d"
 filename = "CHANGELOG.md"
-title_format = "{name} {version} ({project_date})"
+title_format = "## [{version}] - {project_date}"
+issue_format = ""
+underlines = ["", "", ""]
 
 [[tool.towncrier.type]]
-directory = "feature"
-name = "Features"
+directory = "breaking"
+name = "Breaking changes"
 showcontent = true
 
 [[tool.towncrier.type]]
-directory = "bugfix"
-name = "Bug fixes"
+directory = "added"
+name = "Added"
 showcontent = true
 
 [[tool.towncrier.type]]
-directory = "doc"
-name = "Documentation"
+directory = "changed"
+name = "Changed"
 showcontent = true
 
 [[tool.towncrier.type]]
-directory = "misc"
-name = "Misc"
+directory = "fixed"
+name = "Fixed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "removed"
+name = "Removed"
 showcontent = true
 
 [tool.coverage.run]
