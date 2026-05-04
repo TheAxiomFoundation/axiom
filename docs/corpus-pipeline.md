@@ -220,8 +220,14 @@ axiom-corpus-ingest extract-state-statutes \
 Use `--only-jurisdiction`, `--only-source-id`, and `--limit-per-source` for
 smoke runs or targeted rebuilds. Supported state statute adapters are
 `dc-code`, `cic-html`, `cic-odt`, `colorado-docx`, `texas-tcas`,
-`ohio-revised-code`, `minnesota-statutes`, `california-codes-bulk`, and
-`local-state-html`.
+`ohio-revised-code`, `minnesota-statutes`,
+`nebraska-revised-statutes`, `california-codes-bulk`, and `local-state-html`.
+
+The `nebraska-revised-statutes` adapter snapshots the official Nebraska
+Legislature statute index, chapter TOCs, and per-section HTML pages. Its
+manifest entry can fetch live official sources or rebuild from a saved
+`source_dir`; do not add the Nebraska release scope to `current` until a full
+run has completed, coverage validates, and the artifacts are published.
 
 `local-state-html` snapshots cached official HTML files and converts them into
 the same source-first inventory, provision JSONL, and coverage artifacts as the

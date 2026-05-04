@@ -3,13 +3,30 @@ from datetime import date
 from xml.sax.saxutils import escape
 
 import pytest
+import requests
+from bs4 import BeautifulSoup
 
 from axiom_corpus.corpus.artifacts import CorpusArtifactStore
 from axiom_corpus.corpus.cli import main
 from axiom_corpus.corpus.io import load_provisions, load_source_inventory
 from axiom_corpus.corpus.states import (
     _date_text,
+    _iter_nebraska_section_sources,
+    _load_nebraska_html,
+    _load_nebraska_section_source,
+    _nebraska_chapter_filter,
+    _nebraska_chapter_from_href,
+    _nebraska_chapter_link_heading,
+    _nebraska_href_to_citation_path,
+    _nebraska_section_from_href,
+    _nebraska_section_number,
+    _nebraska_section_relative,
+    _nebraska_section_target_heading,
     _non_file_url,
+    _parse_nebraska_chapter_heading,
+    _parse_nebraska_chapters,
+    _parse_nebraska_section,
+    _parse_nebraska_section_targets,
     _parse_state_html_sections,
     _split_state_html_last_hyphen,
     _split_state_html_prefixed_section,
@@ -28,6 +45,7 @@ from axiom_corpus.corpus.states import (
     extract_colorado_docx_release,
     extract_dc_code,
     extract_minnesota_statutes,
+    extract_nebraska_revised_statutes,
     extract_ohio_revised_code,
     extract_state_html_directory,
     extract_texas_tcas,
@@ -306,6 +324,74 @@ SAMPLE_MINNESOTA_CHAPTER = """<!DOCTYPE html>
 """
 
 
+SAMPLE_NEBRASKA_INDEX = """<!DOCTYPE html>
+<html>
+<body>
+  <main>
+    <a href="/laws/browse-chapters.php?chapter=01">Chapter 1 ACCOUNTANTS</a>
+  </main>
+</body>
+</html>
+"""
+
+
+SAMPLE_NEBRASKA_CHAPTER = """<!DOCTYPE html>
+<html>
+<body>
+  <div class="card-header">Revised Statutes Chapter 1 - ACCOUNTANTS</div>
+  <table>
+    <tr>
+      <td class="row">
+        <span><a href="/laws/statutes.php?statute=1-101"><span class="sr-only">View Statute </span>1-101</a></span>
+        <span>Repealed. Laws 1957, c. 1, § 65.</span>
+        <span><a href="/laws/statutes.php?statute=1-101&amp;print=true">Print</a></span>
+      </td>
+    </tr>
+    <tr>
+      <td class="row">
+        <span><a href="/laws/statutes.php?statute=1-105"><span class="sr-only">View Statute </span>1-105</a></span>
+        <span>Act, how cited.</span>
+        <span><a href="/laws/statutes.php?statute=1-105&amp;print=true">Print</a></span>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+"""
+
+
+SAMPLE_NEBRASKA_REPEALED_SECTION = """<!DOCTYPE html>
+<html>
+<body>
+  <div class="statute">
+    <h2>1-101.</h2>
+    <h3>Repealed. Laws 1957, c. 1, § 65.</h3>
+  </div>
+</body>
+</html>
+"""
+
+
+SAMPLE_NEBRASKA_SECTION = """<!DOCTYPE html>
+<html>
+<body>
+  <div class="statute">
+    <h2>1-105.</h2>
+    <h3>Act, how cited.</h3>
+    <p class="text-justify">Sections <a href="/laws/statutes.php?statute=1-105">1-105</a> to <a href="/laws/statutes.php?statute=1-171">1-171</a> shall be known as the Public Accountancy Act.</p>
+    <div>
+      <h2>Source</h2>
+      <ul>
+        <li>Laws 1957, c. 1, § 64, p. 78;</li>
+        <li><a href="/FloorDocs/104/PDF/Slip/LB159.pdf">Laws 2015, LB159, § 1.</a></li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+
 SAMPLE_CALIFORNIA_SECTION_XML = """<?xml version="1.0" encoding="UTF-8"?>
 <section>
   <heading>17052. Personal exemption credit</heading>
@@ -398,6 +484,19 @@ def _write_minnesota_fixture(source_dir):
         SAMPLE_MINNESOTA_PART
     )
     (chapter_dir / "chapter-256B.html").write_text(SAMPLE_MINNESOTA_CHAPTER)
+
+
+def _write_nebraska_fixture(source_dir):
+    chapter_dir = source_dir / "nebraska-revised-statutes-html" / "chapters"
+    section_dir = source_dir / "nebraska-revised-statutes-html" / "sections"
+    chapter_dir.mkdir(parents=True)
+    section_dir.mkdir()
+    (source_dir / "nebraska-revised-statutes-html" / "index.html").write_text(
+        SAMPLE_NEBRASKA_INDEX
+    )
+    (chapter_dir / "chapter-1.html").write_text(SAMPLE_NEBRASKA_CHAPTER)
+    (section_dir / "1-101.html").write_text(SAMPLE_NEBRASKA_REPEALED_SECTION)
+    (section_dir / "1-105.html").write_text(SAMPLE_NEBRASKA_SECTION)
 
 
 def _write_california_bulk_fixture(path):
@@ -737,6 +836,241 @@ def test_extract_minnesota_statutes_writes_state_records(tmp_path):
     assert "[Repealed, 1974 c 1 s 1]" in (records[3].body or "")
 
 
+def test_extract_nebraska_revised_statutes_writes_state_records(tmp_path):
+    source_dir = tmp_path / "nebraska"
+    _write_nebraska_fixture(source_dir)
+    store = CorpusArtifactStore(tmp_path / "corpus")
+
+    report = extract_nebraska_revised_statutes(
+        store,
+        version="2026-05-04",
+        source_dir=source_dir,
+        source_as_of="2026-05-04",
+        only_title="1",
+    )
+
+    assert report.coverage.complete
+    assert report.title_count == 1
+    assert report.container_count == 1
+    assert report.section_count == 2
+    records = load_provisions(report.provisions_path)
+    assert [record.citation_path for record in records] == [
+        "us-ne/statute/1",
+        "us-ne/statute/1/1-101",
+        "us-ne/statute/1/1-105",
+    ]
+    assert records[0].heading == "ACCOUNTANTS"
+    assert records[1].metadata["status"] == "repealed"
+    assert records[1].body is None
+    assert records[2].heading == "Act, how cited"
+    assert records[2].metadata["references_to"] == ["us-ne/statute/1/1-171"]
+    assert records[2].metadata["source_history"] == [
+        "Laws 1957, c. 1, § 64, p. 78;",
+        "Laws 2015, LB159, § 1.",
+    ]
+    assert "Public Accountancy Act" in (records[2].body or "")
+    inventory = load_source_inventory(report.inventory_path)
+    assert inventory[-1].source_format == "nebraska-revised-statutes-html"
+    assert inventory[-1].source_path.endswith(
+        "/nebraska-revised-statutes-html/sections/1-105.html"
+    )
+
+
+def test_nebraska_helpers_cover_defensive_paths(tmp_path, monkeypatch):
+    chapters = _parse_nebraska_chapters(
+        b"""
+        <a href="/laws/browse-chapters.php?chapter=01">Chapter 1 ACCOUNTANTS</a>
+        <a href="/laws/browse-chapters.php?chapter=bad">Bad</a>
+        <a href="/laws/browse-chapters.php?chapter=01">Duplicate</a>
+        """
+    )
+    assert [chapter.num for chapter in chapters] == ["1"]
+    assert _nebraska_chapter_from_href("/laws/browse-chapters.php") is None
+    assert _nebraska_chapter_link_heading("Standalone heading", "1") == "Standalone heading"
+    assert _parse_nebraska_chapter_heading(b"<h1>No match</h1>", "1") is None
+    assert _nebraska_chapter_filter(None) is None
+    assert _nebraska_chapter_filter("Chapter 01") == "1"
+    with pytest.raises(ValueError, match="invalid Nebraska chapter filter"):
+        _nebraska_chapter_filter("chapter one")
+
+    targets = _parse_nebraska_section_targets(
+        b"""
+        <table>
+          <tr><td class="row"><span><a href="/laws/statutes.php?statute=1-105"><span class="sr-only">View Statute </span>1-105</a></span><span>Act, how cited.</span></td></tr>
+          <tr><td class="row"><span><a href="/laws/statutes.php?statute=1-105">1-105</a></span><span>Duplicate.</span></td></tr>
+          <tr><td class="row"><span><a href="/laws/statutes.php?statute=2-101">2-101</a></span><span>Other chapter.</span></td></tr>
+          <tr><td class="row"><span><a href="/laws/statutes.php?statute=bad">bad</a></span></td></tr>
+        </table>
+        """,
+        chapter=chapters[0],
+    )
+    assert [target.section for target in targets] == ["1-105"]
+    assert targets[0].heading == "Act, how cited"
+    assert _nebraska_section_from_href("/laws/statutes.php?statute=01-105.01") == "1-105.01"
+    assert _nebraska_section_from_href("/laws/statutes.php") is None
+    assert _nebraska_href_to_citation_path("/laws/statutes.php?statute=1-171") == (
+        "us-ne/statute/1/1-171"
+    )
+    assert _nebraska_href_to_citation_path("/laws/not-statutes.php") is None
+    assert _nebraska_section_relative(targets[0]).endswith("/1-105.html")
+
+    missing_results = list(_iter_nebraska_section_sources(tmp_path, None, targets, workers=1))
+    assert missing_results[0][2] is not None
+
+    def raise_request(*args, **kwargs):
+        raise requests.RequestException("offline")
+
+    monkeypatch.setattr("axiom_corpus.corpus.states._load_nebraska_html", raise_request)
+    loaded_target, loaded_bytes, loaded_error = _load_nebraska_section_source(None, targets[0])
+    assert loaded_target == targets[0]
+    assert loaded_bytes is None
+    assert loaded_error == "offline"
+
+    with pytest.raises(ValueError, match="no statute body"):
+        _parse_nebraska_section(b"<html></html>", target=targets[0])
+
+    no_heading = BeautifulSoup("<div class='statute'></div>", "html.parser").div
+    assert _nebraska_section_number(no_heading) is None
+    invalid_heading = BeautifulSoup("<div><h2>not a section</h2></div>", "html.parser").div
+    assert _nebraska_section_number(invalid_heading) is None
+    parsed = _parse_nebraska_section(
+        b"""
+        <div class="statute">
+          <h2>1-105.</h2>
+          <p class="text-justify">Body with <a href="/laws/not-statutes.php">ignored link</a>.</p>
+          <h2>Source</h2>
+        </div>
+        """,
+        target=targets[0],
+    )
+    assert parsed.heading == "Act, how cited"
+    assert parsed.source_history == ()
+    assert parsed.references_to == ()
+
+
+def test_nebraska_extraction_reports_source_errors(tmp_path):
+    source_dir = tmp_path / "missing-chapter"
+    root = source_dir / "nebraska-revised-statutes-html"
+    root.mkdir(parents=True)
+    (root / "index.html").write_text(SAMPLE_NEBRASKA_INDEX)
+
+    with pytest.raises(ValueError, match="no Nebraska Revised Statutes provisions extracted"):
+        extract_nebraska_revised_statutes(
+            CorpusArtifactStore(tmp_path / "corpus-missing-chapter"),
+            version="2026-05-04",
+            source_dir=source_dir,
+            only_title="1",
+        )
+
+    bad_section_dir = tmp_path / "bad-section"
+    _write_nebraska_fixture(bad_section_dir)
+    section_dir = bad_section_dir / "nebraska-revised-statutes-html" / "sections"
+    (section_dir / "1-101.html").write_text("<html></html>")
+    (section_dir / "1-105.html").unlink()
+
+    report = extract_nebraska_revised_statutes(
+        CorpusArtifactStore(tmp_path / "corpus-bad-section"),
+        version="2026-05-04",
+        source_dir=bad_section_dir,
+        source_as_of="2026-05-04",
+        only_title="1",
+        limit=3,
+    )
+
+    assert report.section_count == 0
+    assert len(report.errors) == 2
+    assert "no statute body" in report.errors[0]
+    assert "No such file" in report.errors[1] or "not found" in report.errors[1]
+
+
+def test_nebraska_live_source_helpers_cover_success_and_exhausted_retry(tmp_path, monkeypatch):
+    chapters = _parse_nebraska_chapters(SAMPLE_NEBRASKA_INDEX.encode())
+    targets = _parse_nebraska_section_targets(
+        SAMPLE_NEBRASKA_CHAPTER.encode(),
+        chapter=chapters[0],
+    )
+
+    def fake_load_success(*args, **kwargs):
+        return SAMPLE_NEBRASKA_SECTION.encode()
+
+    monkeypatch.setattr("axiom_corpus.corpus.states._load_nebraska_html", fake_load_success)
+    loaded_target, loaded_bytes, loaded_error = _load_nebraska_section_source(
+        tmp_path / "download",
+        targets[0],
+    )
+    assert loaded_target == targets[0]
+    assert loaded_bytes == SAMPLE_NEBRASKA_SECTION.encode()
+    assert loaded_error is None
+
+    iter_results = list(
+        _iter_nebraska_section_sources(None, tmp_path / "download", targets[:1], workers=1)
+    )
+    assert iter_results[0][1] == SAMPLE_NEBRASKA_SECTION.encode()
+
+    loose_link = BeautifulSoup(
+        '<span><a href="/laws/statutes.php?statute=1-200">View Statute 1-200 Loose heading.</a></span>',
+        "html.parser",
+    ).a
+    assert _nebraska_section_target_heading(loose_link) == "Loose heading"
+
+    class Response:
+        status_code = 429
+        content = b"retry exhausted"
+        headers = {"Retry-After": "0"}
+
+        def raise_for_status(self):
+            return None
+
+    class Session:
+        def get(self, url, timeout):
+            del url, timeout
+            return Response()
+
+    content = _load_nebraska_html(
+        Session(),
+        None,
+        None,
+        relative_name="nebraska-revised-statutes-html/index.html",
+        url="https://example.test",
+    )
+    assert content == b"retry exhausted"
+
+
+def test_load_nebraska_html_downloads_and_retries(tmp_path, monkeypatch):
+    class Response:
+        def __init__(self, status_code, content=b"", headers=None):
+            self.status_code = status_code
+            self.content = content
+            self.headers = headers or {}
+
+        def raise_for_status(self):
+            if self.status_code >= 400 and self.status_code != 429:
+                raise requests.HTTPError(str(self.status_code))
+
+    class Session:
+        def __init__(self):
+            self.responses = [
+                Response(429, headers={"Retry-After": "0"}),
+                Response(200, b"<html>ok</html>"),
+            ]
+
+        def get(self, url, timeout):
+            del url, timeout
+            return self.responses.pop(0)
+
+    monkeypatch.setattr("axiom_corpus.corpus.states.time.sleep", lambda seconds: None)
+    content = _load_nebraska_html(
+        Session(),
+        None,
+        tmp_path,
+        relative_name="nebraska-revised-statutes-html/index.html",
+        url="https://example.test",
+    )
+
+    assert content == b"<html>ok</html>"
+    assert (tmp_path / "nebraska-revised-statutes-html" / "index.html").read_bytes() == content
+
+
 def test_extract_california_codes_bulk_writes_state_records(tmp_path):
     source_zip = tmp_path / "pubinfo_2025.zip"
     _write_california_bulk_fixture(source_zip)
@@ -988,6 +1322,31 @@ def test_extract_minnesota_statutes_cli_local_source(tmp_path, capsys):
     assert exit_code == 0
     assert '"jurisdiction": "us-mn"' in output
     assert '"provisions_written": 4' in output
+
+
+def test_extract_nebraska_revised_statutes_cli_local_source(tmp_path, capsys):
+    source_dir = tmp_path / "nebraska"
+    _write_nebraska_fixture(source_dir)
+    base = tmp_path / "corpus"
+
+    exit_code = main(
+        [
+            "extract-nebraska-revised-statutes",
+            "--base",
+            str(base),
+            "--version",
+            "2026-05-04",
+            "--source-dir",
+            str(source_dir),
+            "--only-title",
+            "1",
+        ]
+    )
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert '"jurisdiction": "us-ne"' in output
+    assert '"provisions_written": 3' in output
 
 
 def test_extract_california_codes_cli_local_source(tmp_path, capsys):

@@ -48,6 +48,7 @@ from axiom_corpus.corpus.states import (
     extract_colorado_docx_release,
     extract_dc_code,
     extract_minnesota_statutes,
+    extract_nebraska_revised_statutes,
     extract_ohio_revised_code,
     extract_state_html_directory,
     extract_texas_tcas,
@@ -605,6 +606,35 @@ def _cmd_extract_minnesota_statutes(args: argparse.Namespace) -> int:
     return 0 if report.coverage.complete or args.allow_incomplete else 2
 
 
+def _cmd_extract_nebraska_revised_statutes(args: argparse.Namespace) -> int:
+    store = CorpusArtifactStore(args.base)
+    expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
+    report = extract_nebraska_revised_statutes(
+        store,
+        version=args.version,
+        source_dir=args.source_dir,
+        source_as_of=args.source_as_of,
+        expression_date=expression_date,
+        only_title=args.only_title,
+        limit=args.limit,
+        workers=args.workers,
+        download_dir=args.download_dir,
+    )
+    print(
+        json.dumps(
+            _state_statute_report_payload(
+                report,
+                source_id="us-ne-revised-statutes",
+                adapter="nebraska-revised-statutes",
+                version=args.version,
+            ),
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0 if report.coverage.complete or args.allow_incomplete else 2
+
+
 def _cmd_extract_california_codes_bulk(args: argparse.Namespace) -> int:
     store = CorpusArtifactStore(args.base)
     expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
@@ -836,6 +866,18 @@ def _extract_state_statute_source(
             workers=_optional_int(options.get("workers")) or 4,
             download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
         )
+    if adapter == "nebraska-revised-statutes":
+        return extract_nebraska_revised_statutes(
+            store,
+            version=version,
+            source_dir=_optional_manifest_path(manifest_path, options, "source_dir"),
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            limit=limit,
+            workers=_optional_int(options.get("workers")) or 4,
+            download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
+        )
     if adapter == "california-codes-bulk":
         return extract_california_codes_bulk(
             store,
@@ -944,6 +986,10 @@ def _canonical_state_statute_adapter(adapter: str) -> str:
         "minnesota": "minnesota-statutes",
         "minnesota-statutes": "minnesota-statutes",
         "mn": "minnesota-statutes",
+        "nebraska": "nebraska-revised-statutes",
+        "nebraska-revised-statutes": "nebraska-revised-statutes",
+        "neb-rev-stat": "nebraska-revised-statutes",
+        "ne": "nebraska-revised-statutes",
         "ca": "california-codes-bulk",
         "california": "california-codes-bulk",
         "california-codes": "california-codes-bulk",
@@ -980,7 +1026,12 @@ def _state_statute_source_path_for_plan(
     options: dict[str, Any],
     path_key: str,
 ) -> Path | None:
-    if adapter in {"minnesota-statutes", "ohio-revised-code", "texas-tcas"}:
+    if adapter in {
+        "minnesota-statutes",
+        "nebraska-revised-statutes",
+        "ohio-revised-code",
+        "texas-tcas",
+    }:
         return _optional_manifest_path(manifest_path, options, "source_dir")
     if adapter == "california-codes-bulk":
         return _optional_manifest_path(manifest_path, options, "source_zip")
@@ -1494,6 +1545,22 @@ def build_parser() -> argparse.ArgumentParser:
     extract_minnesota_statutes_cmd.add_argument("--workers", type=int, default=4)
     extract_minnesota_statutes_cmd.add_argument("--allow-incomplete", action="store_true")
     extract_minnesota_statutes_cmd.set_defaults(func=_cmd_extract_minnesota_statutes)
+
+    extract_nebraska_statutes_cmd = sub.add_parser(
+        "extract-nebraska-revised-statutes",
+        help="Snapshot official Nebraska Revised Statutes HTML.",
+    )
+    extract_nebraska_statutes_cmd.add_argument("--base", type=Path, required=True)
+    extract_nebraska_statutes_cmd.add_argument("--version", required=True)
+    extract_nebraska_statutes_cmd.add_argument("--source-dir", type=Path)
+    extract_nebraska_statutes_cmd.add_argument("--download-dir", type=Path)
+    extract_nebraska_statutes_cmd.add_argument("--only-title")
+    extract_nebraska_statutes_cmd.add_argument("--source-as-of", "--as-of", dest="source_as_of")
+    extract_nebraska_statutes_cmd.add_argument("--expression-date")
+    extract_nebraska_statutes_cmd.add_argument("--limit", type=int)
+    extract_nebraska_statutes_cmd.add_argument("--workers", type=int, default=4)
+    extract_nebraska_statutes_cmd.add_argument("--allow-incomplete", action="store_true")
+    extract_nebraska_statutes_cmd.set_defaults(func=_cmd_extract_nebraska_revised_statutes)
 
     extract_california_codes_cmd = sub.add_parser(
         "extract-california-codes",
