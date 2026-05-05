@@ -245,7 +245,17 @@ def _cmd_load_supabase(args: argparse.Namespace) -> int:
     payload["supabase_url"] = args.supabase_url
 
     if args.build_navigation and not args.dry_run and report.rows_loaded:
-        nodes = build_navigation_nodes(records)
+        navigation_records: list[ProvisionRecord] = []
+        for jurisdiction, document_class in _provision_scopes(records):
+            navigation_records.extend(
+                fetch_provisions_for_navigation(
+                    service_key=service_key,
+                    supabase_url=args.supabase_url,
+                    jurisdiction=jurisdiction,
+                    doc_type=document_class,
+                )
+            )
+        nodes = build_navigation_nodes(navigation_records)
         navigation_report = write_navigation_nodes_to_supabase(
             nodes,
             service_key=service_key,
@@ -351,6 +361,10 @@ def _cmd_build_navigation_index(args: argparse.Namespace) -> int:
     payload["supabase_url"] = args.supabase_url
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
+
+
+def _provision_scopes(records: tuple[ProvisionRecord, ...]) -> tuple[tuple[str, str], ...]:
+    return tuple(sorted({(record.jurisdiction, record.document_class) for record in records}))
 
 
 def _single_provision_scope(records: tuple[ProvisionRecord, ...]) -> tuple[str, str]:

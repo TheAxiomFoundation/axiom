@@ -454,12 +454,6 @@ def test_load_supabase_cli_rebuilds_navigation_after_provisions_load(tmp_path, c
                 document_class="statute",
                 citation_path="us-co/statute/title-39",
             ),
-            ProvisionRecord(
-                jurisdiction="us-co",
-                document_class="statute",
-                citation_path="us-co/statute/title-39/article-22",
-                parent_citation_path="us-co/statute/title-39",
-            ),
         ],
     )
 
@@ -468,14 +462,34 @@ def test_load_supabase_cli_rebuilds_navigation_after_provisions_load(tmp_path, c
         cli,
         "load_provisions_to_supabase",
         lambda *a, **kw: SupabaseLoadReport(
-            rows_total=2, rows_loaded=2, chunk_count=1, refreshed=True
+            rows_total=1, rows_loaded=1, chunk_count=1, refreshed=True
         ),
     )
-
     captured: dict[str, object] = {}
+
+    def fake_fetch_for_navigation(**kwargs):
+        captured["fetch_scope"] = (kwargs["jurisdiction"], kwargs["doc_type"])
+        return (
+            ProvisionRecord(
+                id="11111111-1111-1111-1111-111111111111",
+                jurisdiction="us-co",
+                document_class="statute",
+                citation_path="us-co/statute/title-39",
+            ),
+            ProvisionRecord(
+                id="22222222-2222-2222-2222-222222222222",
+                jurisdiction="us-co",
+                document_class="statute",
+                citation_path="us-co/statute/title-39/article-22",
+                parent_citation_path="us-co/statute/title-39",
+            ),
+        )
+
+    monkeypatch.setattr(cli, "fetch_provisions_for_navigation", fake_fetch_for_navigation)
 
     def fake_writer(nodes, **kwargs):
         captured["node_paths"] = [n.path for n in nodes]
+        captured["provision_ids"] = [n.provision_id for n in nodes]
         captured["replace_scope"] = kwargs.get("replace_scope")
         return NavigationSupabaseWriteReport(
             rows_total=len(captured["node_paths"]),
@@ -492,10 +506,15 @@ def test_load_supabase_cli_rebuilds_navigation_after_provisions_load(tmp_path, c
     payload = json.loads(capsys.readouterr().out)
 
     assert exit_code == 0
+    assert captured["fetch_scope"] == ("us-co", "statute")
     assert captured["replace_scope"] is True
     assert set(captured["node_paths"]) == {
         "us-co/statute/title-39",
         "us-co/statute/title-39/article-22",
+    }
+    assert set(captured["provision_ids"]) == {
+        "11111111-1111-1111-1111-111111111111",
+        "22222222-2222-2222-2222-222222222222",
     }
     assert payload["navigation"]["rows_loaded"] == 2
     assert payload["navigation"]["scopes_replaced"] == [["us-co", "statute"]]

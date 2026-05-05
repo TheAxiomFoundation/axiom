@@ -93,6 +93,25 @@ def test_does_not_invent_intermediate_nodes_for_missing_prefixes():
     assert nodes[0].depth == 0
 
 
+def test_missing_explicit_parent_does_not_create_hidden_orphan():
+    nodes = build_navigation_nodes(
+        [
+            _record("us-co/statute/title-39"),
+            _record(
+                "us-co/statute/title-39/article-22/part-1",
+                parent_citation_path="us-co/statute/title-39/article-22",
+            ),
+        ]
+    )
+    by_path = {node.path: node for node in nodes}
+
+    assert (
+        by_path["us-co/statute/title-39/article-22/part-1"].parent_path
+        == "us-co/statute/title-39"
+    )
+    assert by_path["us-co/statute/title-39"].child_count == 1
+
+
 def test_child_count_and_has_children_are_consistent():
     nodes = build_navigation_nodes(
         [

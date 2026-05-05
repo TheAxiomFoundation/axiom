@@ -11,7 +11,8 @@ moves the hierarchy work offline so app navigation can be a simple indexed
 fully derivable from a snapshot of `corpus.provisions` plus the same
 hierarchy rules the app would otherwise reconstruct at request time:
 
-* If a record has `parent_citation_path`, that wins.
+* If a record has `parent_citation_path` and that parent exists in the input
+  set, that wins.
 * Otherwise we walk path-segment prefixes upward and link to the nearest
   ancestor that exists in the input set.
 * Otherwise the row is a top-level navigation root in its
@@ -206,7 +207,7 @@ def _resolve_parent_path(
     record: ProvisionRecord,
     by_path: dict[str, ProvisionRecord],
 ) -> str | None:
-    if record.parent_citation_path:
+    if record.parent_citation_path and record.parent_citation_path in by_path:
         return record.parent_citation_path
     parts = record.citation_path.split("/")
     for size in range(len(parts) - 1, 0, -1):
