@@ -42,6 +42,10 @@ from axiom_corpus.corpus.state_adapters.indiana import (
     INDIANA_CODE_DEFAULT_YEAR,
     extract_indiana_code,
 )
+from axiom_corpus.corpus.state_adapters.montana import (
+    MONTANA_CODE_DEFAULT_YEAR,
+    extract_montana_code,
+)
 from axiom_corpus.corpus.state_statute_completion import (
     build_state_statute_completion_report,
 )
@@ -746,6 +750,37 @@ def _cmd_extract_indiana_code(args: argparse.Namespace) -> int:
     return 0 if report.coverage.complete or args.allow_incomplete else 2
 
 
+def _cmd_extract_montana_code(args: argparse.Namespace) -> int:
+    store = CorpusArtifactStore(args.base)
+    expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
+    report = extract_montana_code(
+        store,
+        version=args.version,
+        source_dir=args.source_dir,
+        source_year=args.source_year,
+        source_as_of=args.source_as_of,
+        expression_date=expression_date,
+        only_title=args.only_title,
+        limit=args.limit,
+        download_dir=args.download_dir,
+        workers=args.workers,
+    )
+    print(
+        json.dumps(
+            _state_statute_report_payload(
+                report,
+                source_id="us-mt-code",
+                adapter="montana-code",
+                version=args.version,
+            ),
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    complete = report.coverage.complete and not report.errors
+    return 0 if complete or args.allow_incomplete else 2
+
+
 def _cmd_extract_california_codes_bulk(args: argparse.Namespace) -> int:
     store = CorpusArtifactStore(args.base)
     expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
@@ -1025,6 +1060,19 @@ def _extract_state_statute_source(
             limit=limit,
             download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
         )
+    if adapter == "montana-code":
+        return extract_montana_code(
+            store,
+            version=version,
+            source_dir=_optional_manifest_path(manifest_path, options, "source_dir"),
+            source_year=_optional_int(options.get("source_year")) or MONTANA_CODE_DEFAULT_YEAR,
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            limit=limit,
+            download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
+            workers=_optional_int(options.get("workers")) or 8,
+        )
     if adapter == "california-codes-bulk":
         return extract_california_codes_bulk(
             store,
@@ -1149,6 +1197,11 @@ def _canonical_state_statute_adapter(adapter: str) -> str:
         "indiana": "indiana-code",
         "indiana-code": "indiana-code",
         "indiana-code-html": "indiana-code",
+        "mt": "montana-code",
+        "montana": "montana-code",
+        "montana-code": "montana-code",
+        "montana-code-html": "montana-code",
+        "mca": "montana-code",
         "ca": "california-codes-bulk",
         "california": "california-codes-bulk",
         "california-codes": "california-codes-bulk",
@@ -1193,10 +1246,11 @@ def _state_statute_source_path_for_plan(
         "washington-rcw",
         "illinois-ilcs",
         "indiana-code",
+        "montana-code",
     }:
         return _optional_manifest_path(manifest_path, options, "source_dir") or (
             _optional_manifest_path(manifest_path, options, "source_zip")
-            if adapter == "indiana-code"
+            if adapter in {"indiana-code"}
             else None
         )
     if adapter == "california-codes-bulk":
@@ -1780,6 +1834,27 @@ def build_parser() -> argparse.ArgumentParser:
     extract_indiana_code_cmd.add_argument("--limit", type=int)
     extract_indiana_code_cmd.add_argument("--allow-incomplete", action="store_true")
     extract_indiana_code_cmd.set_defaults(func=_cmd_extract_indiana_code)
+
+    extract_montana_code_cmd = sub.add_parser(
+        "extract-montana-code",
+        help="Snapshot official Montana Code Annotated HTML.",
+    )
+    extract_montana_code_cmd.add_argument("--base", type=Path, required=True)
+    extract_montana_code_cmd.add_argument("--version", required=True)
+    extract_montana_code_cmd.add_argument("--source-dir", type=Path)
+    extract_montana_code_cmd.add_argument(
+        "--source-year",
+        type=int,
+        default=MONTANA_CODE_DEFAULT_YEAR,
+    )
+    extract_montana_code_cmd.add_argument("--download-dir", type=Path)
+    extract_montana_code_cmd.add_argument("--only-title")
+    extract_montana_code_cmd.add_argument("--source-as-of", "--as-of", dest="source_as_of")
+    extract_montana_code_cmd.add_argument("--expression-date")
+    extract_montana_code_cmd.add_argument("--limit", type=int)
+    extract_montana_code_cmd.add_argument("--workers", type=int, default=8)
+    extract_montana_code_cmd.add_argument("--allow-incomplete", action="store_true")
+    extract_montana_code_cmd.set_defaults(func=_cmd_extract_montana_code)
 
     extract_california_codes_cmd = sub.add_parser(
         "extract-california-codes",

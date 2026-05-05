@@ -16,11 +16,10 @@ policy:
     - State Options Reports
   publication_requires_controller: true
 status_counts:
-  done: 4
+  done: 5
   blocked_release_repair: 14
-  agent_ready: 33
+  agent_ready: 32
 recommended_first_batch:
-  - us-mt
   - us-nv
   - us-or
   - us-ar
@@ -156,11 +155,12 @@ states:
     notes: Source-first Indiana Code adapter is published and validated against the official IGA HTML release.
   - jurisdiction: us-mt
     name: Montana
-    queue_status: agent_ready
-    production_status: supabase_only_legacy
-    supabase_count: 44101
+    queue_status: done
+    production_status: productionized_and_validated
+    version: "2026-05-05"
+    provision_count: 49849
     priority: 1
-    notes: Large legacy corpus; discover current official primary source and build source-first adapter.
+    notes: Source-first Montana Code Annotated adapter is published and validated against official Montana Legislature HTML.
   - jurisdiction: us-nv
     name: Nevada
     queue_status: agent_ready

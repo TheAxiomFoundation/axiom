@@ -100,6 +100,20 @@ sources:
     metadata:
       source_authority: Minnesota Office of the Revisor of Statutes
 
+  - source_id: us-mt-code
+    jurisdiction: us-mt
+    document_class: statute
+    adapter: montana-code
+    source_url: https://mca.legmt.gov/bills/mca/index.html
+    version: "2026-05-05"
+    options:
+      source_year: 2025
+      source_as_of: "2026-03-24"
+      expression_date: "2026-03-24"
+      workers: 24
+    metadata:
+      source_authority: Montana Legislature
+
   - source_id: us-ne-revised-statutes
     jurisdiction: us-ne
     document_class: statute
