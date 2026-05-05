@@ -149,13 +149,16 @@ legal text; navigation rows only exist so app navigation can be served from a
 simple indexed `parent_path` lookup instead of repeated prefix `LIKE` scans.
 
 ```bash
-# Rebuild one jurisdiction.
+# Rebuild one jurisdiction. --from-supabase prunes stale rows by default,
+# since the Supabase snapshot is the full scope.
 uv run python scripts/build_navigation_index.py --jurisdiction us-co --from-supabase
 
 # Rebuild one (jurisdiction, doc_type) scope.
 uv run python scripts/build_navigation_index.py --jurisdiction us-co --doc-type regulation --from-supabase
 
-# Rebuild from a freshly extracted provisions JSONL.
+# Rebuild from a freshly extracted provisions JSONL. --provisions does NOT
+# prune by default, because a local JSONL is often a partial slice of the
+# corpus. Pass --replace-scope to prune stale rows in the touched scopes.
 uv run python scripts/build_navigation_index.py --provisions data/corpus/provisions/us-co/regulation-2026.jsonl
 ```
 
