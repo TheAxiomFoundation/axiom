@@ -695,6 +695,7 @@ def _cmd_extract_illinois_ilcs(args: argparse.Namespace) -> int:
         only_chapter=args.only_chapter,
         only_act=args.only_act,
         limit=args.limit,
+        workers=args.workers,
     )
     print(
         json.dumps(
@@ -975,6 +976,7 @@ def _extract_state_statute_source(
             expression_date=expression_date,
             only_chapter=only_title,
             limit=limit,
+            workers=_optional_int(options.get("workers")) or 8,
         )
     if adapter == "california-codes-bulk":
         return extract_california_codes_bulk(
@@ -1698,6 +1700,7 @@ def build_parser() -> argparse.ArgumentParser:
     extract_illinois_ilcs_cmd.add_argument("--source-as-of", "--as-of", dest="source_as_of")
     extract_illinois_ilcs_cmd.add_argument("--expression-date")
     extract_illinois_ilcs_cmd.add_argument("--limit", type=int)
+    extract_illinois_ilcs_cmd.add_argument("--workers", type=int, default=8)
     extract_illinois_ilcs_cmd.add_argument("--allow-incomplete", action="store_true")
     extract_illinois_ilcs_cmd.set_defaults(func=_cmd_extract_illinois_ilcs)
 

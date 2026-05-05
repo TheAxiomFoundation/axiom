@@ -16,9 +16,8 @@ policy:
     - State Options Reports
   publication_requires_controller: true
 status_counts:
-  done: 2
+  done: 3
   blocked_release_repair: 14
-  implementation_started: 1
   agent_ready: 34
 recommended_first_batch:
   - us-in
@@ -41,6 +40,13 @@ states:
     version: "2026-05-04"
     provision_count: 54631
     notes: Source-first RCW adapter is published and validated.
+  - jurisdiction: us-il
+    name: Illinois
+    queue_status: done
+    production_status: productionized_and_validated
+    version: "2026-05-04"
+    provision_count: 75104
+    notes: Source-first ILCS adapter is published and validated.
 
   - jurisdiction: us-ca
     name: California
@@ -141,13 +147,6 @@ states:
     supabase_count: 20262
     notes: Existing release uses a CIC source; prefer a primary official source if rebuilding.
 
-  - jurisdiction: us-il
-    name: Illinois
-    queue_status: implementation_started
-    production_status: supabase_only_legacy
-    supabase_count: 72155
-    priority: 1
-    notes: Source-first adapter prototype exists; needs full run, review, release promotion, R2, and Supabase publication.
   - jurisdiction: us-in
     name: Indiana
     queue_status: agent_ready

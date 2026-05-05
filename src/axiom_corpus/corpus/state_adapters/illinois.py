@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable, Iterator
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date
 from html import unescape
@@ -27,7 +29,7 @@ _DOC_NAME_RE = re.compile(
     r"^(?P<chapter>\d{4})(?P<act>\d{5})(?P<doc_type>[AFHK])(?P<identifier>.*?)(?:\.html?)?$",
     re.IGNORECASE,
 )
-_DOC_TOKEN_RE = re.compile(r"\b\d{9}[AFHK][A-Za-z0-9.\-]*\b")
+_DOC_TOKEN_RE = re.compile(r"\b\d{9}[AFHK][A-Za-z0-9.\-]*\b(?!\.\s)")
 _HREF_RE = re.compile(r"""href\s*=\s*["'](?P<href>[^"']+)["']""", re.IGNORECASE)
 _ILCS_CITATION_RE = re.compile(
     r"\((?P<chapter>\d+)\s+ILCS\s+(?P<act>\d+)\s*/\s*(?P<section>[^)]+)\)"
@@ -129,7 +131,8 @@ def parse_illinois_ilcs_links(text: str) -> tuple[str, ...]:
             seen.add(decoded)
             seen_stems.add(parse_illinois_ilcs_doc_name(decoded).stem)
             links.append(decoded)
-    for token in _DOC_TOKEN_RE.findall(text):
+    token_source = re.sub(r"<a\b[^>]*>.*?</a>", " ", text, flags=re.IGNORECASE | re.DOTALL)
+    for token in _DOC_TOKEN_RE.findall(token_source):
         stem = token.rsplit(".", 1)[0] if token.lower().endswith(".html") else token
         decoded = f"{stem}.html"
         if decoded not in seen and stem not in seen_stems:
@@ -193,6 +196,7 @@ def extract_illinois_ilcs(
     only_chapter: str | int | None = None,
     only_act: str | int | None = None,
     limit: int | None = None,
+    workers: int = 8,
     base_url: str = ILLINOIS_ILCS_BASE_URL,
 ) -> StateStatuteExtractReport:
     """Snapshot official Illinois ILCS HTML and extract normalized provisions."""
@@ -210,34 +214,31 @@ def extract_illinois_ilcs(
     )
 
     source_root = Path(source_dir) if source_dir is not None else None
-    source_entries = (
-        _discover_local_sources(source_root)
-        if source_root is not None
-        else _discover_remote_sources(
-            base_url,
-            limit=limit,
-            chapter_filter=chapter_filter,
-            act_filter=act_filter,
-        )
-    )
     sequence = (
         _load_local_section_sequence(source_root)
         if source_root is not None
         else _load_remote_section_sequence(base_url)
     )
-    source_entries = tuple(
-        sorted(
-            source_entries,
-            key=lambda entry: (
-                sequence.get(entry[0].stem, 10_000_000),
-                entry[0].chapter_int,
-                entry[0].act_int,
-                entry[0].doc_type,
-                entry[0].identifier,
-                entry[1],
-            ),
+    remote_errors: list[str] = []
+    if source_root is not None:
+        source_entries: Iterable[tuple[IllinoisIlcsDocumentName, str, str | None, bytes]] = (
+            tuple(
+                sorted(
+                    _discover_local_sources(source_root),
+                    key=lambda entry: _source_sort_key(entry[0], entry[1], sequence),
+                )
+            )
         )
-    )
+    else:
+        source_entries = _iter_remote_sources(
+            base_url,
+            limit=limit,
+            chapter_filter=chapter_filter,
+            act_filter=act_filter,
+            sequence=sequence,
+            workers=workers,
+            errors=remote_errors,
+        )
 
     items: list[SourceInventoryItem] = []
     records: list[ProvisionRecord] = []
@@ -429,8 +430,8 @@ def extract_illinois_ilcs(
         coverage_path=coverage_path,
         coverage=coverage,
         source_paths=tuple(source_paths),
-        skipped_source_count=skipped_source_count,
-        errors=tuple(errors),
+        skipped_source_count=skipped_source_count + len(remote_errors),
+        errors=tuple(remote_errors + errors),
     )
 
 
@@ -450,13 +451,53 @@ def _discover_local_sources(
     return tuple(entries)
 
 
+def _source_sort_key(
+    document: IllinoisIlcsDocumentName,
+    relative_name: str,
+    sequence: dict[str, int],
+) -> tuple[int, int, int, str, str, str]:
+    return (
+        sequence.get(document.stem, 10_000_000),
+        document.chapter_int,
+        document.act_int,
+        document.doc_type,
+        document.identifier,
+        relative_name,
+    )
+
+
 def _discover_remote_sources(
     base_url: str,
     *,
     limit: int | None,
     chapter_filter: int | None,
     act_filter: int | None,
+    workers: int = 1,
+    errors: list[str] | None = None,
 ) -> tuple[tuple[IllinoisIlcsDocumentName, str, str | None, bytes], ...]:
+    return tuple(
+        _iter_remote_sources(
+            base_url,
+            limit=limit,
+            chapter_filter=chapter_filter,
+            act_filter=act_filter,
+            sequence={},
+            workers=workers,
+            errors=errors,
+        )
+    )
+
+
+def _iter_remote_sources(
+    base_url: str,
+    *,
+    limit: int | None,
+    chapter_filter: int | None,
+    act_filter: int | None,
+    sequence: dict[str, int],
+    workers: int,
+    errors: list[str] | None = None,
+) -> Iterator[tuple[IllinoisIlcsDocumentName, str, str | None, bytes]]:
     session = requests.Session()
     session.headers.update({"User-Agent": ILLINOIS_USER_AGENT})
     paths = _remote_document_paths(
@@ -465,18 +506,57 @@ def _discover_remote_sources(
         limit=limit,
         chapter_filter=chapter_filter,
         act_filter=act_filter,
+        sequence=sequence,
     )
-    entries: list[tuple[IllinoisIlcsDocumentName, str, str | None, bytes]] = []
+    source_refs: list[tuple[IllinoisIlcsDocumentName, str, str]] = []
     for relative_name in paths:
         try:
             document = parse_illinois_ilcs_doc_name(relative_name)
         except ValueError:
             continue
         url = urljoin(base_url, quote(relative_name, safe="/%"))
-        response = session.get(url, timeout=20)
+        source_refs.append((document, relative_name, url))
+    sorted_refs = tuple(
+        sorted(
+            source_refs,
+            key=lambda entry: _source_sort_key(entry[0], entry[1], sequence),
+        )
+    )
+    worker_count = max(1, workers)
+    if worker_count == 1:
+        for document, relative_name, url in sorted_refs:
+            try:
+                response = session.get(url, timeout=20)
+                response.raise_for_status()
+            except requests.RequestException as exc:
+                if errors is not None:
+                    errors.append(f"{relative_name}: {exc}")
+                continue
+            yield document, relative_name, url, response.content
+        return
+
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        for document, relative_name, url, data, error in executor.map(
+            _fetch_remote_source,
+            sorted_refs,
+        ):
+            if error is not None:
+                if errors is not None:
+                    errors.append(f"{relative_name}: {error}")
+                continue
+            yield document, relative_name, url, data
+
+
+def _fetch_remote_source(
+    source_ref: tuple[IllinoisIlcsDocumentName, str, str],
+) -> tuple[IllinoisIlcsDocumentName, str, str, bytes, str | None]:
+    document, relative_name, url = source_ref
+    try:
+        response = requests.get(url, headers={"User-Agent": ILLINOIS_USER_AGENT}, timeout=20)
         response.raise_for_status()
-        entries.append((document, relative_name, url, response.content))
-    return tuple(entries)
+    except requests.RequestException as exc:
+        return document, relative_name, url, b"", str(exc)
+    return document, relative_name, url, response.content, None
 
 
 def _remote_document_paths(
@@ -486,7 +566,15 @@ def _remote_document_paths(
     limit: int | None,
     chapter_filter: int | None = None,
     act_filter: int | None = None,
+    sequence: dict[str, int] | None = None,
 ) -> tuple[str, ...]:
+    if sequence:
+        return _remote_document_paths_from_sequence(
+            sequence,
+            limit=limit,
+            chapter_filter=chapter_filter,
+            act_filter=act_filter,
+        )
     index = _remote_text(session, base_url)
     direct_links = [
         normalized_link
@@ -516,6 +604,31 @@ def _remote_document_paths(
                 paths.append(relative_name)
                 if limit is not None and _section_path_count(paths) >= limit:
                     return tuple(paths)
+    return tuple(paths)
+
+
+def _remote_document_paths_from_sequence(
+    sequence: dict[str, int],
+    *,
+    limit: int | None,
+    chapter_filter: int | None,
+    act_filter: int | None,
+) -> tuple[str, ...]:
+    paths: list[str] = []
+    for stem in sequence:
+        try:
+            document = parse_illinois_ilcs_doc_name(f"{stem}.html")
+        except ValueError:
+            continue
+        if chapter_filter is not None and document.chapter_int != chapter_filter:
+            continue
+        if act_filter is not None and document.act_int != act_filter:
+            continue
+        paths.append(
+            f"Ch {document.chapter_int:04d}/Act {document.act_int:04d}/{document.stem}.html"
+        )
+        if limit is not None and _section_path_count(paths) >= limit:
+            break
     return tuple(paths)
 
 

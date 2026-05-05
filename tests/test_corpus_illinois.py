@@ -110,6 +110,18 @@ def test_parse_illinois_ilcs_links_reads_directory_and_sequence_styles():
     }
 
 
+def test_parse_illinois_ilcs_links_does_not_invent_tokens_from_spaced_href_labels():
+    text = """
+    <a href="/ftp/ILCS/Ch%200005/Act%200100/000501000HArt.%201.html">000501000HArt. 1.html</a>
+    <a href="/ftp/ILCS/Ch%200005/Act%200100/000501000K1-1.html">000501000K1-1.html</a>
+    """
+
+    assert parse_illinois_ilcs_links(text) == (
+        "/ftp/ILCS/Ch 0005/Act 0100/000501000HArt. 1.html",
+        "/ftp/ILCS/Ch 0005/Act 0100/000501000K1-1.html",
+    )
+
+
 def test_parse_illinois_ilcs_section_extracts_citation_heading_body_and_refs():
     document = parse_illinois_ilcs_doc_name("000500700K1.html")
 
@@ -158,6 +170,8 @@ class _FakeIllinoisSession:
 
     def get(self, url: str, timeout: int) -> _FakeIllinoisResponse:
         del timeout
+        if url not in self.pages:
+            raise requests.HTTPError(f"404 Client Error: Not Found for url: {url}")
         return _FakeIllinoisResponse(self.pages[url])
 
 
@@ -191,6 +205,31 @@ def test_remote_document_paths_filters_chapter_act_before_section_limit():
         "Ch 0005/Act 0070/000500700F.html",
         "Ch 0005/Act 0070/000500700K0.01.html",
         "Ch 0005/Act 0070/000500700K1.01.html",
+    )
+
+
+def test_remote_document_paths_prefers_official_section_sequence():
+    session = _FakeIllinoisSession({})
+
+    paths = _remote_document_paths(
+        session,
+        ILLINOIS_ILCS_BASE_URL,
+        limit=2,
+        chapter_filter=5,
+        act_filter=70,
+        sequence={
+            "000500000A": 0,
+            "000500700F": 1,
+            "000500700K0.01": 2,
+            "000500700K1": 3,
+            "001000050K1": 4,
+        },
+    )
+
+    assert paths == (
+        "Ch 0005/Act 0070/000500700F.html",
+        "Ch 0005/Act 0070/000500700K0.01.html",
+        "Ch 0005/Act 0070/000500700K1.html",
     )
 
 
@@ -248,6 +287,36 @@ def test_discover_remote_sources_fetches_filtered_document_bytes(monkeypatch):
     )
     assert entries[0][0].doc_type == "F"
     assert entries[1][3] == SAMPLE_SECTION_1.encode()
+
+
+def test_discover_remote_sources_records_fetch_errors(monkeypatch):
+    pages: dict[str, str | bytes] = {
+        ILLINOIS_ILCS_BASE_URL: """
+        <a href="/ftp/ILCS/Ch%200005/Act%200070/000500700K1.html">Sec. 1</a>
+        <a href="/ftp/ILCS/Ch%200005/Act%200070/000500700K2.html">Sec. 2</a>
+        """,
+        f"{ILLINOIS_ILCS_BASE_URL}Ch%200005/Act%200070/000500700K1.html": SAMPLE_SECTION_1.encode(),
+    }
+    session = _FakeIllinoisSession(pages)
+    monkeypatch.setattr(
+        "axiom_corpus.corpus.state_adapters.illinois.requests.Session",
+        lambda: session,
+    )
+    errors: list[str] = []
+
+    entries = _discover_remote_sources(
+        ILLINOIS_ILCS_BASE_URL,
+        limit=None,
+        chapter_filter=5,
+        act_filter=70,
+        errors=errors,
+    )
+
+    assert tuple(entry[1] for entry in entries) == (
+        "Ch 0005/Act 0070/000500700K1.html",
+    )
+    assert len(errors) == 1
+    assert "000500700K2.html" in errors[0]
 
 
 def test_extract_illinois_ilcs_local_fixture_orders_by_section_sequence(tmp_path):

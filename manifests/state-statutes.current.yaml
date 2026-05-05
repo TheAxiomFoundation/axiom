@@ -49,6 +49,19 @@ sources:
     metadata:
       source_authority: Public.Resource.Org CIC state code release
 
+  - source_id: us-il-ilcs
+    jurisdiction: us-il
+    document_class: statute
+    adapter: illinois-ilcs
+    source_url: https://www.ilga.gov/ftp/ILCS/
+    version: "2026-05-04"
+    options:
+      source_as_of: "2025-11-24"
+      expression_date: "2025-11-24"
+      workers: 32
+    metadata:
+      source_authority: Illinois General Assembly
+
   - source_id: us-ky-krs
     jurisdiction: us-ky
     document_class: statute
