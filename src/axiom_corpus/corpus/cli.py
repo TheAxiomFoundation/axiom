@@ -26,6 +26,14 @@ from axiom_corpus.corpus.models import (
     DocumentClass,
     ProvisionRecord,
 )
+from axiom_corpus.corpus.navigation import (
+    NavigationNode,
+    build_navigation_nodes,
+)
+from axiom_corpus.corpus.navigation_supabase import (
+    fetch_provisions_for_navigation,
+    write_navigation_nodes_to_supabase,
+)
 from axiom_corpus.corpus.r2 import (
     DEFAULT_ARTIFACT_PREFIXES,
     DEFAULT_RELEASE_ARTIFACT_PREFIXES,
@@ -235,6 +243,22 @@ def _cmd_load_supabase(args: argparse.Namespace) -> int:
         payload["replace_scope"] = replace_report.to_mapping()
     payload["provisions"] = str(args.provisions)
     payload["supabase_url"] = args.supabase_url
+
+    if args.build_navigation and not args.dry_run and report.rows_loaded:
+        nodes = build_navigation_nodes(records)
+        navigation_report = write_navigation_nodes_to_supabase(
+            nodes,
+            service_key=service_key,
+            supabase_url=args.supabase_url,
+            chunk_size=args.chunk_size,
+            replace_scope=True,
+            dry_run=False,
+            progress_stream=sys.stderr,
+        )
+        payload["navigation"] = navigation_report.to_mapping()
+    elif args.build_navigation and args.dry_run:
+        payload["navigation"] = {"skipped": "dry-run"}
+
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
 
@@ -251,6 +275,80 @@ def _cmd_snapshot_provision_counts(args: argparse.Namespace) -> int:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
         payload["written_to"] = str(args.output)
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
+def _cmd_build_navigation_index(args: argparse.Namespace) -> int:
+    if not args.provisions and not args.from_supabase and not args.all:
+        raise SystemExit("build-navigation-index requires --provisions, --from-supabase, or --all")
+
+    records: tuple[ProvisionRecord, ...]
+    if args.provisions:
+        loaded: list[ProvisionRecord] = []
+        for path in args.provisions:
+            loaded.extend(load_provisions(path))
+        records = tuple(loaded)
+        sources_used = [str(path) for path in args.provisions]
+    else:
+        service_key_for_fetch = resolve_service_key(
+            args.supabase_url,
+            service_key_env=args.service_key_env,
+            access_token_env=args.access_token_env,
+        )
+        records = fetch_provisions_for_navigation(
+            service_key=service_key_for_fetch,
+            supabase_url=args.supabase_url,
+            jurisdiction=args.jurisdiction,
+            doc_type=args.doc_type,
+        )
+        sources_used = [f"supabase:{args.supabase_url}"]
+
+    nodes: tuple[NavigationNode, ...] = build_navigation_nodes(
+        records,
+        jurisdiction=args.jurisdiction,
+        document_class=args.doc_type,
+    )
+
+    payload: dict[str, object] = {
+        "nodes_built": len(nodes),
+        "provisions_input": len(records),
+        "jurisdiction": args.jurisdiction,
+        "doc_type": args.doc_type,
+        "sources": sources_used,
+    }
+
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(
+            "\n".join(json.dumps(node.to_supabase_row(), sort_keys=True) for node in nodes)
+            + ("\n" if nodes else "")
+        )
+        payload["written_to"] = str(args.output)
+
+    if args.skip_supabase:
+        payload["skipped_supabase"] = True
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+
+    service_key = ""
+    if not args.dry_run:
+        service_key = resolve_service_key(
+            args.supabase_url,
+            service_key_env=args.service_key_env,
+            access_token_env=args.access_token_env,
+        )
+    write_report = write_navigation_nodes_to_supabase(
+        nodes,
+        service_key=service_key,
+        supabase_url=args.supabase_url,
+        chunk_size=args.chunk_size,
+        replace_scope=not args.no_replace_scope,
+        dry_run=args.dry_run,
+        progress_stream=sys.stderr,
+    )
+    payload["supabase"] = write_report.to_mapping()
+    payload["supabase_url"] = args.supabase_url
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
 
@@ -2287,7 +2385,77 @@ def build_parser() -> argparse.ArgumentParser:
     )
     load_supabase.add_argument("--service-key-env", default=DEFAULT_SERVICE_KEY_ENV)
     load_supabase.add_argument("--access-token-env", default=DEFAULT_ACCESS_TOKEN_ENV)
+    load_supabase.add_argument(
+        "--build-navigation",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Rebuild corpus.navigation_nodes for the loaded scope after the "
+            "provisions upsert succeeds. Disabled with --no-build-navigation."
+        ),
+    )
     load_supabase.set_defaults(func=_cmd_load_supabase)
+
+    build_navigation = sub.add_parser(
+        "build-navigation-index",
+        help=(
+            "Build (and optionally upsert) corpus.navigation_nodes from a "
+            "provisions JSONL or directly from corpus.provisions in Supabase."
+        ),
+    )
+    build_navigation.add_argument(
+        "--provisions",
+        type=Path,
+        action="append",
+        default=[],
+        help="Path to a provisions JSONL file. Repeatable.",
+    )
+    build_navigation.add_argument(
+        "--from-supabase",
+        action="store_true",
+        help="Fetch provisions to navigate from Supabase instead of local JSONL.",
+    )
+    build_navigation.add_argument(
+        "--all",
+        action="store_true",
+        help=(
+            "Rebuild every (jurisdiction, doc_type) scope. Requires --from-supabase "
+            "or --provisions input."
+        ),
+    )
+    build_navigation.add_argument(
+        "--jurisdiction",
+        help="Filter provisions/scope to one jurisdiction (e.g. us-co).",
+    )
+    build_navigation.add_argument(
+        "--doc-type",
+        choices=[document_class.value for document_class in DocumentClass],
+        help="Filter to one document class (e.g. statute, regulation).",
+    )
+    build_navigation.add_argument(
+        "--output",
+        type=Path,
+        help="Optionally write the built navigation rows to JSONL for inspection.",
+    )
+    build_navigation.add_argument(
+        "--no-replace-scope",
+        action="store_true",
+        help="Skip pruning stale rows for rebuilt scopes (default replaces in scope).",
+    )
+    build_navigation.add_argument("--chunk-size", type=int, default=500)
+    build_navigation.add_argument("--dry-run", action="store_true")
+    build_navigation.add_argument(
+        "--skip-supabase",
+        action="store_true",
+        help="Build rows locally without contacting Supabase.",
+    )
+    build_navigation.add_argument(
+        "--supabase-url",
+        default=os.environ.get("AXIOM_SUPABASE_URL", DEFAULT_AXIOM_SUPABASE_URL),
+    )
+    build_navigation.add_argument("--service-key-env", default=DEFAULT_SERVICE_KEY_ENV)
+    build_navigation.add_argument("--access-token-env", default=DEFAULT_ACCESS_TOKEN_ENV)
+    build_navigation.set_defaults(func=_cmd_build_navigation_index)
 
     snapshot_counts = sub.add_parser(
         "snapshot-provision-counts",

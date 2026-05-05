@@ -383,6 +383,124 @@ def test_load_supabase_cli_replace_scope_dry_run(tmp_path, capsys):
     assert payload["rows_total"] == 1
 
 
+def test_load_supabase_cli_dry_run_skips_navigation_writes(tmp_path, capsys):
+    from axiom_corpus.corpus.artifacts import CorpusArtifactStore
+
+    store = CorpusArtifactStore(tmp_path / "corpus")
+    provisions = store.provisions_path("us-co", "statute", "2026-05-05")
+    store.write_provisions(
+        provisions,
+        [
+            ProvisionRecord(
+                jurisdiction="us-co",
+                document_class="statute",
+                citation_path="us-co/statute/title-39",
+            )
+        ],
+    )
+
+    exit_code = main(["load-supabase", "--provisions", str(provisions), "--dry-run"])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    # Default --build-navigation is on, but dry-run still must not contact the API.
+    assert payload["navigation"] == {"skipped": "dry-run"}
+
+
+def test_load_supabase_cli_no_build_navigation_omits_navigation_section(tmp_path, capsys):
+    from axiom_corpus.corpus.artifacts import CorpusArtifactStore
+
+    store = CorpusArtifactStore(tmp_path / "corpus")
+    provisions = store.provisions_path("us-co", "statute", "2026-05-05")
+    store.write_provisions(
+        provisions,
+        [
+            ProvisionRecord(
+                jurisdiction="us-co",
+                document_class="statute",
+                citation_path="us-co/statute/title-39",
+            )
+        ],
+    )
+
+    exit_code = main(
+        [
+            "load-supabase",
+            "--provisions",
+            str(provisions),
+            "--dry-run",
+            "--no-build-navigation",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert "navigation" not in payload
+
+
+def test_load_supabase_cli_rebuilds_navigation_after_provisions_load(tmp_path, capsys, monkeypatch):
+    import axiom_corpus.corpus.cli as cli
+    from axiom_corpus.corpus.artifacts import CorpusArtifactStore
+    from axiom_corpus.corpus.navigation_supabase import NavigationSupabaseWriteReport
+    from axiom_corpus.corpus.supabase import SupabaseLoadReport
+
+    store = CorpusArtifactStore(tmp_path / "corpus")
+    provisions = store.provisions_path("us-co", "statute", "2026-05-05")
+    store.write_provisions(
+        provisions,
+        [
+            ProvisionRecord(
+                jurisdiction="us-co",
+                document_class="statute",
+                citation_path="us-co/statute/title-39",
+            ),
+            ProvisionRecord(
+                jurisdiction="us-co",
+                document_class="statute",
+                citation_path="us-co/statute/title-39/article-22",
+                parent_citation_path="us-co/statute/title-39",
+            ),
+        ],
+    )
+
+    monkeypatch.setattr(cli, "resolve_service_key", lambda *a, **kw: "service")
+    monkeypatch.setattr(
+        cli,
+        "load_provisions_to_supabase",
+        lambda *a, **kw: SupabaseLoadReport(
+            rows_total=2, rows_loaded=2, chunk_count=1, refreshed=True
+        ),
+    )
+
+    captured: dict[str, object] = {}
+
+    def fake_writer(nodes, **kwargs):
+        captured["node_paths"] = [n.path for n in nodes]
+        captured["replace_scope"] = kwargs.get("replace_scope")
+        return NavigationSupabaseWriteReport(
+            rows_total=len(captured["node_paths"]),
+            rows_loaded=len(captured["node_paths"]),
+            chunk_count=1,
+            scopes_replaced=(("us-co", "statute"),),
+            rows_deleted=0,
+            delete_chunk_count=0,
+        )
+
+    monkeypatch.setattr(cli, "write_navigation_nodes_to_supabase", fake_writer)
+
+    exit_code = main(["load-supabase", "--provisions", str(provisions)])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert captured["replace_scope"] is True
+    assert set(captured["node_paths"]) == {
+        "us-co/statute/title-39",
+        "us-co/statute/title-39/article-22",
+    }
+    assert payload["navigation"]["rows_loaded"] == 2
+    assert payload["navigation"]["scopes_replaced"] == [["us-co", "statute"]]
+
+
 def test_snapshot_provision_counts_cli_writes_supabase_counts(tmp_path, capsys, monkeypatch):
     import axiom_corpus.corpus.cli as cli
 
