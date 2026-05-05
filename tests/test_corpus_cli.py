@@ -723,6 +723,39 @@ sources:
     assert payload["rows"][0]["source_path_exists"] is True
 
 
+def test_extract_state_statutes_batch_dry_run_allows_live_indiana_source(tmp_path, capsys):
+    manifest = tmp_path / "state-statutes.yaml"
+    manifest.write_text(
+        """
+version: "2026-05-05"
+sources:
+  - source_id: us-in-code
+    jurisdiction: us-in
+    document_class: statute
+    adapter: indiana-code
+    source_url: https://iga.in.gov/ic/2025/2025-Indiana-Code-html.zip
+"""
+    )
+
+    exit_code = main(
+        [
+            "extract-state-statutes",
+            "--base",
+            str(tmp_path / "corpus"),
+            "--manifest",
+            str(manifest),
+            "--dry-run",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert payload["dry_run"] is True
+    assert payload["rows"][0]["adapter"] == "indiana-code"
+    assert payload["rows"][0]["source_path"] is None
+    assert payload["rows"][0]["source_path_exists"] is True
+
+
 def test_extract_state_statutes_batch_dry_run_checks_california_source_zip(tmp_path, capsys):
     source_zip = tmp_path / "pubinfo_2025.zip"
     source_zip.write_bytes(b"zip placeholder")
