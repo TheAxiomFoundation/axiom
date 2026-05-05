@@ -138,6 +138,8 @@ def build_navigation_nodes(
     for record in filtered:
         parent_paths[record.citation_path] = _resolve_parent_path(record, by_path)
 
+    _break_parent_cycles(parent_paths)
+
     depths = _resolve_depths(parent_paths)
 
     nodes: dict[str, NavigationNode] = {}
@@ -207,14 +209,36 @@ def _resolve_parent_path(
     record: ProvisionRecord,
     by_path: dict[str, ProvisionRecord],
 ) -> str | None:
-    if record.parent_citation_path and record.parent_citation_path in by_path:
-        return record.parent_citation_path
+    explicit = record.parent_citation_path
+    if explicit and explicit != record.citation_path and explicit in by_path:
+        return explicit
     parts = record.citation_path.split("/")
     for size in range(len(parts) - 1, 0, -1):
         candidate = "/".join(parts[:size])
         if candidate in by_path and candidate != record.citation_path:
             return candidate
     return None
+
+
+def _break_parent_cycles(parent_paths: dict[str, str | None]) -> None:
+    """Promote any node that participates in a parent cycle to a root.
+
+    `_resolve_parent_path` rejects self-edges, but a record A whose parent is B
+    while B's parent is A would still produce a two-cycle. Walking the chain
+    here catches that and any longer cycle. The first node in each cycle —
+    iteration-order — has its `parent_path` cleared so the cycle is broken at
+    a deterministic point and the rest of the chain reaches a root.
+    """
+    for start in list(parent_paths):
+        seen: set[str] = {start}
+        cursor = parent_paths.get(start)
+        while cursor is not None and cursor in parent_paths:
+            if cursor in seen:
+                # `start` is the cycle entry from the caller's perspective.
+                parent_paths[start] = None
+                break
+            seen.add(cursor)
+            cursor = parent_paths.get(cursor)
 
 
 def _resolve_depths(parent_paths: dict[str, str | None]) -> dict[str, int]:

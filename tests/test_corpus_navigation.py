@@ -106,8 +106,7 @@ def test_missing_explicit_parent_does_not_create_hidden_orphan():
     by_path = {node.path: node for node in nodes}
 
     assert (
-        by_path["us-co/statute/title-39/article-22/part-1"].parent_path
-        == "us-co/statute/title-39"
+        by_path["us-co/statute/title-39/article-22/part-1"].parent_path == "us-co/statute/title-39"
     )
     assert by_path["us-co/statute/title-39"].child_count == 1
 
@@ -244,6 +243,96 @@ def test_status_pulled_from_metadata_when_present():
     by_path = {n.path: n for n in nodes}
     assert by_path["scope/x"].status == "current"
     assert by_path["scope/y"].status is None
+
+
+def test_empty_input_returns_empty_tuple():
+    assert build_navigation_nodes([]) == ()
+
+
+def test_self_parent_is_promoted_to_root():
+    nodes = build_navigation_nodes([_record("a", parent_citation_path="a")])
+    assert len(nodes) == 1
+    assert nodes[0].parent_path is None
+    assert nodes[0].depth == 0
+
+
+def test_two_cycle_is_broken_into_a_root_and_a_child():
+    nodes = build_navigation_nodes(
+        [
+            _record("a", parent_citation_path="b"),
+            _record("b", parent_citation_path="a"),
+        ]
+    )
+    by_path = {n.path: n for n in nodes}
+    # Exactly one of the two becomes a root; the other points at it.
+    parents = {n.path: n.parent_path for n in nodes}
+    roots = [p for p, parent in parents.items() if parent is None]
+    assert len(roots) == 1
+    other = "b" if roots[0] == "a" else "a"
+    assert parents[other] == roots[0]
+    assert by_path[roots[0]].depth == 0
+    assert by_path[other].depth == 1
+
+
+def test_three_cycle_is_broken_at_one_node():
+    nodes = build_navigation_nodes(
+        [
+            _record("a", parent_citation_path="b"),
+            _record("b", parent_citation_path="c"),
+            _record("c", parent_citation_path="a"),
+        ]
+    )
+    parents = {n.path: n.parent_path for n in nodes}
+    roots = [p for p, parent in parents.items() if parent is None]
+    assert len(roots) == 1
+    # The remaining two nodes form a depth-1 / depth-2 chain reachable from the root.
+    depths = {n.path: n.depth for n in nodes}
+    assert sorted(depths.values()) == [0, 1, 2]
+
+
+def test_filter_strands_child_whose_parent_is_in_another_scope():
+    nodes = build_navigation_nodes(
+        [
+            ProvisionRecord(
+                jurisdiction="us",
+                document_class="statute",
+                citation_path="us/statute/26",
+            ),
+            ProvisionRecord(
+                jurisdiction="us-co",
+                document_class="statute",
+                citation_path="us-co/statute/title-39",
+                parent_citation_path="us/statute/26",
+            ),
+        ],
+        jurisdiction="us-co",
+    )
+    assert [n.path for n in nodes] == ["us-co/statute/title-39"]
+    assert nodes[0].parent_path is None
+
+
+def test_ordinal_zero_sorts_before_unordained_records():
+    nodes = build_navigation_nodes(
+        [
+            _record("p"),
+            _record("p/a", parent_citation_path="p", ordinal=0),
+            _record("p/b", parent_citation_path="p"),
+        ]
+    )
+    children = sorted((n for n in nodes if n.parent_path == "p"), key=lambda n: n.sort_key)
+    assert [n.segment for n in children] == ["a", "b"]
+
+
+def test_has_rulespec_none_is_treated_as_false():
+    nodes = build_navigation_nodes(
+        [
+            _record("root"),
+            _record("root/leaf", parent_citation_path="root", has_rulespec=None),
+        ]
+    )
+    by_path = {n.path: n for n in nodes}
+    assert by_path["root/leaf"].has_rulespec is False
+    assert by_path["root"].encoded_descendant_count == 0
 
 
 def test_repeated_builds_emit_identical_rows():
