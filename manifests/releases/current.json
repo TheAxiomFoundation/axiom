@@ -64,6 +64,11 @@
     },
     {
       "document_class": "statute",
+      "jurisdiction": "us-in",
+      "version": "2026-05-05"
+    },
+    {
+      "document_class": "statute",
       "jurisdiction": "us-ky",
       "version": "2026-04-29"
     },
