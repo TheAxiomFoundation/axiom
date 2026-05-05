@@ -394,18 +394,20 @@ def _cmd_build_navigation_index(args: argparse.Namespace) -> int:
         print(json.dumps(payload, indent=2, sort_keys=True))
         return 0
 
+    replace_scope = _build_navigation_replace_scope(args)
     write_report = write_navigation_nodes_to_supabase(
         nodes,
         service_key=service_key,
         supabase_url=args.supabase_url,
         chunk_size=args.chunk_size,
-        replace_scope=not args.no_replace_scope,
+        replace_scope=replace_scope,
         replace_scopes=_explicit_navigation_replace_scopes(args),
         dry_run=args.dry_run,
         progress_stream=sys.stderr,
     )
     payload["supabase"] = write_report.to_mapping()
     payload["supabase_url"] = args.supabase_url
+    payload["replace_scope"] = replace_scope
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
 
@@ -418,6 +420,12 @@ def _explicit_navigation_replace_scopes(args: argparse.Namespace) -> tuple[tuple
     if args.jurisdiction and args.doc_type:
         return ((args.jurisdiction, args.doc_type),)
     return ()
+
+
+def _build_navigation_replace_scope(args: argparse.Namespace) -> bool:
+    if args.replace_scope is not None:
+        return bool(args.replace_scope)
+    return bool(args.from_supabase)
 
 
 def _apply_navigation_status_overrides(
@@ -2569,9 +2577,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optionally write the built navigation rows to JSONL for inspection.",
     )
     build_navigation.add_argument(
-        "--no-replace-scope",
+        "--replace-scope",
+        dest="replace_scope",
         action="store_true",
-        help="Skip pruning stale rows for rebuilt scopes (default replaces in scope).",
+        default=None,
+        help=(
+            "Prune stale rows for rebuilt scopes. Defaults to on with "
+            "--from-supabase and off with --provisions."
+        ),
+    )
+    build_navigation.add_argument(
+        "--no-replace-scope",
+        dest="replace_scope",
+        action="store_false",
+        help="Skip pruning stale rows for rebuilt scopes.",
     )
     build_navigation.add_argument("--chunk-size", type=int, default=500)
     build_navigation.add_argument("--dry-run", action="store_true")
