@@ -40,6 +40,12 @@ DEFAULT_RELEASE_ARTIFACT_PREFIXES = (
     "provisions",
     "coverage",
 )
+SCOPE_ARTIFACT_PREFIXES = frozenset(DEFAULT_RELEASE_ARTIFACT_PREFIXES)
+SINGLE_FILE_ARTIFACT_SUFFIXES = {
+    "inventory": ".json",
+    "provisions": ".jsonl",
+    "coverage": ".json",
+}
 
 
 @dataclass(frozen=True)
@@ -386,16 +392,122 @@ def iter_local_artifacts(
     return tuple(rows)
 
 
+def _remote_listing_prefixes(
+    prefixes: Iterable[str],
+    *,
+    jurisdiction: str | None = None,
+    document_class: str | None = None,
+    version: str | None = None,
+    release_scopes: Iterable[ScopeKey] | None = None,
+) -> tuple[str, ...]:
+    prefix_tuple = _normalize_prefixes(prefixes)
+    release_scope_keys = _normalize_release_scopes(release_scopes)
+    filters_supplied = (
+        jurisdiction is not None
+        or document_class is not None
+        or version is not None
+        or release_scope_keys is not None
+    )
+    object_prefixes: list[str] = []
+    seen: set[str] = set()
+
+    def add(prefix: str) -> None:
+        if prefix not in seen:
+            seen.add(prefix)
+            object_prefixes.append(prefix)
+
+    if release_scope_keys is not None:
+        for artifact_prefix in prefix_tuple:
+            if artifact_prefix not in SCOPE_ARTIFACT_PREFIXES:
+                continue
+            for scope_jurisdiction, scope_document_class, scope_version in sorted(
+                release_scope_keys
+            ):
+                if jurisdiction is not None and scope_jurisdiction != jurisdiction:
+                    continue
+                if document_class is not None and scope_document_class != document_class:
+                    continue
+                if version is not None and scope_version != version:
+                    continue
+                add(
+                    _remote_listing_prefix_for_scope(
+                        artifact_prefix,
+                        scope_jurisdiction,
+                        scope_document_class,
+                        scope_version,
+                    )
+                )
+        return tuple(object_prefixes)
+
+    for artifact_prefix in prefix_tuple:
+        if filters_supplied and artifact_prefix not in SCOPE_ARTIFACT_PREFIXES:
+            continue
+        add(
+            _remote_listing_prefix_for_filter(
+                artifact_prefix,
+                jurisdiction=jurisdiction,
+                document_class=document_class,
+                version=version,
+            )
+        )
+    return tuple(object_prefixes)
+
+
+def _remote_listing_prefix_for_filter(
+    artifact_prefix: str,
+    *,
+    jurisdiction: str | None,
+    document_class: str | None,
+    version: str | None,
+) -> str:
+    if artifact_prefix not in SCOPE_ARTIFACT_PREFIXES or jurisdiction is None:
+        return f"{artifact_prefix}/"
+    if document_class is None:
+        return f"{artifact_prefix}/{jurisdiction}/"
+    if version is None:
+        return f"{artifact_prefix}/{jurisdiction}/{document_class}/"
+    return _remote_listing_prefix_for_scope(
+        artifact_prefix,
+        jurisdiction,
+        document_class,
+        version,
+    )
+
+
+def _remote_listing_prefix_for_scope(
+    artifact_prefix: str,
+    jurisdiction: str,
+    document_class: str,
+    version: str,
+) -> str:
+    if artifact_prefix == "sources":
+        return f"{artifact_prefix}/{jurisdiction}/{document_class}/{version}/"
+    suffix = SINGLE_FILE_ARTIFACT_SUFFIXES.get(artifact_prefix)
+    if suffix:
+        return f"{artifact_prefix}/{jurisdiction}/{document_class}/{version}{suffix}"
+    return f"{artifact_prefix}/{jurisdiction}/{document_class}/{version}/"
+
+
 def list_r2_artifacts(
     client: Any,
     *,
     bucket: str,
     prefixes: Iterable[str] = DEFAULT_ARTIFACT_PREFIXES,
+    jurisdiction: str | None = None,
+    document_class: str | None = None,
+    version: str | None = None,
+    release_scopes: Iterable[ScopeKey] | None = None,
 ) -> dict[str, RemoteArtifact]:
     artifacts: dict[str, RemoteArtifact] = {}
     paginator = client.get_paginator("list_objects_v2")
-    for prefix in _normalize_prefixes(prefixes):
-        for page in paginator.paginate(Bucket=bucket, Prefix=f"{prefix}/"):
+    for object_prefix in _remote_listing_prefixes(
+        prefixes,
+        jurisdiction=jurisdiction,
+        document_class=document_class,
+        version=version,
+        release_scopes=release_scopes,
+    ):
+        for page in paginator.paginate(Bucket=bucket, Prefix=object_prefix):
             for obj in page.get("Contents", []):
                 key = str(obj["Key"])
                 artifacts[key] = RemoteArtifact(
@@ -435,7 +547,14 @@ def sync_artifacts_to_r2(
         )
     )
     remote = _filter_remote_artifacts(
-        list_r2_artifacts(r2, bucket=config.bucket, prefixes=prefix_tuple),
+        list_r2_artifacts(
+            r2,
+            bucket=config.bucket,
+            prefixes=prefix_tuple,
+            jurisdiction=jurisdiction,
+            document_class=document_class,
+            version=version,
+        ),
         jurisdiction=jurisdiction,
         document_class=document_class,
         version=version,
@@ -562,7 +681,15 @@ def build_artifact_report_with_r2(
     prefix_tuple = _normalize_prefixes(prefixes)
     r2 = client or make_r2_client(config)
     release_scope_keys = _normalize_release_scopes(release_scopes)
-    remote = list_r2_artifacts(r2, bucket=config.bucket, prefixes=prefix_tuple)
+    remote = list_r2_artifacts(
+        r2,
+        bucket=config.bucket,
+        prefixes=prefix_tuple,
+        jurisdiction=jurisdiction,
+        document_class=document_class,
+        version=version,
+        release_scopes=release_scope_keys,
+    )
     scoped_remote = _filter_remote_artifacts(
         remote,
         jurisdiction=jurisdiction,

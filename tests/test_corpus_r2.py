@@ -19,6 +19,7 @@ class FakeR2Client:
     def __init__(self, objects=None):
         self.objects = dict(objects or {})
         self.uploads = []
+        self.list_prefixes = []
 
     def get_paginator(self, name):
         assert name == "list_objects_v2"
@@ -26,6 +27,7 @@ class FakeR2Client:
 
     def paginate(self, **kwargs):
         assert kwargs["Bucket"] == "axiom-corpus"
+        self.list_prefixes.append(kwargs["Prefix"])
         contents = [
             {"Key": key, "Size": _object_size(payload), "ETag": f'"{key}"'}
             for key, payload in sorted(self.objects.items())
@@ -199,6 +201,7 @@ def test_sync_artifacts_to_r2_filters_scope(tmp_path):
     assert report.bytes_planned == (
         store.provisions_path("us-co", "policy", "2026-04-30").stat().st_size
     )
+    assert client.list_prefixes == ["provisions/us-co/policy/2026-04-30.jsonl"]
 
 
 def test_artifact_report_flags_r2_and_supabase_mismatches(tmp_path):
@@ -380,6 +383,11 @@ def test_artifact_report_with_r2_reads_remote_coverage_counts(tmp_path):
     assert row.coverage_complete is True
     assert row.provision_count == 7
     assert row.mismatch_reasons() == ()
+    assert client.list_prefixes == [
+        "inventory/us-co/statute/2026-04-30.json",
+        "provisions/us-co/statute/2026-04-30.jsonl",
+        "coverage/us-co/statute/2026-04-30.json",
+    ]
 
 
 def test_sync_artifacts_to_r2_can_scope_uploads(tmp_path):
@@ -414,6 +422,7 @@ def test_sync_artifacts_to_r2_can_scope_uploads(tmp_path):
     assert report.local_count == 1
     assert report.remote_count == 0
     assert report.uploaded_keys == ("inventory/us-co/policy/2026-04-30.json",)
+    assert client.list_prefixes == ["inventory/us-co/policy/2026-04-30.json"]
 
 
 def test_sync_artifacts_to_r2_supports_parallel_workers(tmp_path):
