@@ -16,12 +16,12 @@ policy:
     - State Options Reports
   publication_requires_controller: true
 status_counts:
-  done: 20
+  done: 23
   blocked_release_repair: 0
-  agent_ready: 31
+  agent_ready: 28
 recommended_first_batch:
-  - us-or
   - us-ar
+  - us-ms
 states:
   - jurisdiction: us-ne
     name: Nebraska
@@ -170,11 +170,12 @@ states:
     notes: Source-first Nevada Revised Statutes adapter is published and validated against the official NRS HTML.
   - jurisdiction: us-or
     name: Oregon
-    queue_status: agent_ready
-    production_status: supabase_only_legacy
-    supabase_count: 39272
+    queue_status: done
+    production_status: productionized_and_validated
+    version: "2026-05-06"
+    provision_count: 68830
     priority: 1
-    notes: Large legacy corpus; discover current official primary source and build source-first adapter.
+    notes: Source-first Oregon Revised Statutes adapter is locally validated against the official ORS HTML.
 
   - jurisdiction: us-ar
     name: Arkansas
@@ -185,11 +186,12 @@ states:
     notes: Discover current official primary source and build source-first adapter.
   - jurisdiction: us-de
     name: Delaware
-    queue_status: agent_ready
-    production_status: supabase_only_legacy
-    supabase_count: 17179
+    queue_status: done
+    production_status: productionized_and_validated
+    version: "2026-05-06"
+    provision_count: 25739
     priority: 2
-    notes: Discover current official primary source and build source-first adapter.
+    notes: Source-first Delaware Code adapter is locally validated against the official Delaware Code HTML.
   - jurisdiction: us-ms
     name: Mississippi
     queue_status: agent_ready
@@ -220,11 +222,12 @@ states:
     notes: Discover current official primary source and build source-first adapter.
   - jurisdiction: us-ri
     name: Rhode Island
-    queue_status: agent_ready
-    production_status: supabase_only_legacy
-    supabase_count: 30601
+    queue_status: done
+    production_status: productionized_and_validated
+    version: "2026-05-06"
+    provision_count: 37428
     priority: 2
-    notes: Discover current official primary source and build source-first adapter.
+    notes: Source-first Rhode Island General Laws adapter is locally validated against the official General Laws HTML.
   - jurisdiction: us-sc
     name: South Carolina
     queue_status: agent_ready
