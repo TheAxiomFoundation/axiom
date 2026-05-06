@@ -37,6 +37,7 @@ from axiom_corpus.corpus.r2 import (
 )
 from axiom_corpus.corpus.release_quality import validate_release
 from axiom_corpus.corpus.releases import ReleaseManifest, resolve_release_manifest_path
+from axiom_corpus.corpus.state_adapters.delaware import extract_delaware_code
 from axiom_corpus.corpus.state_adapters.illinois import extract_illinois_ilcs
 from axiom_corpus.corpus.state_adapters.indiana import (
     INDIANA_CODE_DEFAULT_YEAR,
@@ -49,6 +50,14 @@ from axiom_corpus.corpus.state_adapters.montana import (
 from axiom_corpus.corpus.state_adapters.nevada import (
     NEVADA_NRS_DEFAULT_YEAR,
     extract_nevada_nrs,
+)
+from axiom_corpus.corpus.state_adapters.oregon import (
+    OREGON_ORS_DEFAULT_YEAR,
+    extract_oregon_ors,
+)
+from axiom_corpus.corpus.state_adapters.rhode_island import (
+    RHODE_ISLAND_GENERAL_LAWS_DEFAULT_YEAR,
+    extract_rhode_island_general_laws,
 )
 from axiom_corpus.corpus.state_statute_completion import (
     build_state_statute_completion_report,
@@ -815,6 +824,98 @@ def _cmd_extract_nevada_nrs(args: argparse.Namespace) -> int:
     return 0 if report.coverage.complete or args.allow_incomplete else 2
 
 
+def _cmd_extract_delaware_code(args: argparse.Namespace) -> int:
+    store = CorpusArtifactStore(args.base)
+    expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
+    report = extract_delaware_code(
+        store,
+        version=args.version,
+        source_dir=args.source_dir,
+        source_as_of=args.source_as_of,
+        expression_date=expression_date,
+        only_title=args.only_title,
+        only_chapter=args.only_chapter,
+        limit=args.limit,
+        workers=args.workers,
+        download_dir=args.download_dir,
+    )
+    print(
+        json.dumps(
+            _state_statute_report_payload(
+                report,
+                source_id="us-de-code",
+                adapter="delaware-code",
+                version=args.version,
+            ),
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0 if report.coverage.complete or args.allow_incomplete else 2
+
+
+def _cmd_extract_oregon_ors(args: argparse.Namespace) -> int:
+    store = CorpusArtifactStore(args.base)
+    expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
+    report = extract_oregon_ors(
+        store,
+        version=args.version,
+        source_dir=args.source_dir,
+        source_year=args.source_year,
+        source_as_of=args.source_as_of,
+        expression_date=expression_date,
+        only_title=args.only_title,
+        only_chapter=args.only_chapter,
+        limit=args.limit,
+        workers=args.workers,
+        download_dir=args.download_dir,
+    )
+    print(
+        json.dumps(
+            _state_statute_report_payload(
+                report,
+                source_id="us-or-ors",
+                adapter="oregon-ors",
+                version=args.version,
+            ),
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0 if report.coverage.complete or args.allow_incomplete else 2
+
+
+def _cmd_extract_rhode_island_general_laws(args: argparse.Namespace) -> int:
+    store = CorpusArtifactStore(args.base)
+    expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
+    report = extract_rhode_island_general_laws(
+        store,
+        version=args.version,
+        source_dir=args.source_dir,
+        source_year=args.source_year,
+        source_as_of=args.source_as_of,
+        expression_date=expression_date,
+        only_title=args.only_title,
+        only_chapter=args.only_chapter,
+        limit=args.limit,
+        workers=args.workers,
+        download_dir=args.download_dir,
+    )
+    print(
+        json.dumps(
+            _state_statute_report_payload(
+                report,
+                source_id="us-ri-general-laws",
+                adapter="rhode-island-general-laws",
+                version=args.version,
+            ),
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0 if report.coverage.complete or args.allow_incomplete else 2
+
+
 def _cmd_extract_california_codes_bulk(args: argparse.Namespace) -> int:
     store = CorpusArtifactStore(args.base)
     expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
@@ -1121,6 +1222,48 @@ def _extract_state_statute_source(
             workers=_optional_int(options.get("workers")) or 8,
             download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
         )
+    if adapter == "delaware-code":
+        return extract_delaware_code(
+            store,
+            version=version,
+            source_dir=_optional_manifest_path(manifest_path, options, "source_dir"),
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            only_chapter=_optional_text(options.get("only_chapter")),
+            limit=limit,
+            workers=_optional_int(options.get("workers")) or 1,
+            download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
+        )
+    if adapter == "oregon-ors":
+        return extract_oregon_ors(
+            store,
+            version=version,
+            source_dir=_optional_manifest_path(manifest_path, options, "source_dir"),
+            source_year=_optional_int(options.get("source_year")) or OREGON_ORS_DEFAULT_YEAR,
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            only_chapter=_optional_text(options.get("only_chapter")),
+            limit=limit,
+            workers=_optional_int(options.get("workers")) or 8,
+            download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
+        )
+    if adapter == "rhode-island-general-laws":
+        return extract_rhode_island_general_laws(
+            store,
+            version=version,
+            source_dir=_optional_manifest_path(manifest_path, options, "source_dir"),
+            source_year=_optional_int(options.get("source_year"))
+            or RHODE_ISLAND_GENERAL_LAWS_DEFAULT_YEAR,
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            only_chapter=_optional_text(options.get("only_chapter")),
+            limit=limit,
+            workers=_optional_int(options.get("workers")) or 8,
+            download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
+        )
     if adapter == "california-codes-bulk":
         return extract_california_codes_bulk(
             store,
@@ -1255,6 +1398,20 @@ def _canonical_state_statute_adapter(adapter: str) -> str:
         "nevada-nrs": "nevada-nrs",
         "nrs": "nevada-nrs",
         "nevada-nrs-html": "nevada-nrs",
+        "de": "delaware-code",
+        "delaware": "delaware-code",
+        "delaware-code": "delaware-code",
+        "delaware-code-html": "delaware-code",
+        "or": "oregon-ors",
+        "oregon": "oregon-ors",
+        "oregon-ors": "oregon-ors",
+        "oregon-ors-html": "oregon-ors",
+        "ors": "oregon-ors",
+        "ri": "rhode-island-general-laws",
+        "rhode-island": "rhode-island-general-laws",
+        "rhode-island-general-laws": "rhode-island-general-laws",
+        "rhode-island-general-laws-html": "rhode-island-general-laws",
+        "rigl": "rhode-island-general-laws",
         "ca": "california-codes-bulk",
         "california": "california-codes-bulk",
         "california-codes": "california-codes-bulk",
@@ -1301,6 +1458,9 @@ def _state_statute_source_path_for_plan(
         "indiana-code",
         "montana-code",
         "nevada-nrs",
+        "delaware-code",
+        "oregon-ors",
+        "rhode-island-general-laws",
     }:
         return _optional_manifest_path(manifest_path, options, "source_dir") or (
             _optional_manifest_path(manifest_path, options, "source_zip")
@@ -1931,6 +2091,67 @@ def build_parser() -> argparse.ArgumentParser:
     extract_nevada_nrs_cmd.add_argument("--workers", type=int, default=8)
     extract_nevada_nrs_cmd.add_argument("--allow-incomplete", action="store_true")
     extract_nevada_nrs_cmd.set_defaults(func=_cmd_extract_nevada_nrs)
+
+    extract_delaware_code_cmd = sub.add_parser(
+        "extract-delaware-code",
+        help="Snapshot official Delaware Code HTML.",
+    )
+    extract_delaware_code_cmd.add_argument("--base", type=Path, required=True)
+    extract_delaware_code_cmd.add_argument("--version", required=True)
+    extract_delaware_code_cmd.add_argument("--source-dir", type=Path)
+    extract_delaware_code_cmd.add_argument("--download-dir", type=Path)
+    extract_delaware_code_cmd.add_argument("--only-title")
+    extract_delaware_code_cmd.add_argument("--only-chapter")
+    extract_delaware_code_cmd.add_argument("--source-as-of", "--as-of", dest="source_as_of")
+    extract_delaware_code_cmd.add_argument("--expression-date")
+    extract_delaware_code_cmd.add_argument("--limit", type=int)
+    extract_delaware_code_cmd.add_argument("--workers", type=int, default=1)
+    extract_delaware_code_cmd.add_argument("--allow-incomplete", action="store_true")
+    extract_delaware_code_cmd.set_defaults(func=_cmd_extract_delaware_code)
+
+    extract_oregon_ors_cmd = sub.add_parser(
+        "extract-oregon-ors",
+        help="Snapshot official Oregon Revised Statutes HTML.",
+    )
+    extract_oregon_ors_cmd.add_argument("--base", type=Path, required=True)
+    extract_oregon_ors_cmd.add_argument("--version", required=True)
+    extract_oregon_ors_cmd.add_argument("--source-dir", type=Path)
+    extract_oregon_ors_cmd.add_argument(
+        "--source-year",
+        type=int,
+        default=OREGON_ORS_DEFAULT_YEAR,
+    )
+    extract_oregon_ors_cmd.add_argument("--download-dir", type=Path)
+    extract_oregon_ors_cmd.add_argument("--only-title")
+    extract_oregon_ors_cmd.add_argument("--only-chapter")
+    extract_oregon_ors_cmd.add_argument("--source-as-of", "--as-of", dest="source_as_of")
+    extract_oregon_ors_cmd.add_argument("--expression-date")
+    extract_oregon_ors_cmd.add_argument("--limit", type=int)
+    extract_oregon_ors_cmd.add_argument("--workers", type=int, default=8)
+    extract_oregon_ors_cmd.add_argument("--allow-incomplete", action="store_true")
+    extract_oregon_ors_cmd.set_defaults(func=_cmd_extract_oregon_ors)
+
+    extract_rhode_island_cmd = sub.add_parser(
+        "extract-rhode-island-general-laws",
+        help="Snapshot official Rhode Island General Laws HTML.",
+    )
+    extract_rhode_island_cmd.add_argument("--base", type=Path, required=True)
+    extract_rhode_island_cmd.add_argument("--version", required=True)
+    extract_rhode_island_cmd.add_argument("--source-dir", type=Path)
+    extract_rhode_island_cmd.add_argument(
+        "--source-year",
+        type=int,
+        default=RHODE_ISLAND_GENERAL_LAWS_DEFAULT_YEAR,
+    )
+    extract_rhode_island_cmd.add_argument("--download-dir", type=Path)
+    extract_rhode_island_cmd.add_argument("--only-title")
+    extract_rhode_island_cmd.add_argument("--only-chapter")
+    extract_rhode_island_cmd.add_argument("--source-as-of", "--as-of", dest="source_as_of")
+    extract_rhode_island_cmd.add_argument("--expression-date")
+    extract_rhode_island_cmd.add_argument("--limit", type=int)
+    extract_rhode_island_cmd.add_argument("--workers", type=int, default=8)
+    extract_rhode_island_cmd.add_argument("--allow-incomplete", action="store_true")
+    extract_rhode_island_cmd.set_defaults(func=_cmd_extract_rhode_island_general_laws)
 
     extract_california_codes_cmd = sub.add_parser(
         "extract-california-codes",
