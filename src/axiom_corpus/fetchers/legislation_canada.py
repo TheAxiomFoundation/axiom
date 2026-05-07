@@ -21,6 +21,8 @@ Usage:
     fetcher.bulk_download(output_dir="~/.axiom/canada")
 """
 
+from __future__ import annotations
+
 import re
 import time
 from collections.abc import Callable
@@ -207,7 +209,7 @@ class CanadaLegislationFetcher:
             self._client.close()
             self._client = None
 
-    def __enter__(self) -> "CanadaLegislationFetcher":
+    def __enter__(self) -> CanadaLegislationFetcher:
         return self
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
