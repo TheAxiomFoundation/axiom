@@ -139,6 +139,23 @@ class TestSupabaseQuery:
         assert query.provisions_table == "provisions"
         assert query.provision_counts_table == "provision_counts"
 
+    def test_init_prefers_service_key_for_legacy_rows(self):
+        with patch.dict(
+            os.environ,
+            {
+                "SUPABASE_ANON_KEY": "anon-key",
+                "SUPABASE_SERVICE_ROLE_KEY": "service-key",
+            },
+            clear=True,
+        ):
+            query = SupabaseQuery(
+                url="https://test.supabase.co",
+                include_legacy=True,
+            )
+
+        assert query.anon_key == "service-key"
+        assert query.provisions_table == "provisions"
+
     def test_init_from_env(self):
         with patch.dict(
             os.environ,

@@ -1,7 +1,8 @@
-"""Query statute data from Supabase.
+"""Query corpus data from Supabase.
 
-This module provides a simple interface to query the corpus.provisions table in Supabase,
-which contains parsed statute text from US, UK, and Canada.
+This module provides a simple interface to query the current-release corpus
+views in Supabase, which contain parsed legal and policy text across
+jurisdictions.
 
 Usage:
     from axiom_corpus.query import SupabaseQuery
@@ -100,12 +101,19 @@ class SupabaseQuery:
 
         Args:
             url: Supabase project URL. Defaults to AXIOM_SUPABASE_URL env var.
-            anon_key: Supabase anon key. Defaults to SUPABASE_ANON_KEY env var.
-            include_legacy: Query all rows, including scopes outside the current release.
+            anon_key: Supabase API key. Defaults to SUPABASE_ANON_KEY env var.
+            include_legacy: Query all rows, including scopes outside the current
+                release. This requires a service-role key once public base-table
+                reads are restricted.
         """
         self.url = url or os.environ.get("AXIOM_SUPABASE_URL", DEFAULT_AXIOM_SUPABASE_URL)
         self.anon_key = (
             anon_key
+            or (
+                os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+                if include_legacy
+                else None
+            )
             or os.environ.get("SUPABASE_ANON_KEY")
             or os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
             or DEFAULT_AXIOM_SUPABASE_ANON_KEY
@@ -162,7 +170,7 @@ class SupabaseQuery:
 
     @staticmethod
     def _normalize_citation_path(path: str, jurisdiction: str = "us") -> str:
-        """Normalize CLI shorthand into the canonical corpus.provisions citation_path."""
+        """Normalize CLI shorthand into a canonical corpus citation_path."""
         normalized = path.strip().strip("/")
         if not normalized:
             return normalized

@@ -19,6 +19,9 @@ CURRENT_RELEASE_MIGRATION = Path(
 RELEASE_SCOPES_MULTI_VERSION_MIGRATION = Path(
     "supabase/migrations/20260507113000_release_scopes_allow_multi_version.sql"
 )
+PUBLIC_CORPUS_BOUNDARY_MIGRATION = Path(
+    "supabase/migrations/20260507150000_restrict_public_corpus_base_reads.sql"
+)
 
 
 def test_corpus_analytics_migration_is_document_class_aware():
@@ -106,3 +109,42 @@ def test_release_scopes_allow_multiple_versions_per_document_class():
     assert "DROP INDEX IF EXISTS corpus.idx_release_scopes_one_active_version" in sql
     assert "jurisdiction/document" in sql
     assert "unique active version" in sql
+
+
+def test_public_corpus_boundary_revokes_base_reads():
+    sql = PUBLIC_CORPUS_BOUNDARY_MIGRATION.read_text()
+
+    assert "REVOKE SELECT ON corpus.provisions FROM anon, authenticated" in sql
+    assert "REVOKE SELECT ON corpus.provision_counts FROM anon, authenticated" in sql
+    assert "REVOKE SELECT ON corpus.provision_references FROM anon, authenticated" in sql
+    assert "GRANT SELECT ON corpus.current_provisions TO anon, authenticated" in sql
+    assert "GRANT SELECT ON corpus.current_provision_counts TO anon, authenticated" in sql
+
+
+def test_public_references_rpc_is_current_scoped():
+    sql = PUBLIC_CORPUS_BOUNDARY_MIGRATION.read_text()
+
+    assert "CREATE OR REPLACE FUNCTION corpus.get_provision_references" in sql
+    assert "SECURITY DEFINER" in sql
+    assert "FROM corpus.current_provisions" in sql
+    assert "LEFT JOIN corpus.current_provisions tgt" in sql
+    assert "JOIN corpus.current_provisions src" in sql
+    assert "GRANT EXECUTE ON FUNCTION corpus.get_provision_references(text) TO anon" in sql
+
+
+def test_all_corpus_rpcs_are_service_only():
+    sql = PUBLIC_CORPUS_BOUNDARY_MIGRATION.read_text()
+
+    assert "REVOKE EXECUTE ON FUNCTION corpus.get_all_corpus_stats() FROM PUBLIC" in sql
+    assert (
+        "REVOKE EXECUTE ON FUNCTION corpus.get_all_corpus_stats() FROM anon, authenticated"
+        in sql
+    )
+    assert (
+        "REVOKE EXECUTE ON FUNCTION corpus.search_all_provisions(text, text, text, int) FROM PUBLIC"
+        in sql
+    )
+    assert (
+        "GRANT EXECUTE ON FUNCTION corpus.search_all_provisions(text, text, text, int)"
+        in sql
+    )
