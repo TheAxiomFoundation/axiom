@@ -212,9 +212,9 @@ states:
     queue_status: done
     production_status: productionized_and_validated
     version: "2026-05-06"
-    provision_count: 31045
+    provision_count: 41420
     priority: 2
-    notes: Source-first official OpenLegislation API adapter extracted 31,045 records with complete coverage from OpenLegislation JSON.
+    notes: Source-first official OpenLegislation API adapter extracted 41,420 records across 94 titles with complete coverage from OpenLegislation JSON.
   - jurisdiction: us-pa
     name: Pennsylvania
     queue_status: agent_ready

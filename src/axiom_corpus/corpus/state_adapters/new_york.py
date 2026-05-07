@@ -702,11 +702,17 @@ def extract_new_york_openleg_api(
         )
         sha256 = store.write_bytes(artifact_path, fetched.data)
         source_paths.append(artifact_path)
-        payload = _openleg_json_payload(fetched.data)
-        law_result = payload.get("result")
-        if not isinstance(law_result, dict):
+        try:
+            payload = _openleg_json_payload(fetched.data)
+            law_result = payload.get("result")
+            if not isinstance(law_result, dict):
+                raise ValueError("missing OpenLegislation law result")
+            root_doc = law_result.get("documents")
+            if not isinstance(root_doc, dict):
+                raise ValueError("missing OpenLegislation documents")
+        except ValueError as exc:
             skipped_source_count += 1
-            errors.append(f"{law.law_id}: missing OpenLegislation law result")
+            errors.append(f"{law.law_id}: {exc}")
             continue
         if law.citation_path not in seen:
             seen.add(law.citation_path)
@@ -731,8 +737,7 @@ def extract_new_york_openleg_api(
                     "chapter": law.chapter,
                 },
             )
-        root_doc = law_result.get("documents")
-        root_children = _api_child_documents(root_doc) if isinstance(root_doc, dict) else ()
+        root_children = _api_child_documents(root_doc)
         for child_ordinal, child in enumerate(root_children):
             append_api_document(
                 law,
@@ -747,6 +752,11 @@ def extract_new_york_openleg_api(
                 break
 
     if not items:
+        if errors:
+            raise ValueError(
+                "no New York OpenLegislation provisions extracted; "
+                + "; ".join(errors[:3])
+            )
         raise ValueError("no New York OpenLegislation provisions extracted")
 
     inventory_path = store.inventory_path(jurisdiction, DocumentClass.STATUTE, run_id)
@@ -891,6 +901,9 @@ def _openleg_json_payload(payload: str | bytes) -> dict[str, Any]:
     data = json.loads(payload)
     if not isinstance(data, dict):
         raise ValueError("OpenLegislation response is not a JSON object")
+    if data.get("success") is False:
+        message = _clean_text(str(data.get("message") or "unknown OpenLegislation error"))
+        raise ValueError(f"OpenLegislation API response was unsuccessful: {message}")
     return data
 
 

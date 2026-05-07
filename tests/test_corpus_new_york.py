@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from axiom_corpus.corpus.artifacts import CorpusArtifactStore
 from axiom_corpus.corpus.io import load_provisions, load_source_inventory
 from axiom_corpus.corpus.state_adapters.new_york import (
@@ -264,6 +266,16 @@ def test_parse_new_york_openleg_laws_keeps_consolidated_laws():
     assert laws[1].citation_path == "us-ny/statute/TAX"
 
 
+def test_parse_new_york_openleg_laws_rejects_unsuccessful_response():
+    payload = {
+        "success": False,
+        "message": "Invalid API key",
+    }
+
+    with pytest.raises(ValueError, match="OpenLegislation API response was unsuccessful"):
+        parse_new_york_openleg_laws(json.dumps(payload))
+
+
 def test_extract_new_york_openleg_api_writes_source_inventory_and_provisions(tmp_path):
     source_dir = _write_new_york_openleg_fixture_tree(tmp_path)
     store = CorpusArtifactStore(tmp_path / "artifacts")
@@ -297,6 +309,91 @@ def test_extract_new_york_openleg_api_writes_source_inventory_and_provisions(tmp
     ]
     assert provisions[-1].body == "§ 601. Imposition of tax. Resident tax text."
     assert provisions[-1].parent_citation_path == "us-ny/statute/TAX/A22"
+
+
+def test_extract_new_york_openleg_api_fails_when_selected_law_has_no_documents(tmp_path):
+    source_dir = _write_new_york_openleg_fixture_tree(tmp_path)
+    tax_payload = {
+        "success": True,
+        "result": {
+            "info": {
+                "lawId": "TAX",
+                "name": "Tax",
+                "lawType": "CONSOLIDATED",
+                "chapter": "60",
+            }
+        },
+    }
+    (source_dir / "new-york-openleg-json" / "TAX.json").write_text(
+        json.dumps(tax_payload),
+        encoding="utf-8",
+    )
+    store = CorpusArtifactStore(tmp_path / "artifacts")
+
+    with pytest.raises(ValueError, match="missing OpenLegislation documents"):
+        extract_new_york_openleg_api(
+            store,
+            version="2026-test",
+            source_dir=source_dir,
+            only_title="TAX",
+            source_as_of="2026-01-30",
+            expression_date="2026-01-30",
+        )
+
+
+def test_extract_new_york_openleg_api_reports_skipped_malformed_law(tmp_path):
+    source_dir = tmp_path / "source"
+    json_dir = source_dir / "new-york-openleg-json"
+    json_dir.mkdir(parents=True)
+    laws_payload = {
+        "success": True,
+        "result": {
+            "items": [
+                {
+                    "lawId": "ABC",
+                    "name": "Alcoholic Beverage Control",
+                    "lawType": "CONSOLIDATED",
+                    "chapter": "3-B",
+                },
+                {
+                    "lawId": "TAX",
+                    "name": "Tax",
+                    "lawType": "CONSOLIDATED",
+                    "chapter": "60",
+                },
+            ]
+        },
+    }
+    abc_payload = json.loads(json.dumps(SAMPLE_OPENLEG_TAX))
+    abc_payload["result"]["info"]["lawId"] = "ABC"
+    tax_payload = {
+        "success": True,
+        "result": {
+            "info": {
+                "lawId": "TAX",
+                "name": "Tax",
+                "lawType": "CONSOLIDATED",
+                "chapter": "60",
+            }
+        },
+    }
+    (json_dir / "laws.json").write_text(json.dumps(laws_payload), encoding="utf-8")
+    (json_dir / "ABC.json").write_text(json.dumps(abc_payload), encoding="utf-8")
+    (json_dir / "TAX.json").write_text(json.dumps(tax_payload), encoding="utf-8")
+    store = CorpusArtifactStore(tmp_path / "artifacts")
+
+    report = extract_new_york_openleg_api(
+        store,
+        version="2026-test",
+        source_dir=source_dir,
+        source_as_of="2026-01-30",
+        expression_date="2026-01-30",
+    )
+
+    assert report.coverage.complete
+    assert report.provisions_written == 3
+    assert report.skipped_source_count == 1
+    assert report.errors == ("TAX: missing OpenLegislation documents",)
 
 
 def test_extract_new_york_consolidated_laws_writes_source_inventory_and_provisions(tmp_path):
