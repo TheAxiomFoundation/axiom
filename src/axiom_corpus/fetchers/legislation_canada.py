@@ -21,6 +21,8 @@ Usage:
     fetcher.bulk_download(output_dir="~/.axiom/canada")
 """
 
+from __future__ import annotations
+
 import re
 import time
 from collections.abc import Callable
@@ -124,10 +126,28 @@ class CanadaLegislationFetcher:
         Raises:
             httpx.HTTPError: If download fails.
         """
+        # We previously used the shared httpx client, but on darwin the SSL
+        # read for the larger LIMS XML payloads (e.g. I-3.3 at ~13MB) reliably
+        # hangs in `_ssl__SSLSocket_read`. Falling back to `requests` for the
+        # streaming download avoids the issue without touching the rest of
+        # the fetcher's API.
+        import requests
+
         url = f"{self.XML_BASE_URL}/{code}.xml"
-        response = self.client.get(url)
-        response.raise_for_status()
-        return response.content
+        with requests.get(
+            url,
+            headers={
+                "User-Agent": ("Axiom/1.0 (legislation archiver; contact@axiom-foundation.org)")
+            },
+            timeout=self.timeout,
+            stream=True,
+        ) as response:
+            response.raise_for_status()
+            chunks: list[bytes] = []
+            for chunk in response.iter_content(chunk_size=64 * 1024):
+                if chunk:
+                    chunks.append(chunk)
+            return b"".join(chunks)
 
     def bulk_download(
         self,
@@ -183,14 +203,14 @@ class CanadaLegislationFetcher:
 
         return stats
 
-    def close(self):
+    def close(self) -> None:
         """Close the HTTP client."""
         if self._client:
             self._client.close()
             self._client = None
 
-    def __enter__(self):
+    def __enter__(self) -> CanadaLegislationFetcher:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         self.close()
