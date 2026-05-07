@@ -1073,6 +1073,50 @@ def _cmd_extract_indiana_code(args: argparse.Namespace) -> int:
     return 0 if report.coverage.complete or args.allow_incomplete else 2
 
 
+def _cmd_extract_canada_acts(args: argparse.Namespace) -> int:
+    from axiom_corpus.corpus.canada import extract_canada_acts
+
+    store = CorpusArtifactStore(args.base)
+    expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
+    only_acts = tuple(args.only_act) if args.only_act else None
+    report = extract_canada_acts(
+        store,
+        version=args.version,
+        only_acts=only_acts,
+        limit_acts=args.limit_acts,
+        source_as_of=args.source_as_of,
+        expression_date=expression_date,
+        progress_stream=sys.stderr,
+    )
+    print(
+        json.dumps(
+            {
+                "jurisdiction": report.jurisdiction,
+                "document_class": report.document_class,
+                "version": args.version,
+                "act_count": report.act_count,
+                "section_count": report.section_count,
+                "subsection_count": report.subsection_count,
+                "skipped_act_count": report.skipped_act_count,
+                "provisions_written": report.provisions_written,
+                "inventory_path": str(report.inventory_path),
+                "provisions_path": str(report.provisions_path),
+                "coverage_path": str(report.coverage_path),
+                "coverage_complete": report.coverage.complete,
+                "source_count": report.coverage.source_count,
+                "provision_count": report.coverage.provision_count,
+                "matched_count": report.coverage.matched_count,
+                "missing_count": len(report.coverage.missing_from_provisions),
+                "extra_count": len(report.coverage.extra_provisions),
+                "errors": list(report.errors[:20]),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0 if report.coverage.complete or args.allow_incomplete else 2
+
+
 def _cmd_extract_montana_code(args: argparse.Namespace) -> int:
     store = CorpusArtifactStore(args.base)
     expression_date = date.fromisoformat(args.expression_date) if args.expression_date else None
@@ -2370,6 +2414,28 @@ def build_parser() -> argparse.ArgumentParser:
     extract_illinois_ilcs_cmd.add_argument("--workers", type=int, default=8)
     extract_illinois_ilcs_cmd.add_argument("--allow-incomplete", action="store_true")
     extract_illinois_ilcs_cmd.set_defaults(func=_cmd_extract_illinois_ilcs)
+
+    extract_canada_acts_cmd = sub.add_parser(
+        "extract-canada-acts",
+        help="Snapshot Canadian federal acts from laws-lois.justice.gc.ca.",
+    )
+    extract_canada_acts_cmd.add_argument("--base", type=Path, required=True)
+    extract_canada_acts_cmd.add_argument("--version", required=True)
+    extract_canada_acts_cmd.add_argument(
+        "--only-act",
+        action="append",
+        default=[],
+        help=("Restrict the extract to a specific consolidated number (e.g. I-3.3). Repeatable."),
+    )
+    extract_canada_acts_cmd.add_argument(
+        "--limit-acts",
+        type=int,
+        help="Stop after this many acts (after enumerating).",
+    )
+    extract_canada_acts_cmd.add_argument("--source-as-of", "--as-of", dest="source_as_of")
+    extract_canada_acts_cmd.add_argument("--expression-date")
+    extract_canada_acts_cmd.add_argument("--allow-incomplete", action="store_true")
+    extract_canada_acts_cmd.set_defaults(func=_cmd_extract_canada_acts)
 
     extract_indiana_code_cmd = sub.add_parser(
         "extract-indiana-code",

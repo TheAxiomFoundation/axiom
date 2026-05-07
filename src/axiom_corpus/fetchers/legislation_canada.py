@@ -124,10 +124,28 @@ class CanadaLegislationFetcher:
         Raises:
             httpx.HTTPError: If download fails.
         """
+        # We previously used the shared httpx client, but on darwin the SSL
+        # read for the larger LIMS XML payloads (e.g. I-3.3 at ~13MB) reliably
+        # hangs in `_ssl__SSLSocket_read`. Falling back to `requests` for the
+        # streaming download avoids the issue without touching the rest of
+        # the fetcher's API.
+        import requests
+
         url = f"{self.XML_BASE_URL}/{code}.xml"
-        response = self.client.get(url)
-        response.raise_for_status()
-        return response.content
+        with requests.get(
+            url,
+            headers={
+                "User-Agent": ("Axiom/1.0 (legislation archiver; contact@axiom-foundation.org)")
+            },
+            timeout=self.timeout,
+            stream=True,
+        ) as response:
+            response.raise_for_status()
+            chunks: list[bytes] = []
+            for chunk in response.iter_content(chunk_size=64 * 1024):
+                if chunk:
+                    chunks.append(chunk)
+            return b"".join(chunks)
 
     def bulk_download(
         self,
