@@ -1,15 +1,20 @@
 import type { Layout, RepoSpec } from "../architecture";
+import type { DetailMode } from "../App";
 
 export function SceneSwitcher({
   layouts,
   activeId,
   onChange,
   repos,
+  detailMode,
+  onDetailModeChange,
 }: {
   layouts: Layout[];
   activeId: string;
   onChange: (id: string) => void;
   repos: RepoSpec[];
+  detailMode: DetailMode;
+  onDetailModeChange: (mode: DetailMode) => void;
 }) {
   return (
     <nav className="scene-switcher">
@@ -37,6 +42,39 @@ export function SceneSwitcher({
           );
         })}
       </ul>
+
+      <div className="scene-switcher__mode">
+        <div className="scene-switcher__legend-title">Detail level</div>
+        <div
+          className="scene-switcher__mode-toggle"
+          role="group"
+          aria-label="Detail level"
+        >
+          <button
+            type="button"
+            className={`scene-switcher__mode-btn ${
+              detailMode === "external" ? "scene-switcher__mode-btn--active" : ""
+            }`}
+            onClick={() => onDetailModeChange("external")}
+          >
+            External
+          </button>
+          <button
+            type="button"
+            className={`scene-switcher__mode-btn ${
+              detailMode === "internal" ? "scene-switcher__mode-btn--active" : ""
+            }`}
+            onClick={() => onDetailModeChange("internal")}
+          >
+            Internal
+          </button>
+        </div>
+        <div className="scene-switcher__mode-hint">
+          {detailMode === "external"
+            ? "Public-facing summary — concepts and relationships."
+            : "Operator depth — mechanics, gotchas, file paths, commands."}
+        </div>
+      </div>
 
       <div className="scene-switcher__legend">
         <div className="scene-switcher__legend-title">Edges</div>

@@ -1078,36 +1078,44 @@ export const EDGES: EdgeSpec[] = [
   { from: "provisions", to: "counts", kind: "derived", label: "RPC refresh" },
   { from: "provisions", to: "references", kind: "derived", label: "extract-references" },
 
+  // Three rules-* edges into navigation share the has_rulespec verb;
+  // label only one to keep the canvas readable.
   { from: "rules-us", to: "navigation", kind: "derived", label: "has_rulespec" },
-  { from: "rules-state", to: "navigation", kind: "derived", label: "has_rulespec" },
-  { from: "rules-other", to: "navigation", kind: "derived", label: "has_rulespec" },
+  { from: "rules-state", to: "navigation", kind: "derived" },
+  { from: "rules-other", to: "navigation", kind: "derived" },
 
   { from: "provisions", to: "axiom-encode", kind: "read" },
   { from: "axiom-encode", to: "rules-us", kind: "solid", label: "writes YAML" },
-  { from: "axiom-encode", to: "rules-state", kind: "solid", label: "writes YAML" },
-  { from: "axiom-encode", to: "rules-other", kind: "solid", label: "writes YAML" },
+  { from: "axiom-encode", to: "rules-state", kind: "solid" },
+  { from: "axiom-encode", to: "rules-other", kind: "solid" },
 
-  { from: "navigation", to: "axiom-foundation", kind: "read", label: "REST" },
-  { from: "provisions", to: "axiom-foundation", kind: "read", label: "REST" },
-  { from: "provisions", to: "finbot", kind: "read", label: "REST" },
-  { from: "provisions", to: "dashboard-builder", kind: "read", label: "REST" },
+  // Cross-column reads (storage → apps) — drop the "REST" label so it
+  // doesn't land inside Col 5/6 nodes at the geometric midpoint of the
+  // long edge. Edge style already signals the relationship.
+  { from: "navigation", to: "axiom-foundation", kind: "read" },
+  { from: "provisions", to: "axiom-foundation", kind: "read" },
+  { from: "provisions", to: "finbot", kind: "read" },
+  { from: "provisions", to: "dashboard-builder", kind: "read" },
 
-  // axiom-rules compiles + executes the RuleSpec YAML
+  // axiom-rules compiles + executes the RuleSpec YAML. Single labeled edge
+  // (rules-us) carries the verb; the others are visually identical so we
+  // skip the duplicate labels.
   { from: "rules-us", to: "axiom-rules", kind: "read", label: "compiles" },
-  { from: "rules-state", to: "axiom-rules", kind: "read", label: "compiles" },
-  { from: "rules-other", to: "axiom-rules", kind: "read", label: "compiles" },
+  { from: "rules-state", to: "axiom-rules", kind: "read" },
+  { from: "rules-other", to: "axiom-rules", kind: "read" },
   { from: "axiom-rules", to: "finbot", kind: "solid", label: "executes" },
-  { from: "axiom-rules", to: "dashboard-builder", kind: "solid", label: "executes" },
+  { from: "axiom-rules", to: "dashboard-builder", kind: "solid" },
 
   // axiom-programs validates against external oracles
   { from: "rules-us", to: "axiom-programs", kind: "read", label: "compares" },
-  { from: "rules-state", to: "axiom-programs", kind: "read", label: "compares" },
-  { from: "axiom-rules", to: "axiom-programs", kind: "read", label: "executes for comparison" },
+  { from: "rules-state", to: "axiom-programs", kind: "read" },
+  { from: "axiom-rules", to: "axiom-programs", kind: "read" },
 
-  // axiom-demo-shell embeds the front-end demos
-  { from: "axiom-foundation", to: "axiom-demo-shell", kind: "read", label: "iframe embed" },
-  { from: "finbot", to: "axiom-demo-shell", kind: "read", label: "iframe embed" },
-  { from: "dashboard-builder", to: "axiom-demo-shell", kind: "read", label: "iframe embed" },
+  // axiom-demo-shell embeds the front-end demos (three short edges; one label
+  // is enough — repeating it three times is just noise).
+  { from: "axiom-foundation", to: "axiom-demo-shell", kind: "read", label: "iframe" },
+  { from: "finbot", to: "axiom-demo-shell", kind: "read" },
+  { from: "dashboard-builder", to: "axiom-demo-shell", kind: "read" },
 ];
 
 export type Layout = {

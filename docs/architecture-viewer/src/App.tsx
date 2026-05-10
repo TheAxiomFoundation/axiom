@@ -94,9 +94,12 @@ function toRfEdges(
   });
 }
 
+export type DetailMode = "external" | "internal";
+
 export function App() {
   const [activeLayoutId, setActiveLayoutId] = useState(LAYOUTS[0].id);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detailMode, setDetailMode] = useState<DetailMode>("external");
 
   const catalog = useMemo(() => new Map(NODES.map((node) => [node.id, node])), []);
 
@@ -144,6 +147,8 @@ export function App() {
           setSelectedId(null);
         }}
         repos={REPOS}
+        detailMode={detailMode}
+        onDetailModeChange={setDetailMode}
       />
       <main className="canvas">
         <header className="canvas__header">
@@ -179,6 +184,7 @@ export function App() {
           node={selectedNode}
           incoming={neighbors?.incoming ?? []}
           outgoing={neighbors?.outgoing ?? []}
+          mode={detailMode}
           onSelectNode={setSelectedId}
           onClose={() => setSelectedId(null)}
         />
