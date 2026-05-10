@@ -10,6 +10,7 @@ deterministic IDs and column projections are stable.
 from __future__ import annotations
 
 import json
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -332,8 +333,7 @@ def fetch_provisions_for_navigation(
                 "User-Agent": USER_AGENT,
             },
         )
-        with urllib.request.urlopen(req, timeout=180) as resp:
-            page = json.loads(resp.read())
+        page = _fetch_json_with_retries(req, timeout=180)
         if not isinstance(page, list):
             raise RuntimeError("unexpected Supabase provisions response")
         if not page:
@@ -412,8 +412,7 @@ def fetch_navigation_statuses(
                 "User-Agent": USER_AGENT,
             },
         )
-        with urllib.request.urlopen(req, timeout=180) as resp:
-            page = json.loads(resp.read())
+        page = _fetch_json_with_retries(req, timeout=180)
         if not isinstance(page, list):
             raise RuntimeError("unexpected Supabase navigation status response")
         page_paths: list[str] = []
@@ -429,6 +428,31 @@ def fetch_navigation_statuses(
             break
         last_path = page_paths[-1]
     return statuses
+
+
+def _fetch_json_with_retries(
+    req: urllib.request.Request,
+    *,
+    timeout: float,
+    attempts: int = 3,
+) -> object:
+    last_error: BaseException | None = None
+    for attempt in range(1, max(1, attempts) + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as exc:
+            last_error = exc
+            if exc.code < 500 or attempt >= attempts:
+                raise
+        except urllib.error.URLError as exc:
+            last_error = exc
+            if attempt >= attempts:
+                raise
+        time.sleep(0.5 * attempt)
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("Supabase JSON fetch failed")
 
 
 def _chunked_rows(

@@ -412,6 +412,21 @@ sources:
     metadata:
       source_authority: Nevada Legislature
 
+  - source_id: us-nj-statutes
+    jurisdiction: us-nj
+    document_class: statute
+    adapter: new-jersey-statutes
+    source_url: https://pub.njleg.state.nj.us/Statutes/STATUTES-TEXT.zip
+    version: "2026-05-09"
+    options:
+      source_as_of: "2026-05-09"
+      expression_date: "2026-05-09"
+      download_dir: ../data/corpus/downloads/us-nj-statutes/2026-05-09
+      timeout_seconds: 180
+      request_attempts: 3
+    metadata:
+      source_authority: New Jersey Legislature
+
   - source_id: us-nm-statutes
     jurisdiction: us-nm
     document_class: statute

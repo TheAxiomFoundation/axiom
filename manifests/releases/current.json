@@ -169,6 +169,11 @@
     },
     {
       "document_class": "statute",
+      "jurisdiction": "us-nj",
+      "version": "2026-05-09"
+    },
+    {
+      "document_class": "statute",
       "jurisdiction": "us-nm",
       "version": "2026-05-09"
     },

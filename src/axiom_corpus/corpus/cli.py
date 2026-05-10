@@ -100,6 +100,7 @@ from axiom_corpus.corpus.state_adapters.nevada import (
     extract_nevada_nrs,
 )
 from axiom_corpus.corpus.state_adapters.new_hampshire import extract_new_hampshire_rsa
+from axiom_corpus.corpus.state_adapters.new_jersey import extract_new_jersey_statutes
 from axiom_corpus.corpus.state_adapters.new_mexico import extract_new_mexico_statutes
 from axiom_corpus.corpus.state_adapters.new_york import (
     extract_new_york_consolidated_laws,
@@ -1970,6 +1971,21 @@ def _extract_state_statute_source(
             timeout_seconds=_optional_float(options.get("timeout_seconds")) or 30.0,
             request_attempts=_optional_int(options.get("request_attempts")) or 2,
         )
+    if adapter == "new-jersey-statutes":
+        return extract_new_jersey_statutes(
+            store,
+            version=version,
+            source_dir=_optional_manifest_path(manifest_path, options, "source_dir"),
+            source_zip=_optional_manifest_path(manifest_path, options, "source_zip"),
+            source_url=source.source_url,
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            limit=limit,
+            download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
+            timeout_seconds=_optional_float(options.get("timeout_seconds")) or 180.0,
+            request_attempts=_optional_int(options.get("request_attempts")) or 3,
+        )
     if adapter == "montana-code":
         return extract_montana_code(
             store,
@@ -2360,6 +2376,12 @@ def _canonical_state_statute_adapter(adapter: str) -> str:
         "new-hampshire-statutes": "new-hampshire-rsa",
         "nh-rsa": "new-hampshire-rsa",
         "rsa-nh": "new-hampshire-rsa",
+        "nj": "new-jersey-statutes",
+        "new-jersey": "new-jersey-statutes",
+        "new-jersey-statutes": "new-jersey-statutes",
+        "new-jersey-statutes-text": "new-jersey-statutes",
+        "nj-statutes": "new-jersey-statutes",
+        "njsa": "new-jersey-statutes",
         "ny": "new-york-openleg-api",
         "new-york": "new-york-openleg-api",
         "new-york-openleg-api": "new-york-openleg-api",
@@ -2467,6 +2489,7 @@ def _state_statute_source_path_for_plan(
         "montana-code",
         "nevada-nrs",
         "new-hampshire-rsa",
+        "new-jersey-statutes",
         "new-york-consolidated-laws",
         "new-york-openleg-api",
         "delaware-code",

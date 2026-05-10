@@ -16,13 +16,13 @@ policy:
     - State Options Reports
   publication_requires_controller: true
 status_counts:
-  done: 42
+  done: 43
   blocked_release_repair: 0
   blocked_primary_source: 4
-  agent_ready: 5
+  agent_ready: 4
 recommended_first_batch:
-  - us-nj
   - us-ok
+  - us-sd
 states:
   - jurisdiction: us-ne
     name: Nebraska
@@ -377,11 +377,12 @@ states:
     notes: Source-first adapter and tests were drafted against the official General Court RSA HTML, but the site timed out after title TOC fetches during extraction from this public IP; retry with the polite single-worker adapter after access cools down or use an official bulk/source export.
   - jurisdiction: us-nj
     name: New Jersey
-    queue_status: agent_ready
-    production_status: supabase_only_legacy
-    supabase_count: 5
+    queue_status: done
+    production_status: productionized_and_validated
+    version: "2026-05-09"
+    provision_count: 58258
     priority: 3
-    notes: Legacy count is likely partial; discover current official primary source and rebuild completely.
+    notes: Source-first New Jersey statutes adapter is published and validated against the official Legislature STATUTES-TEXT.zip bulk release.
   - jurisdiction: us-ok
     name: Oklahoma
     queue_status: agent_ready
