@@ -1124,207 +1124,165 @@ const N = (id: string, x: number, y: number) => ({ id, x, y });
 const edgesAmong = (ids: Set<string>) =>
   EDGES.filter((e) => ids.has(e.from) && ids.has(e.to));
 
-// Sequential story arc. Each scene builds on the previous: start with the
-// upstream sources, walk through ingest, then storage, then encoding, then
-// the full pipeline including consumers. Repo identity stays present on
-// every card eyebrow throughout, so there's no need for a separate
-// "by repo" view.
+// Sequential, ADDITIVE story arc. Each scene keeps every node from the
+// previous one and adds a new column to the right. Column x-positions are
+// consistent across scenes so the architecture visibly grows rightward as
+// the reader progresses — the same node lands at the same coordinate
+// whether you're in §01 or §05.
+//
+// Column layout (left → right):
+//   x=40    Col 1 — Upstream publishers
+//   x=460   Col 2 — Ingest layer (fetchers, parsers, adapters)
+//   x=880   Col 3 — Local JSONL artifact tree
+//   x=1300  Col 4 — Storage tier (R2 + Supabase tables)
+//   x=1720  Col 5 — Encoder + rules-* repos
+//   x=2140  Col 6 — Execution + validation
+//   x=2560  Col 7 — Consumer apps
+//   x=2980  Col 8 — Demo shell
+
+// Canonical positions, used by every scene below.
+const POS: Record<string, [number, number]> = {
+  // Col 1
+  ecfr: [40, 80],
+  usc: [40, 240],
+  "state-sources": [40, 400],
+  "canada-source": [40, 560],
+  "irs-bulk": [40, 720],
+  // Col 2
+  fetchers: [460, 200],
+  parsers: [460, 420],
+  adapters: [460, 640],
+  // Col 3
+  artifacts: [880, 420],
+  // Col 4 — storage tier
+  r2: [1300, 80],
+  provisions: [1300, 240],
+  navigation: [1300, 400],
+  counts: [1300, 560],
+  references: [1300, 720],
+  // Col 5 — encoder + rules
+  "axiom-encode": [1720, 80],
+  "rules-us": [1720, 320],
+  "rules-state": [1720, 480],
+  "rules-other": [1720, 640],
+  // Col 6 — execution + validation
+  "axiom-rules": [2140, 320],
+  "axiom-programs": [2140, 560],
+  // Col 7 — consumer apps
+  "axiom-foundation": [2560, 240],
+  finbot: [2560, 400],
+  "dashboard-builder": [2560, 560],
+  // Col 8 — demo shell
+  "axiom-demo-shell": [2980, 400],
+};
+
+const pos = (id: string) => N(id, POS[id][0], POS[id][1]);
+const placeAll = (ids: string[]) => ids.map(pos);
+
+// Each scene's "visible nodes" is cumulative: scene N = scene N-1 + new ones.
+const SOURCES_IDS = ["ecfr", "usc", "state-sources", "canada-source", "irs-bulk"];
+
+const INGEST_NEW_IDS = ["fetchers", "parsers", "adapters", "artifacts"];
+
+const STORAGE_NEW_IDS = ["r2", "provisions", "navigation", "counts", "references"];
+
+const ENCODING_NEW_IDS = [
+  "axiom-encode",
+  "rules-us",
+  "rules-state",
+  "rules-other",
+  "axiom-rules",
+  "axiom-programs",
+];
+
+const CONSUMER_NEW_IDS = [
+  "axiom-foundation",
+  "finbot",
+  "dashboard-builder",
+  "axiom-demo-shell",
+];
+
+const SOURCES_VISIBLE = SOURCES_IDS;
+const INGEST_VISIBLE = [...SOURCES_VISIBLE, ...INGEST_NEW_IDS];
+const STORAGE_VISIBLE = [...INGEST_VISIBLE, ...STORAGE_NEW_IDS];
+const ENCODING_VISIBLE = [...STORAGE_VISIBLE, ...ENCODING_NEW_IDS];
+const PIPELINE_VISIBLE = [...ENCODING_VISIBLE, ...CONSUMER_NEW_IDS];
+
 export const LAYOUTS: Layout[] = [
   // ═══════════════════════════════════════════════════════════════
-  // § 01 — where the corpus begins. Just the upstream publishers.
+  // § 01 — start: just the upstream publishers.
   // ═══════════════════════════════════════════════════════════════
   {
     id: "sources",
     title: "Where the corpus begins",
     eyebrow: "§ 01 · Sources",
     description:
-      "Five categories of official publishers. We snapshot them — never change " +
-      "what we ingest. Hover any source to see what we pull from it.",
-    nodes: [
-      N("ecfr", 80, 80),
-      N("usc", 80, 240),
-      N("state-sources", 80, 400),
-      N("canada-source", 80, 560),
-      N("irs-bulk", 80, 720),
-    ],
-    edges: [],
+      "Five categories of official publishers. We snapshot — never modify the source.",
+    nodes: placeAll(SOURCES_VISIBLE),
+    edges: edgesAmong(new Set(SOURCES_VISIBLE)),
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // § 02 — bytes become structured data. Adds ingest layer + JSONL.
+  // § 02 — add: ingest pipeline. Bytes flow into a local JSONL tree.
   // ═══════════════════════════════════════════════════════════════
   {
     id: "ingest",
-    title: "From bytes to JSONL",
+    title: "Add the ingest layer",
     eyebrow: "§ 02 · Ingest",
     description:
-      "Each upstream source flows through a fetcher, a parser, and a " +
-      "source-first adapter. The adapter projects parser output into " +
-      "ProvisionRecord rows and writes them to a local JSONL artifact tree — " +
-      "the contract that every downstream stage reads from.",
-    nodes: [
-      N("ecfr", 60, 80),
-      N("canada-source", 60, 240),
-      N("state-sources", 60, 400),
-      N("fetchers", 460, 240),
-      N("parsers", 800, 240),
-      N("adapters", 1140, 240),
-      N("artifacts", 1480, 240),
-    ],
-    edges: edgesAmong(
-      new Set([
-        "ecfr",
-        "canada-source",
-        "state-sources",
-        "fetchers",
-        "parsers",
-        "adapters",
-        "artifacts",
-      ]),
-    ),
+      "Bytes from each publisher flow through a fetcher → parser → " +
+      "source-first adapter, ending in a local JSONL artifact tree that becomes " +
+      "the contract every downstream stage reads from.",
+    nodes: placeAll(INGEST_VISIBLE),
+    edges: edgesAmong(new Set(INGEST_VISIBLE)),
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // § 03 — where the JSONL lands. Cold storage (R2) + live Supabase
-  // and its derived tables.
+  // § 03 — add: storage tier. R2 (cold) + Supabase (live).
   // ═══════════════════════════════════════════════════════════════
   {
     id: "storage",
-    title: "Where it lands",
+    title: "Add the storage tier",
     eyebrow: "§ 03 · Storage",
     description:
-      "The same JSONL produces a durable R2 mirror and a live Supabase " +
-      "snapshot. corpus.provisions is the source of truth for legal text; " +
-      "corpus.navigation_nodes, provision_counts, and references are derived " +
-      "and rebuildable in minutes.",
-    nodes: [
-      N("artifacts", 80, 320),
-      N("r2", 500, 100),
-      N("provisions", 500, 380),
-      N("navigation", 920, 100),
-      N("counts", 920, 280),
-      N("references", 920, 460),
-    ],
-    edges: [
-      { from: "artifacts", to: "r2", kind: "solid", label: "sync-r2" },
-      { from: "artifacts", to: "provisions", kind: "solid", label: "load-supabase" },
-      { from: "provisions", to: "navigation", kind: "derived", label: "build-nav-index" },
-      { from: "provisions", to: "counts", kind: "derived", label: "RPC refresh" },
-      { from: "provisions", to: "references", kind: "derived", label: "extract-references" },
-    ],
+      "The same JSONL produces a durable R2 mirror and a live Supabase snapshot. " +
+      "corpus.provisions is the source of truth for legal text; navigation_nodes, " +
+      "provision_counts, and provision_references are derived from it and " +
+      "rebuildable in minutes.",
+    nodes: placeAll(STORAGE_VISIBLE),
+    edges: edgesAmong(new Set(STORAGE_VISIBLE)),
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // § 04 — how rules emerge from law. The encoder, the rules-*
-  // repos, and the has_rulespec loop back into navigation.
+  // § 04 — add: encoder + rules + execution + validation.
   // ═══════════════════════════════════════════════════════════════
   {
     id: "encoding",
-    title: "Law becomes rules",
+    title: "Add encoding + execution",
     eyebrow: "§ 04 · Encoding",
     description:
-      "axiom-encode reads the corpus to know what to encode against and writes " +
-      "RuleSpec YAML into rules-* repos. axiom-rules compiles + executes that YAML. " +
-      "axiom-programs validates results against external oracles (PolicyEngine, " +
-      "TAXSIM, ACCESS NYC). The next navigation rebuild closes the loop via " +
-      "has_rulespec.",
-    nodes: [
-      N("provisions", 60, 320),
-      N("axiom-encode", 460, 320),
-      N("rules-us", 860, 120),
-      N("rules-state", 860, 280),
-      N("rules-other", 860, 440),
-      N("navigation", 1260, 580),
-      N("axiom-rules", 1260, 280),
-      N("axiom-programs", 1660, 280),
-    ],
-    edges: [
-      { from: "provisions", to: "axiom-encode", kind: "read", label: "reads text" },
-      { from: "axiom-encode", to: "rules-us", kind: "solid", label: "writes YAML" },
-      { from: "axiom-encode", to: "rules-state", kind: "solid", label: "writes YAML" },
-      { from: "axiom-encode", to: "rules-other", kind: "solid", label: "writes YAML" },
-      { from: "rules-us", to: "axiom-rules", kind: "read", label: "compiles" },
-      { from: "rules-state", to: "axiom-rules", kind: "read", label: "compiles" },
-      { from: "rules-other", to: "axiom-rules", kind: "read", label: "compiles" },
-      { from: "axiom-rules", to: "axiom-programs", kind: "read", label: "for comparison" },
-      { from: "rules-us", to: "navigation", kind: "derived", label: "has_rulespec" },
-      { from: "rules-state", to: "navigation", kind: "derived", label: "has_rulespec" },
-      { from: "rules-other", to: "navigation", kind: "derived", label: "has_rulespec" },
-      { from: "provisions", to: "navigation", kind: "derived", label: "build-nav-index" },
-    ],
+      "axiom-encode reads the corpus and writes RuleSpec YAML into the rules-* " +
+      "repos. axiom-rules (Rust) compiles + executes that YAML. axiom-programs " +
+      "validates outputs against external oracles (PolicyEngine, TAXSIM, " +
+      "ACCESS NYC). The next nav rebuild closes the loop via has_rulespec.",
+    nodes: placeAll(ENCODING_VISIBLE),
+    edges: edgesAmong(new Set(ENCODING_VISIBLE)),
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // § 05 — everything assembled, end to end. The card eyebrows
-  // make every repo boundary visible at a glance.
+  // § 05 — add: consumer apps + demo shell. Pipeline assembled.
   // ═══════════════════════════════════════════════════════════════
   {
     id: "end-to-end",
-    title: "End to end",
+    title: "Add the consumers",
     eyebrow: "§ 05 · Pipeline",
     description:
-      "All pieces in one frame. Upstream publishers, ingest, storage, encoder, " +
-      "rules, and the read-only consumers. The repo eyebrow on every card " +
-      "tells you exactly who owns what.",
-    nodes: [
-      // Upstream
-      N("ecfr", 40, 40),
-      N("usc", 40, 200),
-      N("state-sources", 40, 360),
-      N("canada-source", 40, 520),
-      N("irs-bulk", 40, 680),
-      // Ingest
-      N("fetchers", 460, 200),
-      N("parsers", 460, 380),
-      N("adapters", 460, 560),
-      // Artifacts
-      N("artifacts", 880, 380),
-      // Storage stack
-      N("r2", 1300, 100),
-      N("provisions", 1300, 280),
-      N("navigation", 1300, 460),
-      // Rules below navigation
-      N("rules-us", 1300, 680),
-      N("rules-state", 1300, 820),
-      N("rules-other", 1300, 960),
-      // Encoder beside rules
-      N("axiom-encode", 880, 820),
-      // Execution + validation tier
-      N("axiom-rules", 1720, 820),
-      N("axiom-programs", 2140, 820),
-      // Consumer apps
-      N("axiom-foundation", 1720, 280),
-      N("finbot", 1720, 460),
-      N("dashboard-builder", 1720, 640),
-      // Demo shell that embeds apps
-      N("axiom-demo-shell", 2140, 460),
-    ],
-    edges: edgesAmong(
-      new Set([
-        "ecfr",
-        "usc",
-        "state-sources",
-        "canada-source",
-        "irs-bulk",
-        "fetchers",
-        "parsers",
-        "adapters",
-        "artifacts",
-        "r2",
-        "provisions",
-        "navigation",
-        "rules-us",
-        "rules-state",
-        "rules-other",
-        "axiom-encode",
-        "axiom-rules",
-        "axiom-programs",
-        "axiom-foundation",
-        "finbot",
-        "dashboard-builder",
-        "axiom-demo-shell",
-      ]),
-    ),
+      "axiom-foundation.org, finbot, and dashboard-builder all read from Supabase " +
+      "and call into axiom-rules for execution. axiom-demo-shell unifies the three " +
+      "demo surfaces in a static landing page. Every block carries its repo on the " +
+      "eyebrow so you can see who owns what at a glance.",
+    nodes: placeAll(PIPELINE_VISIBLE),
+    edges: edgesAmong(new Set(PIPELINE_VISIBLE)),
   },
 ];
 

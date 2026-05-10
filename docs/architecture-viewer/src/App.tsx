@@ -153,6 +153,10 @@ export function App() {
         </header>
         <div className="canvas__flow">
           <ReactFlow
+            // Remount when the active layout changes so fitView re-fires and
+            // the canvas re-centers on the new node set. Without the key,
+            // ReactFlow keeps the previous viewport.
+            key={layout.id}
             nodes={rfNodes}
             edges={rfEdges}
             nodeTypes={NODE_TYPES}
@@ -161,7 +165,7 @@ export function App() {
             onPaneClick={() => setSelectedId(null)}
             fitView
             fitViewOptions={{ padding: 0.18 }}
-            minZoom={0.25}
+            minZoom={0.18}
             maxZoom={1.6}
             proOptions={{ hideAttribution: true }}
           >
