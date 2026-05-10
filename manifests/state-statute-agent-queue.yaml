@@ -16,13 +16,13 @@ policy:
     - State Options Reports
   publication_requires_controller: true
 status_counts:
-  done: 40
+  done: 41
   blocked_release_repair: 0
   blocked_primary_source: 2
-  agent_ready: 9
+  agent_ready: 8
 recommended_first_batch:
-  - us-la
   - us-mi
+  - us-mo
 states:
   - jurisdiction: us-ne
     name: Nebraska
@@ -323,11 +323,12 @@ states:
     notes: Source-first Kansas Statutes adapter is published and validated against official Kansas Office of Revisor of Statutes HTML.
   - jurisdiction: us-la
     name: Louisiana
-    queue_status: agent_ready
-    production_status: supabase_only_legacy
-    supabase_count: 501
+    queue_status: done
+    production_status: productionized_and_validated
+    version: "2026-05-10"
+    provision_count: 46315
     priority: 3
-    notes: Legacy count is likely partial; discover current official primary source and rebuild completely.
+    notes: Source-first Louisiana Revised Statutes adapter is published and validated against official Legislature TOC and printable law pages.
   - jurisdiction: us-me
     name: Maine
     queue_status: done

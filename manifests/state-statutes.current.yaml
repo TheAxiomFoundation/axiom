@@ -252,6 +252,26 @@ sources:
       source_authority: Kansas Office of Revisor of Statutes
       source_scope_note: Current Kansas Statutes HTML from the official Revisor site; page notes amendments and new laws enacted during the 2025 legislative session.
 
+  - source_id: us-la-revised-statutes
+    jurisdiction: us-la
+    document_class: statute
+    adapter: louisiana-revised-statutes
+    source_url: https://www.legis.la.gov/Legis/Laws_Toc.aspx?folder=75&level=Parent
+    version: "2026-05-10"
+    options:
+      source_as_of: "2026-05-10"
+      expression_date: "2026-05-10"
+      download_dir: ../data/corpus/downloads/us-la-revised-statutes/2026-05-10
+      base_url: https://www.legis.la.gov/Legis/
+      root_folder: "75"
+      request_delay_seconds: 0.02
+      timeout_seconds: 60
+      request_attempts: 3
+      workers: 16
+    metadata:
+      source_authority: Louisiana State Legislature
+      source_scope_note: Current Louisiana Revised Statutes table of contents and printable law pages from the official Legislature site.
+
   - source_id: us-me-statutes
     jurisdiction: us-me
     document_class: statute

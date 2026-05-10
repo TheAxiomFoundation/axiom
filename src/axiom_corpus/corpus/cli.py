@@ -77,6 +77,9 @@ from axiom_corpus.corpus.state_adapters.iowa import (
     extract_iowa_code,
 )
 from axiom_corpus.corpus.state_adapters.kansas import extract_kansas_statutes
+from axiom_corpus.corpus.state_adapters.louisiana import (
+    extract_louisiana_revised_statutes,
+)
 from axiom_corpus.corpus.state_adapters.maine import extract_maine_revised_statutes
 from axiom_corpus.corpus.state_adapters.maryland import extract_maryland_code
 from axiom_corpus.corpus.state_adapters.massachusetts import (
@@ -1665,6 +1668,24 @@ def _extract_state_statute_source(
             request_attempts=_optional_int(options.get("request_attempts")) or 3,
             workers=_optional_int(options.get("workers")) or 8,
         )
+    if adapter == "louisiana-revised-statutes":
+        return extract_louisiana_revised_statutes(
+            store,
+            version=version,
+            source_dir=_optional_manifest_path(manifest_path, options, "source_dir"),
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            limit=limit,
+            download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
+            base_url=_optional_text(options.get("base_url"))
+            or "https://www.legis.la.gov/Legis/",
+            root_folder=_optional_text(options.get("root_folder")) or "75",
+            request_delay_seconds=_optional_float(options.get("request_delay_seconds")) or 0.02,
+            timeout_seconds=_optional_float(options.get("timeout_seconds")) or 60.0,
+            request_attempts=_optional_int(options.get("request_attempts")) or 3,
+            workers=_optional_int(options.get("workers")) or 8,
+        )
     if adapter == "dc-code":
         return extract_dc_code(
             store,
@@ -2198,6 +2219,11 @@ def _canonical_state_statute_adapter(adapter: str) -> str:
         "kansas-statutes-html": "kansas-statutes",
         "kansas-ksa": "kansas-statutes",
         "ksa": "kansas-statutes",
+        "la": "louisiana-revised-statutes",
+        "louisiana": "louisiana-revised-statutes",
+        "louisiana-revised-statutes": "louisiana-revised-statutes",
+        "louisiana-rs": "louisiana-revised-statutes",
+        "la-rs": "louisiana-revised-statutes",
         "colorado-docx": "colorado-docx",
         "colorado-crs-docx": "colorado-docx",
         "ohio": "ohio-revised-code",
@@ -2349,6 +2375,7 @@ def _state_statute_source_path_for_plan(
         "florida-statutes",
         "hawaii-revised-statutes",
         "kansas-statutes",
+        "louisiana-revised-statutes",
         "minnesota-statutes",
         "nebraska-revised-statutes",
         "ohio-revised-code",

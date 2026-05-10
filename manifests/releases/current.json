@@ -124,6 +124,11 @@
     },
     {
       "document_class": "statute",
+      "jurisdiction": "us-la",
+      "version": "2026-05-10"
+    },
+    {
+      "document_class": "statute",
       "jurisdiction": "us-me",
       "version": "2026-05-09"
     },
