@@ -144,6 +144,11 @@
     },
     {
       "document_class": "statute",
+      "jurisdiction": "us-mi",
+      "version": "2026-05-10"
+    },
+    {
+      "document_class": "statute",
       "jurisdiction": "us-mn",
       "version": "2026-05-01"
     },

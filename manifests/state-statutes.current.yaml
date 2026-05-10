@@ -328,6 +328,25 @@ sources:
       source_authority: Massachusetts General Court
       source_scope_note: Legislature site says General Laws include amendments passed before January 6, 2026; the site labels this an unofficial online version of the official edition.
 
+  - source_id: us-mi-compiled-laws
+    jurisdiction: us-mi
+    document_class: statute
+    adapter: michigan-compiled-laws
+    source_url: https://legislature.mi.gov/documents/mcl/
+    version: "2026-05-10"
+    options:
+      source_as_of: "2026-05-10"
+      expression_date: "2026-05-10"
+      download_dir: ../data/corpus/downloads/us-mi-compiled-laws/2026-05-10
+      base_url: https://legislature.mi.gov/documents/mcl/
+      request_delay_seconds: 0.02
+      timeout_seconds: 120
+      request_attempts: 3
+      workers: 12
+    metadata:
+      source_authority: Michigan Legislature
+      source_scope_note: Current Michigan Compiled Laws XML chapter files from the official Legislature documents directory.
+
   - source_id: us-ky-krs
     jurisdiction: us-ky
     document_class: statute

@@ -85,6 +85,9 @@ from axiom_corpus.corpus.state_adapters.maryland import extract_maryland_code
 from axiom_corpus.corpus.state_adapters.massachusetts import (
     extract_massachusetts_general_laws,
 )
+from axiom_corpus.corpus.state_adapters.michigan import (
+    extract_michigan_compiled_laws,
+)
 from axiom_corpus.corpus.state_adapters.montana import (
     MONTANA_CODE_DEFAULT_YEAR,
     extract_montana_code,
@@ -1912,6 +1915,23 @@ def _extract_state_statute_source(
             timeout_seconds=_optional_float(options.get("timeout_seconds")) or 60.0,
             request_attempts=_optional_int(options.get("request_attempts")) or 3,
         )
+    if adapter == "michigan-compiled-laws":
+        return extract_michigan_compiled_laws(
+            store,
+            version=version,
+            source_dir=_optional_manifest_path(manifest_path, options, "source_dir"),
+            source_as_of=source_as_of,
+            expression_date=expression_date,
+            only_title=only_title,
+            limit=limit,
+            workers=_optional_int(options.get("workers")) or 8,
+            download_dir=_optional_manifest_path(manifest_path, options, "download_dir"),
+            base_url=_optional_text(options.get("base_url"))
+            or "https://legislature.mi.gov/documents/mcl/",
+            request_delay_seconds=_optional_float(options.get("request_delay_seconds")) or 0.02,
+            timeout_seconds=_optional_float(options.get("timeout_seconds")) or 120.0,
+            request_attempts=_optional_int(options.get("request_attempts")) or 3,
+        )
     if adapter == "montana-code":
         return extract_montana_code(
             store,
@@ -2276,6 +2296,11 @@ def _canonical_state_statute_adapter(adapter: str) -> str:
         "mass-general-laws": "massachusetts-general-laws",
         "massachusetts-general-laws-html": "massachusetts-general-laws",
         "mgl": "massachusetts-general-laws",
+        "mi": "michigan-compiled-laws",
+        "michigan": "michigan-compiled-laws",
+        "michigan-compiled-laws": "michigan-compiled-laws",
+        "michigan-mcl": "michigan-compiled-laws",
+        "mcl": "michigan-compiled-laws",
         "mt": "montana-code",
         "montana": "montana-code",
         "montana-code": "montana-code",
@@ -2388,6 +2413,7 @@ def _state_statute_source_path_for_plan(
         "maine-revised-statutes",
         "maryland-code",
         "massachusetts-general-laws",
+        "michigan-compiled-laws",
         "montana-code",
         "nevada-nrs",
         "new-york-consolidated-laws",

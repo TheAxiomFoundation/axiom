@@ -16,13 +16,13 @@ policy:
     - State Options Reports
   publication_requires_controller: true
 status_counts:
-  done: 41
+  done: 42
   blocked_release_repair: 0
   blocked_primary_source: 2
-  agent_ready: 8
+  agent_ready: 7
 recommended_first_batch:
-  - us-mi
   - us-mo
+  - us-nh
 states:
   - jurisdiction: us-ne
     name: Nebraska
@@ -355,11 +355,12 @@ states:
     notes: Source-first Massachusetts General Laws adapter is published and validated against official Massachusetts General Court HTML current through amendments passed before January 6, 2026.
   - jurisdiction: us-mi
     name: Michigan
-    queue_status: agent_ready
-    production_status: supabase_only_legacy
-    supabase_count: 1
+    queue_status: done
+    production_status: productionized_and_validated
+    version: "2026-05-10"
+    provision_count: 43917
     priority: 3
-    notes: Legacy count is likely partial; discover current official primary source and rebuild completely.
+    notes: Source-first Michigan Compiled Laws adapter is published and validated against official Legislature XML chapter files.
   - jurisdiction: us-mo
     name: Missouri
     queue_status: agent_ready
