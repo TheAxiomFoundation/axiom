@@ -85,13 +85,7 @@ function toRfEdges(
         fontWeight: 500,
       },
       labelShowBg: true,
-      labelBgStyle: {
-        fill: "#ffffff",
-        fillOpacity: 1,
-        stroke: highlighted ? "#92400e" : "#e7e5e4",
-        strokeWidth: 1,
-      },
-      labelBgPadding: [10, 5],
+      labelBgPadding: [12, 6],
       labelBgBorderRadius: 3,
       style: {
         stroke: highlighted ? "#92400e" : style.stroke,

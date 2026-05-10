@@ -734,8 +734,25 @@ body::before {
   color: var(--color-accent);
 }
 
+/* Edge label chip — solid white background, hairline border, small radius.
+   Lives under .react-flow__edge .react-flow__edge-textbg in the DOM. */
 .react-flow__edge-textbg {
-  fill: var(--color-paper);
+  fill: #ffffff;
+  fill-opacity: 1;
+  stroke: var(--color-rule);
+  stroke-width: 1;
+  rx: 3;
+  ry: 3;
+}
+
+.react-flow__edge.selected .react-flow__edge-textbg,
+.react-flow__edge:hover .react-flow__edge-textbg {
+  stroke: var(--color-accent);
+}
+
+.react-flow__edge-text {
+  font-family: var(--f-mono);
+  font-weight: 500;
 }
 
 ::selection {
