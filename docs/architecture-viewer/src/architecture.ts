@@ -16,7 +16,10 @@ export type Layer =
 export type Repo =
   | "axiom-corpus"
   | "axiom-encode"
+  | "axiom-rules"
+  | "axiom-programs"
   | "axiom-foundation.org"
+  | "axiom-demo-shell"
   | "rules-us"
   | "rules-us-state"
   | "rules-non-us"
@@ -41,9 +44,27 @@ export const REPOS: RepoSpec[] = [
     description: "Encoder pipeline. Reads corpus, writes RuleSpec YAML.",
   },
   {
+    id: "axiom-rules",
+    label: "axiom-rules",
+    description:
+      "Rust runtime engine: compiles + executes RuleSpec YAML. CLI binary + Python bindings.",
+  },
+  {
+    id: "axiom-programs",
+    label: "axiom-programs",
+    description:
+      "Oracle comparison toolkit. Runs cases through Axiom + PolicyEngine + TAXSIM + ACCESS NYC for validation.",
+  },
+  {
     id: "axiom-foundation.org",
     label: "axiom-foundation.org",
     description: "Public-facing web app. Read-only consumer of the corpus.",
+  },
+  {
+    id: "axiom-demo-shell",
+    label: "axiom-demo-shell",
+    description:
+      "Landing page that embeds the three demos in iframes. Pure static HTML/CSS/JS.",
   },
   {
     id: "rules-us",
@@ -877,6 +898,166 @@ export const NODES: NodeSpec[] = [
         "per-tool-use detail.",
     ],
   },
+  {
+    id: "axiom-rules",
+    label: "axiom-rules",
+    layer: "consumer",
+    repo: "axiom-rules",
+    summary: "Rust engine — compiles + executes RuleSpec",
+    detail:
+      "The core Rust runtime that turns RuleSpec YAML into computation. Parses + " +
+      "lowers RuleSpec to ProgramSpec (an internal IR), compiles it into optimized " +
+      "artifacts, and executes rules over entity-scoped temporal periods. Two execution " +
+      "modes: explain (trace-based, per-rule provenance) and fast (dense vectorized " +
+      "evaluation via native extension). Distributed as a Rust CLI binary + Python " +
+      "bindings.",
+    mechanics:
+      "Three pipeline stages. (1) RuleSpec lowering (src/rulespec.rs): reads YAML with " +
+      "explicit discriminators (format: rulespec/v1 or schema: axiom.rules.*), resolves " +
+      "cross-repo imports using jurisdiction prefixes (us:, us-co:, …), recursively " +
+      "merges imported files with cycle detection. Every rule gets a durable id of the " +
+      "form <jurisdiction>:<filepath>#<rule_name>. (2) Compilation (src/compile.rs): " +
+      "topologically sorts derived-rule dependencies, validates acyclicity, generates " +
+      "fast-path metadata (blockers: judgment outputs, complex relations, variable-" +
+      "length lookups). Artifact serialises to JSON. (3) Execution (src/engine.rs, " +
+      "src/dense.rs): reference engine traces dependencies and produces explain output; " +
+      "the dense engine (native Rust ext) vectorises across batches of entities for " +
+      "orders-of-magnitude speedups when the rule set is dense-compatible.",
+    rationale:
+      "RuleSpec is the sole authoring surface; production rules live in jurisdiction " +
+      "repos (rules-us, rules-us-co…). Engine stays focused on runtime + schema. " +
+      "Filepath-as-id eliminates drift between repo and engine identity. Compiled " +
+      "artifacts are JSON-serialisable so callers can run on ephemeral compute (Workers, " +
+      "Lambda) without re-parsing the source YAML.",
+    important: [
+      "RuleSpec discriminator is mandatory — a top-level rules: key with no format:/" +
+        "schema: declaration is rejected so the format stays unambiguous.",
+      "Durable rule ids are required for cross-file references. Local rule names (just " +
+        "the symbol) only work as formula references inside the same module.",
+      "Fast path is opt-in by the rule set, not the caller. Falls back to explain mode " +
+        "(reference engine) with a fallback_reason in response metadata.",
+      "Judgment outputs (yes/no decisions) cannot be vectorised — fast mode blocks on " +
+        "them. Only scalar outputs (integer, decimal, text, date) vectorise.",
+      "Parameters are versioned by effective_from date. The engine picks the live " +
+        "version for a given query period; lookups are linear scans in reverse-chrono " +
+        "order.",
+      "Temporal queries specify Period (Month, BenefitWeek, TaxYear, Custom). Inputs " +
+        "and relations must overlap the query period.",
+      "Python client wraps the Rust binary as a subprocess for stdin/stdout JSON; " +
+        "dense-extension binding is direct (numpy in, numpy out).",
+    ],
+    files: [
+      "axiom-rules/src/main.rs",
+      "axiom-rules/src/rulespec.rs",
+      "axiom-rules/src/spec.rs",
+      "axiom-rules/src/engine.rs",
+      "axiom-rules/src/dense.rs",
+      "axiom-rules/src/compile.rs",
+      "axiom-rules/python/axiom_rules/client.py",
+      "axiom-rules/docs/rulespec.md",
+      "axiom-rules/DECISIONS.md",
+    ],
+  },
+  {
+    id: "axiom-programs",
+    label: "axiom-programs",
+    layer: "consumer",
+    repo: "axiom-programs",
+    summary: "Oracle-comparison toolkit",
+    detail:
+      "Validation toolkit that pits Axiom's RuleSpec implementations against external " +
+      "'oracles' (reference implementations): PolicyEngine, TAXSIM, Atlanta Fed PRD, " +
+      "ACCESS NYC. Same concept-keyed test case runs through all engines; the comparator " +
+      "normalises results and produces JSON mismatch reports.",
+    mechanics:
+      "Four layers. (1) Thin case schema (core/case.py): Case has facts, entities " +
+      "(concept-keyed), and requested outputs — no universal household ontology. " +
+      "(2) Engine adapters (adapters/): one per oracle implementing EngineAdapter with " +
+      "run_cases() / run_households(). PolicyEngineRunner imports policyengine_us; " +
+      "AccessNycApiRunner hits the REST screening API; AccessNycPythonRunner calls the " +
+      "Drools replatform; TaxsimPackageRunner wraps policyengine_taxsim; PrdPackageRunner " +
+      "wraps Atlanta Fed PRD; AxiomRulesRunner is currently a stub waiting to wire " +
+      "axiom-rules execution. (3) Mappings + Comparator (comparison/): concept_mappings." +
+      "yaml maps canonical Axiom concept ids to per-engine targets (e.g. SNAP → policy" +
+      "engine: snap, accessnyc: S2R007, axiom: us:policies/usda/snap/…). The comparator " +
+      "aligns results by household_id and emits typed mismatches (amount_difference, " +
+      "eligibility_left_only, …). (4) Populations + CLI: enhanced_cps.py samples " +
+      "households from HuggingFace's policyengine-us-data datasets; CLI: " +
+      "`axiom-programs compare <left> <right>`.",
+    rationale:
+      "Validation is hard without ground truth. Comparing Axiom's output against " +
+      "established calculators across many synthetic + real households gives a coverage " +
+      "signal: where we disagree with the oracle, dig in. Concept-keyed cases let one " +
+      "test data set drive every engine without rewriting inputs per oracle.",
+    important: [
+      "Cases are intentionally thin and concept-keyed, not a universal household " +
+        "ontology. Adapters project concepts into their own input languages.",
+      "Adapter-specific inputs go in case.metadata: TAXSIM cases need metadata[" +
+        "'taxsim_input']; PRD cases need metadata['prd_household']. Not canonical.",
+      "ACCESS NYC Drools execution is stubbed locally because the public repo lacks " +
+        "compiled classes. Python replatform is the working local path; REST API is " +
+        "available too.",
+      "AxiomRulesRunner is empty — work-in-progress to call into axiom-rules. Until it " +
+        "lands, Axiom values can't be compared automatically.",
+      "Report schema is versioned: COMPARISON_REPORT_SCHEMA_VERSION = " +
+        "'axiom.comparison_report.v1'.",
+      "Locale/scope filters in mappings handle geographic restrictions (ACCESS NYC is " +
+        "NYC-only; PolicyEngine and Axiom are US-wide).",
+      "Does NOT integrate with axiom-corpus (no imports, no direct data flow); reads " +
+        "rules-* repos only as Drools static-audit sources, not as RuleSpec inputs.",
+    ],
+    files: [
+      "axiom-programs/axiom_programs/core/case.py",
+      "axiom-programs/axiom_programs/adapters/policyengine/runner.py",
+      "axiom-programs/axiom_programs/adapters/accessnyc/",
+      "axiom-programs/axiom_programs/adapters/taxsim/runner.py",
+      "axiom-programs/axiom_programs/adapters/prd/runner.py",
+      "axiom-programs/axiom_programs/comparison/comparator.py",
+      "axiom-programs/axiom_programs/comparison/mappings.py",
+      "axiom-programs/axiom_programs/populations/enhanced_cps.py",
+      "axiom-programs/axiom_programs/config/concept_mappings.yaml",
+    ],
+    commands: ["axiom-programs compare", "axiom-programs accessnyc audit"],
+  },
+  {
+    id: "axiom-demo-shell",
+    label: "axiom-demo-shell",
+    layer: "consumer",
+    repo: "axiom-demo-shell",
+    summary: "Landing page embedding the demos",
+    detail:
+      "Lightweight static landing page that unifies the three demo surfaces — Axiom " +
+      "App, FinBot, Dashboard Builder — under a single narrative. Embeds each demo " +
+      "in an iframe with a fallback link.",
+    mechanics:
+      "Four static files: index.html, app.js (13 lines), styles.css (160 lines), and " +
+      "logos/. The JS populates CTA href attributes from a hardcoded `destinations` map: " +
+      "law → https://app.axiom-foundation.org/, finbot → finbot-snap-demo.vercel.app, " +
+      "builder → dashboard-builder-flax.vercel.app. No dependencies, no build step. " +
+      "`npm start` serves via Python's http.server on port 4173; production deploys " +
+      "to Vercel.",
+    rationale:
+      "Pure static + zero deps is maximally auditable. The shell is explicitly " +
+      "temporary — meant to frame the ecosystem while shared APIs and product " +
+      "boundaries are still being defined. It orchestrates without merging code, so " +
+      "each demo retains autonomy.",
+    important: [
+      "Iframe embeds can fail silently if a target sets X-Frame-Options: DENY. The " +
+        "shell provides no error handling; the fallback link still works.",
+      "URLs are hardcoded in both index.html and app.js — if a demo moves, both files " +
+        "need updating. No env-var system.",
+      "No shared auth — each embedded demo has its own session.",
+      "No tests, no analytics. `npm check` is JS syntax validation only.",
+      "Non-goals are real constraints (per README): no duplicate law, no second " +
+        "interpretation layer, no hidden provenance.",
+    ],
+    files: [
+      "axiom-demo-shell/index.html",
+      "axiom-demo-shell/app.js",
+      "axiom-demo-shell/styles.css",
+      "axiom-demo-shell/README.md",
+    ],
+  },
 ];
 
 export const EDGES: EdgeSpec[] = [
@@ -910,6 +1091,23 @@ export const EDGES: EdgeSpec[] = [
   { from: "provisions", to: "axiom-foundation", kind: "read", label: "REST" },
   { from: "provisions", to: "finbot", kind: "read", label: "REST" },
   { from: "provisions", to: "dashboard-builder", kind: "read", label: "REST" },
+
+  // axiom-rules compiles + executes the RuleSpec YAML
+  { from: "rules-us", to: "axiom-rules", kind: "read", label: "compiles" },
+  { from: "rules-state", to: "axiom-rules", kind: "read", label: "compiles" },
+  { from: "rules-other", to: "axiom-rules", kind: "read", label: "compiles" },
+  { from: "axiom-rules", to: "finbot", kind: "solid", label: "executes" },
+  { from: "axiom-rules", to: "dashboard-builder", kind: "solid", label: "executes" },
+
+  // axiom-programs validates against external oracles
+  { from: "rules-us", to: "axiom-programs", kind: "read", label: "compares" },
+  { from: "rules-state", to: "axiom-programs", kind: "read", label: "compares" },
+  { from: "axiom-rules", to: "axiom-programs", kind: "read", label: "executes for comparison" },
+
+  // axiom-demo-shell embeds the front-end demos
+  { from: "axiom-foundation", to: "axiom-demo-shell", kind: "read", label: "iframe embed" },
+  { from: "finbot", to: "axiom-demo-shell", kind: "read", label: "iframe embed" },
+  { from: "dashboard-builder", to: "axiom-demo-shell", kind: "read", label: "iframe embed" },
 ];
 
 export type Layout = {
@@ -1025,22 +1223,30 @@ export const LAYOUTS: Layout[] = [
     title: "Law becomes rules",
     eyebrow: "§ 04 · Encoding",
     description:
-      "axiom-encode reads the corpus to know what to encode against, writes " +
-      "RuleSpec YAML into rules-* repos, and the next navigation rebuild " +
-      "observes that coverage via has_rulespec — closing the loop.",
+      "axiom-encode reads the corpus to know what to encode against and writes " +
+      "RuleSpec YAML into rules-* repos. axiom-rules compiles + executes that YAML. " +
+      "axiom-programs validates results against external oracles (PolicyEngine, " +
+      "TAXSIM, ACCESS NYC). The next navigation rebuild closes the loop via " +
+      "has_rulespec.",
     nodes: [
-      N("provisions", 80, 200),
-      N("axiom-encode", 480, 200),
-      N("rules-us", 880, 60),
-      N("rules-state", 880, 220),
-      N("rules-other", 880, 380),
-      N("navigation", 1280, 220),
+      N("provisions", 60, 320),
+      N("axiom-encode", 460, 320),
+      N("rules-us", 860, 120),
+      N("rules-state", 860, 280),
+      N("rules-other", 860, 440),
+      N("navigation", 1260, 580),
+      N("axiom-rules", 1260, 280),
+      N("axiom-programs", 1660, 280),
     ],
     edges: [
       { from: "provisions", to: "axiom-encode", kind: "read", label: "reads text" },
       { from: "axiom-encode", to: "rules-us", kind: "solid", label: "writes YAML" },
       { from: "axiom-encode", to: "rules-state", kind: "solid", label: "writes YAML" },
       { from: "axiom-encode", to: "rules-other", kind: "solid", label: "writes YAML" },
+      { from: "rules-us", to: "axiom-rules", kind: "read", label: "compiles" },
+      { from: "rules-state", to: "axiom-rules", kind: "read", label: "compiles" },
+      { from: "rules-other", to: "axiom-rules", kind: "read", label: "compiles" },
+      { from: "axiom-rules", to: "axiom-programs", kind: "read", label: "for comparison" },
       { from: "rules-us", to: "navigation", kind: "derived", label: "has_rulespec" },
       { from: "rules-state", to: "navigation", kind: "derived", label: "has_rulespec" },
       { from: "rules-other", to: "navigation", kind: "derived", label: "has_rulespec" },
@@ -1083,10 +1289,15 @@ export const LAYOUTS: Layout[] = [
       N("rules-other", 1300, 960),
       // Encoder beside rules
       N("axiom-encode", 880, 820),
-      // Consumers
+      // Execution + validation tier
+      N("axiom-rules", 1720, 820),
+      N("axiom-programs", 2140, 820),
+      // Consumer apps
       N("axiom-foundation", 1720, 280),
       N("finbot", 1720, 460),
       N("dashboard-builder", 1720, 640),
+      // Demo shell that embeds apps
+      N("axiom-demo-shell", 2140, 460),
     ],
     edges: edgesAmong(
       new Set([
@@ -1106,9 +1317,12 @@ export const LAYOUTS: Layout[] = [
         "rules-state",
         "rules-other",
         "axiom-encode",
+        "axiom-rules",
+        "axiom-programs",
         "axiom-foundation",
         "finbot",
         "dashboard-builder",
+        "axiom-demo-shell",
       ]),
     ),
   },

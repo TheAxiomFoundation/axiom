@@ -4,7 +4,10 @@ import type { Layer, Repo } from "../architecture";
 const REPO_LABEL: Record<Repo, string> = {
   "axiom-corpus": "axiom-corpus",
   "axiom-encode": "axiom-encode",
+  "axiom-rules": "axiom-rules",
+  "axiom-programs": "axiom-programs",
   "axiom-foundation.org": "axiom-foundation.org",
+  "axiom-demo-shell": "axiom-demo-shell",
   "rules-us": "rules-us",
   "rules-us-state": "rules-us-{*}",
   "rules-non-us": "rules-uk · rules-ca",
