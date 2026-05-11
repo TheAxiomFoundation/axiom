@@ -19,11 +19,11 @@ Use this as an offline checklist only:
 
 - [ ] Export a static URL inventory from PolicyEngine-US references into a
       review artifact, preserving the citing parameter or variable path.
-- [ ] Normalize URL variants, strip page anchors into separate metadata, and
+- [x] Normalize URL variants, strip page anchors into separate metadata, and
       deduplicate by canonical URL.
-- [ ] Classify each URL by source status: primary official, official-but-not-
+- [x] Classify each URL by source status: primary official, official-but-not-
       current, secondary mirror, analytical report, vendor-only, or unknown.
-- [ ] Classify each primary official URL by document class: statute,
+- [x] Classify each primary official URL by document class: statute,
       regulation, manual, state plan, waiver, agency memo, tax form
       instruction, data table, or other policy document.
 - [ ] Prioritize official/open URLs that are not already covered by current
@@ -58,3 +58,9 @@ Useful initial scale from a local PolicyEngine-US checkout:
 - about 4,115 parameter YAML files with a reference or URL
 
 Those counts are discovery scope, not corpus coverage.
+
+The current ops artifact is
+`data/corpus/analytics/source-discovery-current.json`, generated from the
+static URL lists under `sources/policyengine-us/`. It powers the Axiom `/ops`
+Source Discovery Backlog section and should be refreshed when the offline
+inventory changes.

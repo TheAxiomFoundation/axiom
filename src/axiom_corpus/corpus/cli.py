@@ -58,6 +58,7 @@ from axiom_corpus.corpus.rulespec_paths import (
     discover_encoded_paths,
     discover_encoded_paths_for_jurisdictions,
 )
+from axiom_corpus.corpus.source_discovery import build_source_discovery_report
 from axiom_corpus.corpus.state_adapters.alabama import extract_alabama_code
 from axiom_corpus.corpus.state_adapters.alaska import (
     ALASKA_STATUTES_DEFAULT_YEAR,
@@ -3108,6 +3109,28 @@ def _cmd_regulation_completion(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_source_discovery(args: argparse.Namespace) -> int:
+    release = None
+    release_path = None
+    if args.release:
+        release_path = resolve_release_manifest_path(args.base, args.release)
+        release = ReleaseManifest.load(release_path)
+    report = build_source_discovery_report(
+        tuple(args.input),
+        release=release,
+        source_name=args.source_name,
+    )
+    payload = report.to_mapping()
+    if release_path is not None:
+        payload["release_path"] = str(release_path)
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+        payload["written_to"] = str(args.output)
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
 def _artifact_scope_filter_supplied(args: argparse.Namespace) -> bool:
     return any((args.version, args.jurisdiction, args.document_class))
 
@@ -4069,6 +4092,31 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     regulation_completion.set_defaults(func=_cmd_regulation_completion)
+
+    source_discovery = sub.add_parser(
+        "source-discovery",
+        help="Classify static external URL inventories for source-discovery operations.",
+    )
+    source_discovery.add_argument("--base", type=Path, required=True)
+    source_discovery.add_argument(
+        "--input",
+        type=Path,
+        action="append",
+        required=True,
+        help="Static URL-list file to classify. Repeatable.",
+    )
+    source_discovery.add_argument(
+        "--source-name",
+        default="policyengine-us",
+        help="External discovery source label to write into the report.",
+    )
+    source_discovery.add_argument(
+        "--release",
+        default="current",
+        help="Release manifest to compare for matching jurisdiction/class scopes. Use empty string to skip.",
+    )
+    source_discovery.add_argument("--output", type=Path)
+    source_discovery.set_defaults(func=_cmd_source_discovery)
 
     return parser
 
