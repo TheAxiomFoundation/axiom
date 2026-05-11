@@ -128,6 +128,11 @@
       "version": "2026-05-09"
     },
     {
+      "document_class": "guidance",
+      "jurisdiction": "us-ia",
+      "version": "2026-05-11-iowa-tax-guidance"
+    },
+    {
       "document_class": "statute",
       "jurisdiction": "us-ks",
       "version": "2026-05-09"
