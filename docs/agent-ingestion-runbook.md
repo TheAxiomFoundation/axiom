@@ -29,6 +29,12 @@ state provides bulk XML, JSON, ZIP, SQL, or downloadable HTML, prefer that over
 scraping page-by-page. If no bulk source exists, snapshot the official HTML
 index and all official section/chapter pages needed to prove completeness.
 
+Agents may use external citation lists, including PolicyEngine references, only
+as offline discovery checklists. Do not import PolicyEngine packages, read
+PolicyEngine YAML during production ingestion, or treat a model citation as a
+corpus source. Every selected document must be re-fetched from the official
+publisher and stored as an Axiom source artifact.
+
 ## Adapter Requirements
 
 Adapters should live in the corpus package and return `StateStatuteExtractReport`

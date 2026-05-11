@@ -22,6 +22,13 @@ the corpus contract. If a compiled source becomes necessary, add it deliberately
 as its own document class with explicit provenance and do not let it substitute
 for available primary documents.
 
+External model repositories and citation lists can also be used for discovery,
+but not as pipeline dependencies. For example, PolicyEngine-US references are a
+useful offline checklist for finding official policy documents; corpus
+ingestion must still re-fetch primary official sources directly and preserve
+only the external citation path as discovery provenance. See
+`docs/source-discovery-checklist.md`.
+
 ## Storage
 
 The artifact root is designed to map directly to R2:
