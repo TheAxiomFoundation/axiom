@@ -2,15 +2,15 @@
 
 Supports federal (US Code) and state statutes with consistent structure.
 
-Jurisdiction IDs match rules repo naming:
+Jurisdiction IDs match RuleSpec repo naming:
 - us          -> rulespec-us (federal)
 - us-ca       -> rulespec-us-ca (California)
 - us-ny       -> rulespec-us-ny (New York)
 - uk          -> rulespec-uk (United Kingdom)
 
 Citation paths use slashes like RuleSpec engine:
-- rulespec-us/statute/26/32/a.yaml
-- rulespec-us-ca/statute/RTC/17041/a.yaml
+- rulespec-us/statutes/26/32/a.yaml
+- rulespec-us-ca/statutes/RTC/17041/a.yaml
 """
 
 from datetime import date, datetime
@@ -159,8 +159,8 @@ class Statute(BaseModel):
     - State (NY TAX): jurisdiction="us-ny", code="TAX", section="601"
 
     Citation path format matches RuleSpec engine:
-    - rulespec-us/statute/26/32.yaml
-    - rulespec-us-ca/statute/RTC/17041.yaml
+    - rulespec-us/statutes/26/32.yaml
+    - rulespec-us-ca/statutes/RTC/17041.yaml
     """
 
     # Core identification
@@ -262,11 +262,11 @@ class Statute(BaseModel):
         """Return RuleSpec-style path for file storage.
 
         Examples:
-        - rulespec-us/statute/26/32.yaml
-        - rulespec-us-ca/statute/RTC/17041.yaml
-        - rulespec-us-ca/statute/RTC/17041/a.yaml (with subsection)
+        - rulespec-us/statutes/26/32.yaml
+        - rulespec-us-ca/statutes/RTC/17041.yaml
+        - rulespec-us-ca/statutes/RTC/17041/a.yaml (with subsection)
         """
-        base = f"rulespec-{self.jurisdiction}/statute/{self.code}/{self.section}"
+        base = f"rulespec-{self.jurisdiction}/statutes/{self.code}/{self.section}"
         if self.subsection_path:
             return f"{base}/{self.subsection_path}.yaml"
         return f"{base}.yaml"

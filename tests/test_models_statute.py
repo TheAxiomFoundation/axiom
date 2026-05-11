@@ -127,11 +127,11 @@ class TestStatute:
 
     def test_rulespec_path(self):
         s = self._make_statute()
-        assert s.rulespec_path == "rulespec-us-oh/statute/ORC/5747.02.yaml"
+        assert s.rulespec_path == "rulespec-us-oh/statutes/ORC/5747.02.yaml"
 
     def test_rulespec_path_with_subsection(self):
         s = self._make_statute(subsection_path="a/1")
-        assert s.rulespec_path == "rulespec-us-oh/statute/ORC/5747.02/a/1.yaml"
+        assert s.rulespec_path == "rulespec-us-oh/statutes/ORC/5747.02/a/1.yaml"
 
     def test_db_path(self):
         s = self._make_statute()
