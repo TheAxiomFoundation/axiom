@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import requests
+
 from axiom_corpus.corpus.artifacts import CorpusArtifactStore
 from axiom_corpus.corpus.io import load_provisions, load_source_inventory
 from axiom_corpus.corpus.ny_rulemaking import extract_ny_state_register
@@ -105,6 +107,18 @@ class _StateRegisterSession:
         return _FakeResponse(_pdf_bytes(STATE_REGISTER_NOTICE_TEXT), url.replace("dos.ny.gov/", "dos.ny.gov/system/files/"))
 
 
+class _FlakyNycrrSession(_NycrrSession):
+    def __init__(self) -> None:
+        super().__init__()
+        self.failed = False
+
+    def get(self, url: str, *, timeout: int = 30) -> _FakeResponse:
+        if "guid=title18" in url and not self.failed:
+            self.failed = True
+            raise requests.HTTPError("temporary 502")
+        return super().get(url, timeout=timeout)
+
+
 def _pdf_bytes(text: str) -> bytes:
     import fitz
 
@@ -152,6 +166,25 @@ def test_extract_nycrr_writes_source_first_records(tmp_path):
     assert inventory[2].source_format == "nycrr-westlaw-html"
     assert inventory[2].metadata["guid"] == "doc353"
     assert len(session.urls) == 3
+
+
+def test_extract_nycrr_retries_transient_fetch_errors(tmp_path):
+    store = CorpusArtifactStore(tmp_path / "corpus")
+    session = _FlakyNycrrSession()
+
+    report = extract_nycrr(
+        store,
+        version="2026-05-10",
+        only_title=18,
+        limit=2,
+        delay_seconds=0,
+        retry_attempts=2,
+        session=session,
+    )
+
+    assert report.coverage.complete
+    assert report.page_count == 2
+    assert session.failed
 
 
 def test_extract_ny_state_register_writes_issue_records(tmp_path):

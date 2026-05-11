@@ -2725,6 +2725,7 @@ def _cmd_extract_nycrr(args: argparse.Namespace) -> int:
         only_title=args.only_title,
         limit=args.limit,
         delay_seconds=args.delay_seconds,
+        retry_attempts=args.retry_attempts,
         refresh=args.refresh,
         progress_stream=sys.stderr,
     )
@@ -3623,6 +3624,7 @@ def build_parser() -> argparse.ArgumentParser:
     extract_nycrr_cmd.add_argument("--expression-date")
     extract_nycrr_cmd.add_argument("--limit", type=int)
     extract_nycrr_cmd.add_argument("--delay-seconds", type=float, default=0.25)
+    extract_nycrr_cmd.add_argument("--retry-attempts", type=int, default=4)
     extract_nycrr_cmd.add_argument("--refresh", action="store_true")
     extract_nycrr_cmd.add_argument("--allow-incomplete", action="store_true")
     extract_nycrr_cmd.set_defaults(func=_cmd_extract_nycrr)

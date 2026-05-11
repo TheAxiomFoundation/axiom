@@ -108,6 +108,7 @@ def extract_nycrr(
     only_title: int | None = None,
     limit: int | None = None,
     delay_seconds: float = 0.25,
+    retry_attempts: int = 4,
     refresh: bool = False,
     session: _Session | None = None,
     progress_stream: TextIO | None = None,
@@ -148,6 +149,7 @@ def extract_nycrr(
             page.url,
             refresh=refresh,
             delay_seconds=delay_seconds,
+            retry_attempts=retry_attempts,
         )
         source_paths.append(fetched.source_path)
         soup = BeautifulSoup(fetched.html, "lxml")
@@ -251,6 +253,7 @@ def _read_or_fetch_page(
     *,
     refresh: bool,
     delay_seconds: float,
+    retry_attempts: int,
 ) -> _FetchedPage:
     relative_name = _source_relative_name(url)
     source_path = store.source_path("us-ny", DocumentClass.REGULATION, run_id, relative_name)
@@ -258,13 +261,36 @@ def _read_or_fetch_page(
     if source_path.exists() and not refresh:
         html_bytes = source_path.read_bytes()
         return _FetchedPage(url, html_bytes.decode("utf-8", errors="replace"), sha256_bytes(html_bytes), source_path, source_key)
-    if delay_seconds > 0:
-        time.sleep(delay_seconds)
-    response = session.get(url, timeout=30)
-    response.raise_for_status()
+    response = _get_with_retries(
+        session,
+        url,
+        delay_seconds=delay_seconds,
+        retry_attempts=retry_attempts,
+    )
     html_bytes = response.content
     sha256 = store.write_bytes(source_path, html_bytes)
     return _FetchedPage(response.url or url, response.text, sha256, source_path, source_key)
+
+
+def _get_with_retries(
+    session: _Session,
+    url: str,
+    *,
+    delay_seconds: float,
+    retry_attempts: int,
+) -> _Response:
+    attempts = max(1, retry_attempts)
+    for attempt in range(attempts):
+        if delay_seconds > 0:
+            time.sleep(delay_seconds if attempt == 0 else delay_seconds * (2 ** attempt))
+        try:
+            response = session.get(url, timeout=30)
+            response.raise_for_status()
+            return response
+        except requests.RequestException:
+            if attempt + 1 >= attempts:
+                raise
+    raise RuntimeError("unreachable NYCRR retry loop")
 
 
 def _normalize_url(
