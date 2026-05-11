@@ -18,6 +18,11 @@
       "version": "2026-05-02-snap-fy2026-income-eligibility-standards"
     },
     {
+      "document_class": "guidance",
+      "jurisdiction": "us",
+      "version": "2026-05-11-hhs-poverty-guidelines"
+    },
+    {
       "document_class": "statute",
       "jurisdiction": "us",
       "version": "2026-04-29"

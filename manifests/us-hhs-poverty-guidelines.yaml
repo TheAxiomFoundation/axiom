@@ -1,0 +1,16 @@
+documents:
+  - source_id: hhs-poverty-guidelines-current
+    jurisdiction: us
+    document_class: guidance
+    citation_path: us/guidance/hhs/aspe/poverty-guidelines
+    title: HHS Poverty Guidelines
+    source_url: https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines
+    source_format: html
+    source_as_of: "2026-05-11"
+    expression_date: "2026-05-11"
+    metadata:
+      primary_source: true
+      source_authority: HHS Office of the Assistant Secretary for Planning and Evaluation
+      document_subtype: poverty_guidelines
+      program: federal_poverty_guidelines
+      calendar_year: "2026"

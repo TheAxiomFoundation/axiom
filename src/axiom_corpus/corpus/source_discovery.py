@@ -611,6 +611,8 @@ def infer_document_class(url: str, host: str) -> str:
             "acl",
             "im202",
             "im%202",
+            "poverty-guidelines",
+            "poverty_guidelines",
             "program-facts",
         )
     ):

@@ -15,6 +15,7 @@ def test_source_discovery_classifies_static_external_urls(tmp_path):
         "\n".join(
             [
                 "https://www.irs.gov/instructions/i1040gi?utm_source=test",
+                "https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines",
                 "https://ftb.ca.gov/forms/misc/1001.pdf#page=2",
                 "https://law.cornell.edu/cfr/text/26/1.402(g)-1#old",
                 "https://law.cornell.edu/cfr/text/26/1.402(g)-1#new",
@@ -36,13 +37,17 @@ def test_source_discovery_classifies_static_external_urls(tmp_path):
     )
     rows = {row.host: row for row in report.rows}
 
-    assert report.raw_url_count == 7
+    assert report.raw_url_count == 8
     assert report.invalid_url_count == 1
-    assert report.unique_url_count == 5
+    assert report.unique_url_count == 6
     assert rows["irs.gov"].source_status is SourceStatus.PRIMARY_OFFICIAL
     assert rows["irs.gov"].disposition is DiscoveryDisposition.READY_FOR_MANIFEST
     assert rows["irs.gov"].document_class == "form"
     assert rows["irs.gov"].jurisdiction == "us"
+    assert rows["aspe.hhs.gov"].source_status is SourceStatus.PRIMARY_OFFICIAL
+    assert rows["aspe.hhs.gov"].disposition is DiscoveryDisposition.READY_FOR_MANIFEST
+    assert rows["aspe.hhs.gov"].document_class == "guidance"
+    assert rows["aspe.hhs.gov"].jurisdiction == "us"
     assert rows["ftb.ca.gov"].release_scope_present is True
     assert rows["law.cornell.edu"].source_status is SourceStatus.SECONDARY_MIRROR
     assert rows["law.cornell.edu"].disposition is DiscoveryDisposition.EXCLUDED_SECONDARY
@@ -51,11 +56,11 @@ def test_source_discovery_classifies_static_external_urls(tmp_path):
     assert rows["docs.google.com"].disposition is DiscoveryDisposition.NEEDS_REVIEW
 
     payload = report.to_mapping()
-    assert payload["ready_for_manifest_count"] == 2
+    assert payload["ready_for_manifest_count"] == 3
     assert payload["needs_review_count"] == 1
     assert payload["blocked_or_excluded_count"] == 2
     assert payload["release_scope_present_count"] == 1
-    assert payload["source_status_counts"]["primary_official"] == 2
+    assert payload["source_status_counts"]["primary_official"] == 3
 
 
 def test_source_discovery_cli_writes_report(tmp_path, capsys):
