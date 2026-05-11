@@ -160,7 +160,8 @@ def test_extract_nycrr_writes_source_first_records(tmp_path):
     assert records[1].heading == "Title 18 Department of Social Services"
     assert records[0].kind == "collection"
     assert records[2].citation_label == "18 CRR-NY 353.1"
-    assert records[2].source_as_of == "September 15, 2021"
+    assert records[2].source_as_of == "2021-09-15"
+    assert records[2].metadata["current_through"] == "2021-09-15"
     assert records[2].metadata["source_caveat"] == "Online NYCRR is unofficial and not for evidentiary use."
     assert "Social Services Law" in records[2].body
     inventory = load_source_inventory(report.inventory_path)

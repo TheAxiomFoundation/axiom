@@ -8,7 +8,7 @@ import time
 from collections import deque
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Protocol, TextIO
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
@@ -36,6 +36,10 @@ _BH_PARAMS = {
     "bhov": "-3",
     "bhqs": "1",
 }
+_MONTH_DATE_PATTERN = re.compile(
+    r"\b(?:January|February|March|April|May|June|July|August|September|October|November|December)"
+    r"\s+\d{1,2},\s+\d{4}\b"
+)
 
 
 class _Response(Protocol):
@@ -464,7 +468,7 @@ def _provision_record(
         source_path=source_path,
         source_id="nycrr-westlaw",
         source_format=NYCRR_SOURCE_FORMAT,
-        source_document_id=metadata.get("guid"),
+        source_document_id=None,
         source_as_of=str(current_through or source_as_of),
         expression_date=expression_date,
         parent_citation_path=parent_citation_path,
@@ -516,7 +520,10 @@ def _current_through(soup: BeautifulSoup) -> str | None:
     match = re.search(r"Current through\s+(.+?)(?:\s+End of Document|\s+IMPORTANT NOTE|$)", text)
     if not match:
         return None
-    return match.group(1).strip().rstrip(".")
+    date_match = _MONTH_DATE_PATTERN.search(match.group(1))
+    if not date_match:
+        return None
+    return datetime.strptime(date_match.group(0), "%B %d, %Y").date().isoformat()
 
 
 def _record_kind(

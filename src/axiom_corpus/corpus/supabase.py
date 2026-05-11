@@ -12,7 +12,7 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TextIO
-from uuid import NAMESPACE_URL, uuid5
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 from axiom_corpus.corpus.models import ProvisionRecord
 from axiom_corpus.corpus.releases import ReleaseManifest, ReleaseScope
@@ -108,12 +108,25 @@ def deterministic_provision_id(citation_path: str) -> str:
     return str(uuid5(NAMESPACE_URL, f"axiom:{citation_path}"))
 
 
+def _uuid_or_none(value: str | None) -> str | None:
+    if value is None:
+        return None
+    try:
+        return str(UUID(str(value)))
+    except ValueError:
+        return None
+
+
 def provision_to_supabase_row(record: ProvisionRecord) -> dict[str, object]:
     """Project a normalized provision record into the `corpus.provisions` shape."""
     provision_id = record.id or deterministic_provision_id(record.citation_path)
     parent_id = record.parent_id
     if parent_id is None and record.parent_citation_path:
         parent_id = deterministic_provision_id(record.parent_citation_path)
+    source_document_id = _uuid_or_none(record.source_document_id)
+    identifiers = dict(record.identifiers or {})
+    if record.source_document_id is not None and source_document_id is None:
+        identifiers.setdefault("source:document_id", record.source_document_id)
 
     row: dict[str, object] = {
         "id": provision_id,
@@ -129,12 +142,12 @@ def provision_to_supabase_row(record: ProvisionRecord) -> dict[str, object]:
         "citation_path": record.citation_path,
         "rulespec_path": record.rulespec_path,
         "has_rulespec": bool(record.has_rulespec) if record.has_rulespec is not None else False,
-        "source_document_id": record.source_document_id,
+        "source_document_id": source_document_id,
         "source_as_of": record.source_as_of,
         "expression_date": record.expression_date,
         "language": record.language,
         "legal_identifier": record.legal_identifier,
-        "identifiers": record.identifiers or {},
+        "identifiers": identifiers,
     }
     return row
 

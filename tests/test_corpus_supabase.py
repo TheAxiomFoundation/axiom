@@ -34,6 +34,39 @@ def test_supabase_projection_derives_stable_ids_and_parent_ids():
     assert row["identifiers"] == {}
 
 
+def test_supabase_projection_preserves_non_uuid_source_document_id_as_identifier():
+    record = ProvisionRecord(
+        jurisdiction="us-ny",
+        document_class="regulation",
+        citation_path="us-ny/regulation/title-1",
+        source_document_id="I0dea9f40aab711ddae51f9dc2e7e68c4",
+        identifiers={"nycrr:guid": "I0dea9f40aab711ddae51f9dc2e7e68c4"},
+    )
+
+    row = provision_to_supabase_row(record)
+
+    assert row["source_document_id"] is None
+    assert row["identifiers"] == {
+        "nycrr:guid": "I0dea9f40aab711ddae51f9dc2e7e68c4",
+        "source:document_id": "I0dea9f40aab711ddae51f9dc2e7e68c4",
+    }
+
+
+def test_supabase_projection_keeps_uuid_source_document_id_column():
+    source_document_id = "11111111-1111-1111-1111-111111111111"
+    record = ProvisionRecord(
+        jurisdiction="us",
+        document_class="policy",
+        citation_path="us/policy/source-doc",
+        source_document_id=source_document_id,
+    )
+
+    row = provision_to_supabase_row(record)
+
+    assert row["source_document_id"] == source_document_id
+    assert row["identifiers"] == {}
+
+
 def test_write_supabase_rows_jsonl_uses_projection_contract(tmp_path):
     out = tmp_path / "rows.jsonl"
     count = write_supabase_rows_jsonl(
