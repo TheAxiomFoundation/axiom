@@ -85,7 +85,7 @@ class MppSection:
 
     num: str
     title: str
-    subsections: tuple["MppSubsection", ...]
+    subsections: tuple[MppSubsection, ...]
     source_file: str
 
 

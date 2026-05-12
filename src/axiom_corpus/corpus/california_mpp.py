@@ -43,7 +43,7 @@ from typing import Any, Protocol
 
 import requests
 
-from axiom_corpus.corpus.artifacts import CorpusArtifactStore, sha256_bytes
+from axiom_corpus.corpus.artifacts import CorpusArtifactStore
 from axiom_corpus.corpus.coverage import (
     ProvisionCoverageReport,
     compare_provision_coverage,
@@ -67,10 +67,6 @@ ROOT_CITATION_PATH = "us-ca/regulation/mpp"
 DIVISION_CITATION_PATH = "us-ca/regulation/mpp/63"
 DIVISION_HEADING = "Division 63 — CalFresh (Food Stamps)"
 
-# Default MVP scope. Caller can override via run options.
-DEFAULT_DOCX_SOURCES: tuple["MppDocxSource", ...] = ()
-
-
 @dataclass(frozen=True)
 class MppDocxSource:
     """One DOCX file in the MPP source set."""
@@ -80,6 +76,10 @@ class MppDocxSource:
     chapter: str
     sections: tuple[str, ...]
     summary: str
+
+
+# Default MVP scope. Caller can override via run options.
+DEFAULT_DOCX_SOURCES: tuple[MppDocxSource, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -189,7 +189,6 @@ def extract_california_mpp_calfresh(
             cache_path=(download_root / src.file) if download_root else None,
             delay_seconds=request_delay_seconds,
         )
-        sha = sha256_bytes(docx_bytes)
         relative = f"cdss-mpp/{src.file}"
         artifact_path = store.source_path(JURISDICTION, DOC_CLASS, run_id, relative)
         store.write_bytes(artifact_path, docx_bytes)
