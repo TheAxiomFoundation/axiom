@@ -44,10 +44,14 @@ class OfficialDocumentSource:
     source_as_of: str | None = None
     expression_date: str | None = None
     local_path: str | None = None
+    extraction: dict[str, Any] | None = None
     metadata: dict[str, Any] | None = None
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> Self:
+        extraction = data.get("extraction")
+        if extraction is not None and not isinstance(extraction, dict):
+            raise ValueError("official document extraction config must be a mapping")
         return cls(
             source_id=str(data["source_id"]),
             jurisdiction=str(data["jurisdiction"]),
@@ -60,6 +64,7 @@ class OfficialDocumentSource:
             source_as_of=data.get("source_as_of"),
             expression_date=data.get("expression_date"),
             local_path=data.get("local_path"),
+            extraction=extraction,
             metadata=data.get("metadata"),
         )
 
@@ -193,7 +198,12 @@ def extract_official_documents(
         expression_date_text = source.expression_date or default_expression_date
 
         blocks = tuple(
-            _extract_blocks(downloaded.content, source_format, source_url=source.source_url)
+            _extract_blocks(
+                downloaded.content,
+                source_format,
+                source_url=source.source_url,
+                extraction=source.extraction,
+            )
         )
         block_count += len(blocks)
         inventory.extend(
@@ -323,16 +333,24 @@ def _extension(source_format: str) -> str:
 
 
 def _extract_blocks(
-    content: bytes, source_format: str, *, source_url: str
+    content: bytes,
+    source_format: str,
+    *,
+    source_url: str,
+    extraction: dict[str, Any] | None,
 ) -> tuple[_DocumentBlock, ...]:
     if source_format == "pdf":
-        return _extract_pdf_blocks(content)
+        return _extract_pdf_blocks(content, extraction=extraction)
     if source_format == "html":
         return _extract_html_blocks(content, source_url=source_url)
     raise ValueError(f"unsupported official document source_format: {source_format}")
 
 
-def _extract_pdf_blocks(content: bytes) -> tuple[_DocumentBlock, ...]:
+def _extract_pdf_blocks(
+    content: bytes, *, extraction: dict[str, Any] | None
+) -> tuple[_DocumentBlock, ...]:
+    if (extraction or {}).get("segmentation") == "numbered_sections":
+        return _extract_numbered_pdf_section_blocks(content, extraction=extraction or {})
     blocks: list[_DocumentBlock] = []
     with fitz.open(stream=content, filetype="pdf") as document:
         for index, page in enumerate(document, start=1):
@@ -349,6 +367,111 @@ def _extract_pdf_blocks(content: bytes) -> tuple[_DocumentBlock, ...]:
                 )
             )
     return tuple(blocks)
+
+
+def _extract_numbered_pdf_section_blocks(
+    content: bytes, *, extraction: dict[str, Any]
+) -> tuple[_DocumentBlock, ...]:
+    """Extract legal PDFs whose top-level sections begin with numbered headings."""
+    start_page = _positive_int(extraction.get("start_page"), default=1)
+    drop_lines = {str(line).strip() for line in extraction.get("drop_lines", ())}
+    drop_line_patterns = tuple(
+        re.compile(str(pattern)) for pattern in extraction.get("drop_line_patterns", ())
+    )
+    lines: list[tuple[str, int]] = []
+    with fitz.open(stream=content, filetype="pdf") as document:
+        for page_index, page in enumerate(document, start=1):
+            if page_index < start_page:
+                continue
+            for raw_line in page.get_text("text").splitlines():
+                line = _normalize_text(raw_line)
+                if not line or _drop_pdf_line(line, drop_lines, drop_line_patterns):
+                    continue
+                lines.append((line, page_index))
+
+    sections: list[_DocumentBlock] = []
+    index = 0
+    while index < len(lines):
+        match = _NUMBERED_SECTION_START_RE.match(lines[index][0])
+        if not match:
+            index += 1
+            continue
+
+        section_label = match.group("label")
+        end_label = match.group("end_label")
+        index += 1
+        heading_lines: list[str] = []
+        while index < len(lines) and _looks_like_section_heading_line(lines[index][0]):
+            heading_lines.append(lines[index][0])
+            index += 1
+        if not heading_lines:
+            continue
+
+        body_lines: list[str] = []
+        first_page = lines[index - 1][1]
+        while index < len(lines) and not _NUMBERED_SECTION_START_RE.match(lines[index][0]):
+            body_lines.append(lines[index][0])
+            index += 1
+
+        label_text = section_label if end_label is None else f"{section_label} -- {end_label}"
+        citation_suffix = section_label if end_label is None else f"{section_label}-{end_label}"
+        heading = f"{label_text}. {' '.join(heading_lines)}"
+        page_numbers = [page for _line, page in lines[max(0, index - len(body_lines)) : index]]
+        pages = page_numbers or [first_page]
+        metadata: dict[str, Any] = {
+            "citation_suffix": citation_suffix,
+            "section_label": section_label,
+            "page_start": min(pages),
+            "page_end": max(pages),
+        }
+        if end_label is not None:
+            metadata["section_end_label"] = end_label
+        sections.append(
+            _DocumentBlock(
+                kind="section",
+                ordinal=len(sections) + 1,
+                heading=heading,
+                body=_normalize_text("\n".join(body_lines)),
+                metadata=metadata,
+            )
+        )
+    return tuple(sections)
+
+
+_NUMBERED_SECTION_START_RE = re.compile(
+    r"^(?P<label>\d{3})\.(?:\s*--\s*(?P<end_label>\d{3})\.)?$"
+)
+
+
+def _positive_int(value: Any, *, default: int) -> int:
+    if value is None:
+        return default
+    parsed = int(value)
+    if parsed < 1:
+        raise ValueError("page numbers must be positive")
+    return parsed
+
+
+def _drop_pdf_line(
+    line: str, drop_lines: set[str], drop_line_patterns: tuple[re.Pattern[str], ...]
+) -> bool:
+    if line in drop_lines:
+        return True
+    if re.match(r"^Page \d+$", line):
+        return True
+    if re.match(r"^Section \d{3}$", line):
+        return True
+    return any(pattern.search(line) for pattern in drop_line_patterns)
+
+
+def _looks_like_section_heading_line(line: str) -> bool:
+    if line in {"(RESERVED)", "(RESERVED)."}:
+        return True
+    letters = [character for character in line if character.isalpha()]
+    if not letters:
+        return False
+    uppercase_letters = [character for character in letters if character.isupper()]
+    return len(uppercase_letters) / len(letters) >= 0.75
 
 
 def _extract_html_blocks(content: bytes, *, source_url: str) -> tuple[_DocumentBlock, ...]:
@@ -591,6 +714,9 @@ def _root_citation_path(source: OfficialDocumentSource) -> str:
 
 
 def _block_citation_path(source: OfficialDocumentSource, block: _DocumentBlock) -> str:
+    citation_suffix = block.metadata.get("citation_suffix")
+    if isinstance(citation_suffix, str) and citation_suffix:
+        return f"{_root_citation_path(source)}/{safe_segment(citation_suffix)}"
     return f"{_root_citation_path(source)}/{block.kind}-{block.ordinal}"
 
 

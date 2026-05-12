@@ -99,3 +99,74 @@ documents:
     assert page_record.source_document_id is None
     assert page_record.metadata is not None
     assert page_record.metadata["document_subtype"] == "waiver_approval"
+
+
+def test_extract_official_documents_splits_numbered_pdf_sections(tmp_path):
+    pdf_path = tmp_path / "rules.pdf"
+    document = fitz.open()
+    page = document.new_page()
+    page.insert_text(
+        (72, 72),
+        "\n".join(
+            [
+                "IDAHO ADMINISTRATIVE CODE",
+                "Section 000",
+                "Page 1",
+                "000.",
+                "LEGAL AUTHORITY.",
+                "Legal authority text.",
+                "001.",
+                "SCOPE.",
+                "01.",
+                "Scope body.",
+                "002. -- 009.",
+                "(RESERVED)",
+            ]
+        ),
+    )
+    document.save(pdf_path)
+    document.close()
+    manifest_path = tmp_path / "documents.yaml"
+    manifest_path.write_text(
+        f"""
+documents:
+  - source_id: idaho-rule
+    jurisdiction: us-id
+    document_class: regulation
+    title: IDAPA 35.01.01 - Income Tax Administrative Rules
+    source_url: https://adminrules.idaho.gov/rules/current/35/350101.pdf
+    citation_path: us-id/regulation/idapa/35/01/01
+    source_format: pdf
+    local_path: {json.dumps(str(pdf_path))}
+    extraction:
+      segmentation: numbered_sections
+      drop_lines:
+        - IDAHO ADMINISTRATIVE CODE
+"""
+    )
+    store = CorpusArtifactStore(tmp_path / "corpus")
+
+    report = extract_official_documents(
+        store,
+        manifest_path=manifest_path,
+        version="2026-05-12-idapa-35-01-01",
+    )
+
+    assert report.block_count == 3
+    records = load_provisions(report.provisions_path)
+    assert [record.citation_path for record in records] == [
+        "us-id/regulation/idapa/35/01/01",
+        "us-id/regulation/idapa/35/01/01/000",
+        "us-id/regulation/idapa/35/01/01/001",
+        "us-id/regulation/idapa/35/01/01/002-009",
+    ]
+    first_section = records[1]
+    assert first_section.kind == "section"
+    assert first_section.heading == "000. LEGAL AUTHORITY."
+    assert first_section.body == "Legal authority text."
+    assert first_section.metadata is not None
+    assert first_section.metadata["page_start"] == 1
+    assert "section_end_label" not in first_section.metadata
+    reserved_section = records[3]
+    assert reserved_section.metadata is not None
+    assert reserved_section.metadata["section_end_label"] == "009"
