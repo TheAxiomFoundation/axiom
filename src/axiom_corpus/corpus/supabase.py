@@ -1031,23 +1031,20 @@ def ensure_release_scopes_for_loaded_data(
 ) -> tuple[dict[str, object], ...]:
     """Idempotently ensure a release_scopes row exists for each loaded scope.
 
-    For each (jurisdiction, document_class) pair in ``scope_versions``,
-    upserts a release_scopes row with the given ``active`` flag. The
-    deterministic upsert key is (release_name, jurisdiction, document_class,
-    version) per the corpus.release_scopes schema constraint.
+    Uses ``Prefer: resolution=ignore-duplicates``: if a row already exists
+    for ``(release_name, jurisdiction, document_class, version)``, this
+    function leaves it alone — including its ``active`` flag. State
+    changes always require an explicit ``axiom-corpus-ingest publish`` /
+    ``unpublish`` invocation, never a re-load.
 
-    Returns a tuple of dicts describing the rows that were written, suitable
-    for inclusion in a load report so operators can see which scopes the
-    load auto-registered (and at what active state).
+    This protects against the surprise that a re-load with ``--stage``
+    would silently demote a previously-published scope (or that a re-load
+    without ``--stage`` would silently undo an explicit unpublish).
+    Re-loads of existing scopes become no-ops at the release_scopes layer.
 
-    This is the load-time companion to ``axiom-corpus-ingest publish`` /
-    ``unpublish``: each load auto-registers its scopes, and operators can
-    later flip ``active`` via the CLI.
-
-    Default ``active=True`` matches the design choice that loading data
-    should publish it by default (the "fail open" choice — forgetting to
-    promote no longer hides data). Callers wanting to stage a load
-    explicitly should pass ``active=False``.
+    Default ``active=True`` for newly-inserted rows matches the design
+    choice that loading new data should publish it by default. Callers
+    wanting to stage explicitly pass ``active=False``.
     """
     if not scope_versions:
         return ()
@@ -1064,8 +1061,52 @@ def ensure_release_scopes_for_loaded_data(
         }
         for (jurisdiction, document_class), version in sorted(scope_versions.items())
     ]
-    upsert_release_scope_rows(rows, service_key=service_key, rest_url=rest_url)
+    insert_release_scope_rows_ignore_duplicates(
+        rows, service_key=service_key, rest_url=rest_url
+    )
     return tuple(rows)
+
+
+def insert_release_scope_rows_ignore_duplicates(
+    rows: list[dict[str, object]],
+    *,
+    service_key: str,
+    rest_url: str,
+) -> None:
+    """Insert release_scopes rows; skip any row that conflicts on the unique
+    key (release_name, jurisdiction, document_class, version).
+
+    Sister function to ``upsert_release_scope_rows`` which uses
+    ``resolution=merge-duplicates``. The auto-register-on-load flow uses
+    this ignore-duplicates variant so that re-loads don't silently flip
+    the ``active`` flag on existing rows.
+    """
+    if not rows:
+        return
+    req = urllib.request.Request(
+        (
+            f"{rest_url}/release_scopes?"
+            "on_conflict=release_name,jurisdiction,document_class,version"
+        ),
+        data=json.dumps(rows).encode("utf-8"),
+        headers={
+            "apikey": service_key,
+            "Authorization": f"Bearer {service_key}",
+            "Content-Type": "application/json",
+            "Prefer": "resolution=ignore-duplicates,return=minimal",
+            "Content-Profile": "corpus",
+            "User-Agent": USER_AGENT,
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=180) as resp:
+            resp.read()
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")[:500]
+        raise RuntimeError(
+            f"release-scope ignore-duplicates insert failed {exc.code}: {body}"
+        ) from exc
 
 
 def deactivate_release_scope_rows(

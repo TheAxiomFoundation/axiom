@@ -867,3 +867,57 @@ def test_list_release_scopes_filters_by_active(monkeypatch):
     assert len(rows) == 1
     assert rows[0]["jurisdiction"] == "us-ar"
     assert "active=is.false" in captured_url[0]
+
+
+def test_load_provisions_auto_register_uses_ignore_duplicates(monkeypatch):
+    """Re-load should never silently flip an existing row's active flag.
+
+    Auto-register uses Prefer: resolution=ignore-duplicates so that a
+    re-load of an already-promoted scope leaves the existing row alone.
+    This protects against:
+      * --stage on a re-load demoting a previously-published scope
+      * a default load undoing an explicit unpublish
+
+    State changes always require explicit publish/unpublish.
+    """
+    import axiom_corpus.corpus.supabase as supabase
+
+    captured_headers = []
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def read(self):
+            return b""
+
+    def fake_urlopen(req, timeout):
+        if "release_scopes" in req.full_url and req.get_method() == "POST":
+            captured_headers.append(dict(req.headers))
+        return FakeResponse()
+
+    monkeypatch.setattr(supabase.urllib.request, "urlopen", fake_urlopen)
+
+    load_provisions_to_supabase(
+        [
+            ProvisionRecord(
+                jurisdiction="us-mo",
+                document_class="statute",
+                citation_path="us-mo/statute/akn/135.212",
+                version="2026-05-13",
+            ),
+        ],
+        service_key="service",
+        supabase_url="https://example.supabase.co",
+        chunk_size=10,
+    )
+
+    # One release_scopes POST should have been captured, with
+    # ignore-duplicates resolution.
+    assert len(captured_headers) == 1
+    prefer = captured_headers[0].get("Prefer") or ""
+    assert "resolution=ignore-duplicates" in prefer
+    assert "resolution=merge-duplicates" not in prefer
