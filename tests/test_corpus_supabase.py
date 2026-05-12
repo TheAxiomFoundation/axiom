@@ -11,6 +11,7 @@ from axiom_corpus.corpus.supabase import (
     refresh_corpus_analytics,
     resolve_service_key,
     sync_release_scopes_to_supabase,
+    verify_release_coverage,
     write_supabase_rows_jsonl,
 )
 
@@ -485,3 +486,100 @@ def test_refresh_corpus_analytics_calls_current_rpc(monkeypatch):
     assert calls == [
         "https://example.supabase.co/rest/v1/rpc/refresh_corpus_analytics",
     ]
+
+
+def test_verify_release_coverage_flags_jurisdictions_missing_current_provisions(monkeypatch):
+    """The historical UK regression: rows in navigation_nodes, zero in
+    current_provisions. The check must catch this."""
+    import axiom_corpus.corpus.supabase as supabase
+
+    nav_count_rpc_rows = [
+        {"jurisdiction": "us", "document_class": "statute", "node_count": 1000},
+        {"jurisdiction": "uk", "document_class": "regulation", "node_count": 4705},
+        {"jurisdiction": "us-ca", "document_class": "statute", "node_count": 7948},
+    ]
+    current_rows = [
+        {"jurisdiction": "us", "document_class": "statute", "provision_count": 1000},
+        {"jurisdiction": "us-ca", "document_class": "statute", "provision_count": 7948},
+        # uk deliberately absent → should be flagged
+    ]
+
+    class FakeResponse:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def read(self):
+            return json.dumps(self.payload).encode()
+
+    def fake_urlopen(req, timeout):
+        url = req.full_url
+        if "/rpc/get_navigation_node_counts" in url:
+            return FakeResponse(nav_count_rpc_rows)
+        if "/current_provision_counts" in url:
+            return FakeResponse(current_rows)
+        raise AssertionError(f"unexpected URL {url}")
+
+    monkeypatch.setattr(supabase.urllib.request, "urlopen", fake_urlopen)
+
+    report = verify_release_coverage(
+        service_key="service",
+        supabase_url="https://example.supabase.co",
+    )
+
+    assert report.ok is False
+    assert len(report.missing_current_provisions) == 1
+    finding = report.missing_current_provisions[0]
+    assert finding.jurisdiction == "uk"
+    assert finding.document_class == "regulation"
+    assert finding.navigation_node_count == 4705
+    assert finding.current_provision_count == 0
+
+
+def test_verify_release_coverage_clean_when_all_jurisdictions_covered(monkeypatch):
+    import axiom_corpus.corpus.supabase as supabase
+
+    nav_count_rpc_rows = [
+        {"jurisdiction": "us", "document_class": "statute", "node_count": 1000},
+        {"jurisdiction": "uk", "document_class": "regulation", "node_count": 4705},
+    ]
+    current_rows = [
+        {"jurisdiction": "us", "document_class": "statute", "provision_count": 1000},
+        {"jurisdiction": "uk", "document_class": "regulation", "provision_count": 4705},
+    ]
+
+    class FakeResponse:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def read(self):
+            return json.dumps(self.payload).encode()
+
+    def fake_urlopen(req, timeout):
+        url = req.full_url
+        if "/rpc/get_navigation_node_counts" in url:
+            return FakeResponse(nav_count_rpc_rows)
+        if "/current_provision_counts" in url:
+            return FakeResponse(current_rows)
+        raise AssertionError(f"unexpected URL {url}")
+
+    monkeypatch.setattr(supabase.urllib.request, "urlopen", fake_urlopen)
+
+    report = verify_release_coverage(
+        service_key="service",
+        supabase_url="https://example.supabase.co",
+    )
+
+    assert report.ok is True
+    assert report.missing_current_provisions == ()

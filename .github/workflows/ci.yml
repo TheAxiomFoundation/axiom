@@ -5,6 +5,11 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  schedule:
+    # Daily 12:00 UTC — catches release-coverage drift if a new
+    # jurisdiction lands in corpus.provisions / navigation_nodes
+    # without a matching active row in corpus.release_scopes.
+    - cron: "0 12 * * *"
 
 jobs:
   test:
@@ -84,3 +89,43 @@ jobs:
           print('PostgreSQL connection successful')
           print('Stats:', storage.get_stats())
           "
+
+  verify-release-coverage:
+    name: Verify release coverage
+    # Skip on PRs:
+    # - Pull-request CI runs in fork context cannot read repo/org secrets.
+    # - Pre-merge is the wrong gate anyway: the check reads PRODUCTION
+    #   Supabase state; a PR that adds a new jurisdiction hasn't yet
+    #   landed any rows in production at PR-CI time, so the check would
+    #   pass even though the manifest is missing an entry.
+    # - The intent is "catch drift fast" — runs on push-to-main and on a
+    #   daily cron.
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.14"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Verify release coverage
+        env:
+          # Reuse the anon (read-only, RLS-gated) Supabase key already
+          # provisioned as an org secret for the foundation.org deploy.
+          # The check only needs SELECT on corpus.navigation_nodes and
+          # corpus.current_provision_counts (both GRANTed to anon per
+          # 20260507150000_restrict_public_corpus_base_reads.sql and
+          # 20260505120000_corpus_navigation_nodes.sql) plus EXECUTE
+          # on corpus.get_navigation_node_counts() (GRANTed in the
+          # 20260512170000 migration). No write capability needed.
+          SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          axiom-corpus-ingest verify-release-coverage \
+            --service-key-env SUPABASE_ANON_KEY
