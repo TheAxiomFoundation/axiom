@@ -217,11 +217,18 @@ def _fetch_navigation_node_counts(
     ``corpus.get_navigation_node_counts`` returns ~70 rows in one call.
     See migration 20260512170000_navigation_node_counts_rpc.sql.
     """
+    # POST RPC resolves the schema from Content-Profile, not Accept-Profile.
+    # Without it PostgREST defaults to `public` and returns 404 for the
+    # corpus.* function.
     req = urllib.request.Request(
         f"{rest_url}/rpc/get_navigation_node_counts",
         data=b"{}",
         method="POST",
-        headers={**headers, "Content-Type": "application/json"},
+        headers={
+            **headers,
+            "Content-Type": "application/json",
+            "Content-Profile": "corpus",
+        },
     )
     with urllib.request.urlopen(req, timeout=180) as resp:
         rows = json.loads(resp.read())
