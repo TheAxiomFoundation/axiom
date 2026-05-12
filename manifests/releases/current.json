@@ -69,6 +69,11 @@
     },
     {
       "document_class": "regulation",
+      "jurisdiction": "us-ca",
+      "version": "2026-05-12-capi-cvcb-regulations"
+    },
+    {
+      "document_class": "regulation",
       "jurisdiction": "us-co",
       "version": "2026-04-29"
     },

@@ -170,3 +170,85 @@ documents:
     reserved_section = records[3]
     assert reserved_section.metadata is not None
     assert reserved_section.metadata["section_end_label"] == "009"
+
+
+def test_extract_official_documents_splits_labeled_pdf_sections(tmp_path):
+    pdf_path = tmp_path / "capi.pdf"
+    document = fitz.open()
+    first_page = document.new_page()
+    first_page.insert_text(
+        (72, 72),
+        "\n".join(
+            [
+                "ELIGIBILITY AND ASSISTANCE STANDARDS",
+                "49-001",
+                "PROGRAM DEFINITION",
+                ".1 Program definition text.",
+                "CALIFORNIA-DSS-MANUAL-EAS",
+                "Page 660.2",
+            ]
+        ),
+    )
+    second_page = document.new_page()
+    second_page.insert_text(
+        (72, 72),
+        "\n".join(
+            [
+                "ELIGIBILITY AND ASSISTANCE STANDARDS",
+                "49-001",
+                "PROGRAM DEFINITION",
+                ".2 Continued definition text.",
+                "49-010",
+                "ELIGIBILITY FOR CASH ASSISTANCE PROGRAM",
+                "FOR IMMIGRANTS",
+                "HANDBOOK BEGINS HERE",
+                ".1 Eligibility text.",
+            ]
+        ),
+    )
+    document.save(pdf_path)
+    document.close()
+    manifest_path = tmp_path / "documents.yaml"
+    manifest_path.write_text(
+        f"""
+documents:
+  - source_id: ca-capi
+    jurisdiction: us-ca
+    document_class: regulation
+    title: California CAPI Regulations
+    source_url: https://cdss.ca.gov/Portals/9/CAPI/CAPI_Regulations-Accessible.pdf
+    citation_path: us-ca/regulation/cdss/eas/49
+    source_format: pdf
+    local_path: {json.dumps(str(pdf_path))}
+    extraction:
+      segmentation: labeled_sections
+      section_label_pattern: "^(?P<label>49-[0-9]{{3}})$"
+      drop_lines:
+        - ELIGIBILITY AND ASSISTANCE STANDARDS
+        - CALIFORNIA-DSS-MANUAL-EAS
+      drop_line_patterns:
+        - "^Page \\\\d+(?:\\\\.\\\\d+)?$"
+"""
+    )
+    store = CorpusArtifactStore(tmp_path / "corpus")
+
+    report = extract_official_documents(
+        store,
+        manifest_path=manifest_path,
+        version="2026-05-12-capi",
+    )
+
+    assert report.block_count == 2
+    records = load_provisions(report.provisions_path)
+    assert [record.citation_path for record in records] == [
+        "us-ca/regulation/cdss/eas/49",
+        "us-ca/regulation/cdss/eas/49/49-001",
+        "us-ca/regulation/cdss/eas/49/49-010",
+    ]
+    definition = records[1]
+    assert definition.body == ".1 Program definition text. .2 Continued definition text."
+    eligibility = records[2]
+    assert eligibility.heading == "49-010 ELIGIBILITY FOR CASH ASSISTANCE PROGRAM FOR IMMIGRANTS"
+    assert eligibility.body == "HANDBOOK BEGINS HERE .1 Eligibility text."
+    assert eligibility.metadata is not None
+    assert eligibility.metadata["page_start"] == 2

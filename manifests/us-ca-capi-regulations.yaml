@@ -1,0 +1,34 @@
+documents:
+  - source_id: california-cdss-capi-cvcb-regulations
+    jurisdiction: us-ca
+    document_class: regulation
+    citation_path: us-ca/regulation/cdss/eas/49
+    title: EAS Chapter 49 - CAPI and CVCB Regulations
+    source_url: https://cdss.ca.gov/Portals/9/CAPI/CAPI_Regulations-Accessible.pdf
+    source_format: pdf
+    source_as_of: "2026-05-12"
+    expression_date: "2026-05-12"
+    extraction:
+      segmentation: labeled_sections
+      start_page: 2
+      section_label_pattern: '^(?P<label>49-[0-9]{3})$'
+      drop_lines:
+        - ELIGIBILITY AND ASSISTANCE STANDARDS
+        - CASH ASSISTANCE PROGRAM FOR IMMIGRANTS (CAPI)
+        - CALIFORNIA VETERANS CASH BENEFIT (CVCB) PROGRAM
+        - CALIFORNIA-DSS-MANUAL-EAS
+      drop_line_patterns:
+        - '^CHAPTER 49-[0-9]{3} .*$'
+        - '^MANUAL LETTER NO\. .*$'
+        - '^Page 660(?:\.[0-9]+)?$'
+        - '^PROGRAM$'
+    metadata:
+      primary_source: true
+      source_authority: California Department of Social Services
+      document_subtype: agency_regulation_chapter
+      manual: Eligibility and Assistance Standards
+      chapter: "49"
+      topics:
+        - capi
+        - cvcb
+      discovered_via: policyengine-us:state_references

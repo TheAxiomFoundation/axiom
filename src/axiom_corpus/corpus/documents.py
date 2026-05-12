@@ -27,6 +27,12 @@ OFFICIAL_DOCUMENT_USER_AGENT = (
 _GOOGLE_DRIVE_FILE_RE = re.compile(r"https?://drive\.google\.com/file/d/([^/]+)/")
 _HEADING_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
 _TEXT_TAGS = _HEADING_TAGS | {"p", "li", "table", "blockquote"}
+_NON_HEADING_UPPERCASE_LINES = {
+    "HANDBOOK BEGINS HERE",
+    "HANDBOOK CONTINUES",
+    "HANDBOOK CONTINUE",
+    "HANDBOOK ENDS HERE",
+}
 
 
 @dataclass(frozen=True)
@@ -349,8 +355,11 @@ def _extract_blocks(
 def _extract_pdf_blocks(
     content: bytes, *, extraction: dict[str, Any] | None
 ) -> tuple[_DocumentBlock, ...]:
-    if (extraction or {}).get("segmentation") == "numbered_sections":
+    segmentation = (extraction or {}).get("segmentation")
+    if segmentation == "numbered_sections":
         return _extract_numbered_pdf_section_blocks(content, extraction=extraction or {})
+    if segmentation == "labeled_sections":
+        return _extract_labeled_pdf_section_blocks(content, extraction=extraction or {})
     blocks: list[_DocumentBlock] = []
     with fitz.open(stream=content, filetype="pdf") as document:
         for index, page in enumerate(document, start=1):
@@ -373,22 +382,7 @@ def _extract_numbered_pdf_section_blocks(
     content: bytes, *, extraction: dict[str, Any]
 ) -> tuple[_DocumentBlock, ...]:
     """Extract legal PDFs whose top-level sections begin with numbered headings."""
-    start_page = _positive_int(extraction.get("start_page"), default=1)
-    drop_lines = {str(line).strip() for line in extraction.get("drop_lines", ())}
-    drop_line_patterns = tuple(
-        re.compile(str(pattern)) for pattern in extraction.get("drop_line_patterns", ())
-    )
-    lines: list[tuple[str, int]] = []
-    with fitz.open(stream=content, filetype="pdf") as document:
-        for page_index, page in enumerate(document, start=1):
-            if page_index < start_page:
-                continue
-            for raw_line in page.get_text("text").splitlines():
-                line = _normalize_text(raw_line)
-                if not line or _drop_pdf_line(line, drop_lines, drop_line_patterns):
-                    continue
-                lines.append((line, page_index))
-
+    lines = _filtered_pdf_lines(content, extraction=extraction)
     sections: list[_DocumentBlock] = []
     index = 0
     while index < len(lines):
@@ -438,6 +432,128 @@ def _extract_numbered_pdf_section_blocks(
     return tuple(sections)
 
 
+def _extract_labeled_pdf_section_blocks(
+    content: bytes, *, extraction: dict[str, Any]
+) -> tuple[_DocumentBlock, ...]:
+    """Extract PDFs whose top-level sections begin with stable labels."""
+    heading_pattern = extraction.get("section_heading_pattern")
+    label_pattern = extraction.get("section_label_pattern")
+    if heading_pattern is None and label_pattern is None:
+        raise ValueError(
+            "labeled_sections extraction requires section_heading_pattern "
+            "or section_label_pattern"
+        )
+    section_heading_re = (
+        re.compile(str(heading_pattern)) if heading_pattern is not None else None
+    )
+    section_label_re = re.compile(str(label_pattern)) if label_pattern is not None else None
+    lines = _filtered_pdf_lines(content, extraction=extraction)
+    drop_repeated = bool(extraction.get("drop_repeated_section_headings", True))
+
+    sections: list[_DocumentBlock] = []
+    current_label: str | None = None
+    current_heading: str | None = None
+    current_body: list[str] = []
+    current_body_pages: list[int] = []
+    current_start_page: int | None = None
+    index = 0
+
+    def flush() -> None:
+        nonlocal current_label, current_heading, current_body, current_body_pages
+        nonlocal current_start_page
+        if current_label is None or current_heading is None or current_start_page is None:
+            return
+        pages = current_body_pages or [current_start_page]
+        sections.append(
+            _DocumentBlock(
+                kind="section",
+                ordinal=len(sections) + 1,
+                heading=current_heading,
+                body=_normalize_text("\n".join(current_body)),
+                metadata={
+                    "citation_suffix": current_label,
+                    "section_label": current_label,
+                    "page_start": min(pages),
+                    "page_end": max(pages),
+                },
+            )
+        )
+        current_label = None
+        current_heading = None
+        current_body = []
+        current_body_pages = []
+        current_start_page = None
+
+    while index < len(lines):
+        line, page = lines[index]
+        match = _match_labeled_pdf_section(line, section_heading_re, section_label_re)
+        if match:
+            label, heading_text = match
+            if drop_repeated and label == current_label:
+                index += 1
+                while index < len(lines) and _looks_like_labeled_heading_continuation(
+                    lines[index][0], section_heading_re, section_label_re
+                ):
+                    index += 1
+                continue
+            flush()
+            heading_lines = [heading_text]
+            index += 1
+            while index < len(lines) and _looks_like_labeled_heading_continuation(
+                lines[index][0], section_heading_re, section_label_re
+            ):
+                heading_lines.append(lines[index][0])
+                index += 1
+            heading = " ".join(part for part in heading_lines if part)
+            current_label = label
+            current_heading = f"{label} {heading}".strip()
+            current_start_page = page
+            continue
+        if current_label is not None:
+            current_body.append(line)
+            current_body_pages.append(page)
+        index += 1
+    flush()
+    return tuple(sections)
+
+
+def _match_labeled_pdf_section(
+    line: str,
+    section_heading_re: re.Pattern[str] | None,
+    section_label_re: re.Pattern[str] | None,
+) -> tuple[str, str] | None:
+    if section_heading_re is not None:
+        match = section_heading_re.match(line)
+        if match:
+            return match.group("label"), match.groupdict().get("heading", "").strip()
+    if section_label_re is not None:
+        match = section_label_re.match(line)
+        if match:
+            return match.group("label"), ""
+    return None
+
+
+def _filtered_pdf_lines(
+    content: bytes, *, extraction: dict[str, Any]
+) -> tuple[tuple[str, int], ...]:
+    start_page = _positive_int(extraction.get("start_page"), default=1)
+    drop_lines = {str(line).strip() for line in extraction.get("drop_lines", ())}
+    drop_line_patterns = tuple(
+        re.compile(str(pattern)) for pattern in extraction.get("drop_line_patterns", ())
+    )
+    lines: list[tuple[str, int]] = []
+    with fitz.open(stream=content, filetype="pdf") as document:
+        for page_index, page in enumerate(document, start=1):
+            if page_index < start_page:
+                continue
+            for raw_line in page.get_text("text").splitlines():
+                line = _normalize_text(raw_line)
+                if not line or _drop_pdf_line(line, drop_lines, drop_line_patterns):
+                    continue
+                lines.append((line, page_index))
+    return tuple(lines)
+
+
 _NUMBERED_SECTION_START_RE = re.compile(
     r"^(?P<label>\d{3})\.(?:\s*--\s*(?P<end_label>\d{3})\.)?$"
 )
@@ -467,11 +583,23 @@ def _drop_pdf_line(
 def _looks_like_section_heading_line(line: str) -> bool:
     if line in {"(RESERVED)", "(RESERVED)."}:
         return True
+    if line in _NON_HEADING_UPPERCASE_LINES:
+        return False
     letters = [character for character in line if character.isalpha()]
     if not letters:
         return False
     uppercase_letters = [character for character in letters if character.isupper()]
     return len(uppercase_letters) / len(letters) >= 0.75
+
+
+def _looks_like_labeled_heading_continuation(
+    line: str,
+    section_heading_re: re.Pattern[str] | None,
+    section_label_re: re.Pattern[str] | None,
+) -> bool:
+    if _match_labeled_pdf_section(line, section_heading_re, section_label_re):
+        return False
+    return _looks_like_section_heading_line(line)
 
 
 def _extract_html_blocks(content: bytes, *, source_url: str) -> tuple[_DocumentBlock, ...]:
