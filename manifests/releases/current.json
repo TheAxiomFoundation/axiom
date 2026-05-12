@@ -69,6 +69,11 @@
     },
     {
       "document_class": "regulation",
+      "jurisdiction": "us-ca",
+      "version": "2026-05-12-capi-cvcb-regulations"
+    },
+    {
+      "document_class": "regulation",
       "jurisdiction": "us-co",
       "version": "2026-04-29"
     },
@@ -126,6 +131,11 @@
       "document_class": "statute",
       "jurisdiction": "us-id",
       "version": "2026-05-09"
+    },
+    {
+      "document_class": "regulation",
+      "jurisdiction": "us-id",
+      "version": "2026-05-12-idapa-35-01-01"
     },
     {
       "document_class": "statute",
@@ -191,6 +201,11 @@
       "document_class": "statute",
       "jurisdiction": "us-ne",
       "version": "2026-05-04"
+    },
+    {
+      "document_class": "regulation",
+      "jurisdiction": "us-ne",
+      "version": "2026-05-12-ne-revenue-chapter-22"
     },
     {
       "document_class": "statute",
