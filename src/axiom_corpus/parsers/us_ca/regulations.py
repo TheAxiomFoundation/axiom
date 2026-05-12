@@ -37,9 +37,15 @@ _SECTION_HEADER_RE = re.compile(
     r"^(?P<num>63-\d+(?:\.\d+)?)\s+(?P<title>[A-Z][A-Za-z0-9 ,/&\-:'()]+?)\s*$"
 )
 
-# Matches subsection markers like ".1 General Process" or ".21 Screening".
+# Matches subsection markers. MPP uses two patterns:
+#   (a) ".1 General Process"  → title only, body in following paragraphs
+#   (b) ".31 The CWD shall not deny eligibility..." → entire subsection content
+#       on one line, no separate body
+# We accept both by matching just the prefix ``.<digits>\s+`` and treating
+# whatever follows as the heading text. Whether the line ends with a period
+# or a title-cased word is irrelevant — the parser doesn't need to know.
 _SUBSECTION_HEADER_RE = re.compile(
-    r"^\.(?P<num>\d{1,4})\s+(?P<title>[A-Z][A-Za-z0-9 ,/&\-:'()]+?)\s*$"
+    r"^\.(?P<num>\d{1,4})\s+(?P<title>\S.*)$"
 )
 
 # Patterns that indicate page-footer or running-header noise.
