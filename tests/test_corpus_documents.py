@@ -17,8 +17,9 @@ def test_google_drive_download_url_converts_file_view():
 
 def test_extract_official_documents_from_local_html_and_pdf(tmp_path):
     html_path = tmp_path / "snap.html"
+    long_html_text = "Long eligibility detail. " * 180
     html_path.write_text(
-        """
+        f"""
         <html>
           <head><title>Ignored browser title</title></head>
           <body>
@@ -27,6 +28,7 @@ def test_extract_official_documents_from_local_html_and_pdf(tmp_path):
               <h1>Colorado SNAP Policy</h1>
               <h2>Eligibility</h2>
               <p>Households may qualify based on income and household size.</p>
+              <p>{long_html_text}</p>
               <ul><li>County departments determine eligibility.</li></ul>
             </main>
           </body>

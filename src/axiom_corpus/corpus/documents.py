@@ -401,8 +401,6 @@ def _extract_html_blocks(content: bytes, *, source_url: str) -> tuple[_DocumentB
             heading = text
             continue
         parts.append(text)
-        if sum(len(part) for part in parts) >= 2_500:
-            flush()
     flush()
     if blocks:
         return tuple(blocks)

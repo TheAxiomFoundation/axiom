@@ -1,0 +1,17 @@
+documents:
+  - source_id: ne-revenue-reg-22-individual-income-tax
+    jurisdiction: us-ne
+    document_class: regulation
+    citation_path: us-ne/regulation/revenue/chapter-22
+    title: Chapter 22 - Individual Income Tax
+    source_url: https://revenue.nebraska.gov/about/legal-information/regulations/chapter-22-individual-income-tax
+    source_format: html
+    source_as_of: "2026-05-12"
+    expression_date: "2026-05-12"
+    metadata:
+      primary_source: true
+      source_authority: Nebraska Department of Revenue
+      document_subtype: agency_regulation_chapter
+      chapter: "22"
+      topic: individual_income_tax
+      discovered_via: policyengine-us:state_references

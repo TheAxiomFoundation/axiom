@@ -193,6 +193,11 @@
       "version": "2026-05-04"
     },
     {
+      "document_class": "regulation",
+      "jurisdiction": "us-ne",
+      "version": "2026-05-12-ne-revenue-chapter-22"
+    },
+    {
       "document_class": "statute",
       "jurisdiction": "us-nv",
       "version": "2026-05-05"
