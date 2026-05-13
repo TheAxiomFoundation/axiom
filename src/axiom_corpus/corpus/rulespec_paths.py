@@ -1,18 +1,24 @@
-"""Discover encoded RuleSpec paths from local jurisdiction rules repos.
+"""Path translation between rulespec-* repos and canonical corpus citation paths.
 
-The navigation builder needs to know which provisions have RuleSpec encodings
-so it can populate `corpus.navigation_nodes.has_rulespec` and the bottom-up
-`encoded_descendant_count`. Today `corpus.provisions.has_rulespec` is mostly
-unset because the corpus pipeline doesn't currently track RuleSpec coverage —
-the canonical record is a YAML file in a jurisdiction's rules repo.
+**No longer driven by the corpus pipeline.** The navigation builder used to
+call into this module to compute `corpus.navigation_nodes.has_rulespec` by
+walking local `rulespec-*` checkouts. That produced machine-dependent results
+in production — the flag value depended on which laptop ran the rebuild and
+which checkouts happened to be present. The CLI no longer invokes the walk;
+encoded coverage is resolved by app consumers directly against GitHub
+(see `axiom-foundation.org/src/lib/axiom/rulespec/repo-listing.ts`).
 
-This module bridges that gap. Given the local checkout of a `rulespec-*` repo
-(e.g. `rulespec-us`, `rulespec-us-co`), it walks the encoding directories, filters
-out `.test.yaml` / `.meta.yaml` fixtures, and produces canonical corpus
-citation paths (`us/statute/26/3111/a`).
+The module is kept as a library: the path-translation helpers
+(`_repo_path_to_citation_path`, `_normalize_tail`) and the
+`JURISDICTION_REPO_MAP` are still useful for anything that needs to convert
+between repo-relative YAML paths and canonical citation paths. The
+filesystem-walk functions (`discover_encoded_paths`,
+`discover_encoded_paths_for_jurisdictions`) remain callable for development
+use but are no longer wired into the navigation build path.
 
-The mapping mirrors the app's `repo-listing.ts` so that browser-side encoded
-listings and the navigation index agree on which paths are "encoded".
+Follow-up: drop the `has_rulespec` column from `corpus.navigation_nodes` once
+the foundation.org sitemap and document-browser consumers have migrated to
+the GitHub-backed lookup. At that point this module can be deleted entirely.
 """
 
 from __future__ import annotations
