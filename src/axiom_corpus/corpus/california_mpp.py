@@ -348,11 +348,16 @@ def _subsection_provision(
     source_id: str | None,
 ) -> ProvisionRecord:
     citation_path = f"{parent_citation_path}.{sub.num}"
+    # Single-paragraph subsections (common in MPP) have the entire rule text
+    # captured as `title` by the parser, with `body` empty. Downstream encoders
+    # and validators expect rule text in `body`, so we fall back to title when
+    # body is empty. Multi-paragraph subsections keep their existing body.
+    body_text = sub.body or sub.title or ""
     return ProvisionRecord(
         jurisdiction=JURISDICTION,
         document_class=DOC_CLASS.value,
         citation_path=citation_path,
-        body=sub.body or None,
+        body=body_text or None,
         heading=f".{sub.num} {sub.title}".strip(),
         citation_label=f"MPP {sub.parent_num}.{sub.num}",
         version=run_id,
