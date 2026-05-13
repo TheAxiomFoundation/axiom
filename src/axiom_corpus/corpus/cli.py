@@ -166,8 +166,10 @@ from axiom_corpus.corpus.supabase import (
     DEFAULT_SERVICE_KEY_ENV,
     delete_supabase_provisions_scope,
     fetch_provision_counts,
+    list_release_scopes,
     load_provisions_to_supabase,
     resolve_service_key,
+    set_release_scope_active,
     sync_release_scopes_to_supabase,
     verify_release_coverage,
     write_supabase_rows_jsonl,
@@ -316,6 +318,8 @@ def _cmd_load_supabase(args: argparse.Namespace) -> int:
         allow_refresh_failure=args.allow_refresh_failure,
         preserve_existing_ids=args.preserve_existing_ids and not args.replace_scope,
         progress_stream=sys.stderr,
+        auto_register_scopes=not args.no_auto_register,
+        auto_publish=not args.stage,
     )
     payload = report.to_mapping()
     if replace_report is not None:
@@ -326,13 +330,14 @@ def _cmd_load_supabase(args: argparse.Namespace) -> int:
     if args.build_navigation and not args.dry_run and report.rows_loaded:
         navigation_records: list[ProvisionRecord] = []
         existing_navigation_statuses: dict[str, str] = {}
-        for jurisdiction, document_class in _provision_scopes(records):
+        for jurisdiction, document_class, version in _provision_release_scopes(records):
             navigation_records.extend(
                 fetch_provisions_for_navigation(
                     service_key=service_key,
                     supabase_url=args.supabase_url,
                     jurisdiction=jurisdiction,
                     doc_type=document_class,
+                    version=version,
                 )
             )
             if args.preserve_navigation_statuses:
@@ -342,10 +347,11 @@ def _cmd_load_supabase(args: argparse.Namespace) -> int:
                         supabase_url=args.supabase_url,
                         jurisdiction=jurisdiction,
                         doc_type=document_class,
+                        version=version,
                     )
                 )
         encoded_paths = _resolve_encoded_paths(
-            args, {jurisdiction for jurisdiction, _ in _provision_scopes(records)}
+            args, {jurisdiction for jurisdiction, _, _ in _provision_release_scopes(records)}
         )
         nodes = build_navigation_nodes(
             _apply_navigation_status_overrides(
@@ -361,7 +367,7 @@ def _cmd_load_supabase(args: argparse.Namespace) -> int:
             supabase_url=args.supabase_url,
             chunk_size=args.chunk_size,
             replace_scope=True,
-            replace_scopes=_provision_scopes(records),
+            replace_scopes=_provision_release_scopes(records),
             dry_run=False,
             progress_stream=sys.stderr,
         )
@@ -409,11 +415,73 @@ def _cmd_sync_release_scopes(args: argparse.Namespace) -> int:
         refresh=not args.skip_refresh,
         dry_run=args.dry_run,
         allow_refresh_failure=args.allow_refresh_failure,
+        exclusive=args.exclusive,
     )
     payload = report.to_mapping()
     payload["release_path"] = str(release_path)
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
+
+
+def _cmd_publish_scope(args: argparse.Namespace) -> int:
+    service_key = resolve_service_key(
+        args.supabase_url,
+        service_key_env=args.service_key_env,
+        access_token_env=args.access_token_env,
+    )
+    result = set_release_scope_active(
+        jurisdiction=args.jurisdiction,
+        document_class=args.doc_type,
+        active=True,
+        release_name=args.release,
+        version=args.version,
+        service_key=service_key,
+        supabase_url=args.supabase_url,
+        refresh=not args.skip_refresh,
+    )
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def _cmd_unpublish_scope(args: argparse.Namespace) -> int:
+    service_key = resolve_service_key(
+        args.supabase_url,
+        service_key_env=args.service_key_env,
+        access_token_env=args.access_token_env,
+    )
+    result = set_release_scope_active(
+        jurisdiction=args.jurisdiction,
+        document_class=args.doc_type,
+        active=False,
+        release_name=args.release,
+        version=args.version,
+        service_key=service_key,
+        supabase_url=args.supabase_url,
+        refresh=not args.skip_refresh,
+    )
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+def _cmd_list_unpublished(args: argparse.Namespace) -> int:
+    service_key = resolve_service_key(
+        args.supabase_url,
+        service_key_env=args.service_key_env,
+        access_token_env=args.access_token_env,
+    )
+    rows = list_release_scopes(
+        release_name=args.release,
+        active=False,
+        service_key=service_key,
+        supabase_url=args.supabase_url,
+    )
+    payload = {
+        "release_name": args.release,
+        "unpublished_count": len(rows),
+        "scopes": list(rows),
+    }
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0 if rows else 0  # Listing is informational; never fails
 
 
 def _cmd_verify_release_coverage(args: argparse.Namespace) -> int:
@@ -455,16 +523,17 @@ def _cmd_build_navigation_index(args: argparse.Namespace) -> int:
         sources_used = [str(path) for path in args.provisions]
         # Preserve manually-set statuses from the live nav table when we are
         # going to write back, so a rebuild from a partial JSONL does not wipe
-        # them. Fetch is scoped per (jurisdiction, doc_type) to avoid pulling
-        # rows for unrelated scopes.
+        # them. Fetch is scoped per release scope to avoid pulling rows for
+        # unrelated jurisdictions, document classes, or versions.
         if will_write_supabase and args.preserve_statuses:
-            for jurisdiction, document_class in _provision_scopes(records):
+            for jurisdiction, document_class, version in _provision_release_scopes(records):
                 existing_navigation_statuses.update(
                     fetch_navigation_statuses(
                         service_key=service_key,
                         supabase_url=args.supabase_url,
                         jurisdiction=jurisdiction,
                         doc_type=document_class,
+                        version=version,
                     )
                 )
     else:
@@ -473,6 +542,7 @@ def _cmd_build_navigation_index(args: argparse.Namespace) -> int:
             supabase_url=args.supabase_url,
             jurisdiction=args.jurisdiction,
             doc_type=args.doc_type,
+            version=args.version,
         )
         if args.preserve_statuses:
             existing_navigation_statuses = fetch_navigation_statuses(
@@ -480,6 +550,7 @@ def _cmd_build_navigation_index(args: argparse.Namespace) -> int:
                 supabase_url=args.supabase_url,
                 jurisdiction=args.jurisdiction,
                 doc_type=args.doc_type,
+                version=args.version,
             )
         sources_used = [f"supabase:{args.supabase_url}"]
 
@@ -545,9 +616,22 @@ def _provision_scopes(records: tuple[ProvisionRecord, ...]) -> tuple[tuple[str, 
     return tuple(sorted({(record.jurisdiction, record.document_class) for record in records}))
 
 
-def _explicit_navigation_replace_scopes(args: argparse.Namespace) -> tuple[tuple[str, str], ...]:
+def _provision_release_scopes(
+    records: tuple[ProvisionRecord, ...],
+) -> tuple[tuple[str, str, str | None], ...]:
+    return tuple(
+        sorted({
+            (record.jurisdiction, record.document_class, record.version)
+            for record in records
+        }, key=lambda scope: (scope[0], scope[1], scope[2] or ""))
+    )
+
+
+def _explicit_navigation_replace_scopes(
+    args: argparse.Namespace,
+) -> tuple[tuple[str, str, str | None], ...]:
     if args.jurisdiction and args.doc_type:
-        return ((args.jurisdiction, args.doc_type),)
+        return ((args.jurisdiction, args.doc_type, args.version),)
     return ()
 
 
@@ -3959,8 +4043,12 @@ def build_parser() -> argparse.ArgumentParser:
     load_supabase.add_argument(
         "--preserve-existing-ids",
         action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Reuse existing corpus.provisions IDs for matching citation paths before upsert.",
+        default=False,
+        help=(
+            "Legacy migration aid: reuse existing corpus.provisions IDs for "
+            "matching citation paths before upsert. Default is false so "
+            "new release versions get distinct provision IDs."
+        ),
     )
     load_supabase.add_argument("--service-key-env", default=DEFAULT_SERVICE_KEY_ENV)
     load_supabase.add_argument("--access-token-env", default=DEFAULT_ACCESS_TOKEN_ENV)
@@ -3980,6 +4068,25 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Carry curated corpus.navigation_nodes.status values across the "
             "post-load nav rebuild. Disable with --no-preserve-navigation-statuses."
+        ),
+    )
+    load_supabase.add_argument(
+        "--stage",
+        action="store_true",
+        help=(
+            "Stage the load: auto-register exact release_scopes version rows "
+            "with active=false so the loaded provisions stay outside "
+            "current_provisions until promoted. Default is auto-publish "
+            "(active=true). Flip later with `axiom-corpus-ingest publish`."
+        ),
+    )
+    load_supabase.add_argument(
+        "--no-auto-register",
+        action="store_true",
+        help=(
+            "Skip release_scopes registration entirely. Legacy behavior; "
+            "the data will not appear in current_provisions until a "
+            "release_scopes row is added by some other means."
         ),
     )
     _add_rulespec_args(load_supabase)
@@ -4020,6 +4127,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--doc-type",
         choices=[document_class.value for document_class in DocumentClass],
         help="Filter to one document class (e.g. statute, regulation).",
+    )
+    build_navigation.add_argument(
+        "--version",
+        help=(
+            "Filter to one source/release version when building from Supabase "
+            "or explicitly replacing an empty navigation scope."
+        ),
     )
     build_navigation.add_argument(
         "--output",
@@ -4108,9 +4222,83 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Return a report even if the post-sync analytics refresh fails.",
     )
+    sync_release_scopes.add_argument(
+        "--exclusive",
+        action="store_true",
+        help=(
+            "Deactivate all current scopes before re-inserting from the "
+            "manifest (the old default). Default is upsert-incremental: "
+            "only scopes in the manifest are touched. Use --exclusive "
+            "ONLY when the manifest is the complete intended set of "
+            "active scopes — otherwise this can silently unpromote work "
+            "added from other branches."
+        ),
+    )
     sync_release_scopes.add_argument("--service-key-env", default=DEFAULT_SERVICE_KEY_ENV)
     sync_release_scopes.add_argument("--access-token-env", default=DEFAULT_ACCESS_TOKEN_ENV)
     sync_release_scopes.set_defaults(func=_cmd_sync_release_scopes)
+
+    publish_cmd = sub.add_parser(
+        "publish",
+        help=(
+            "Mark one corpus scope version as visible in the Axiom app. Flips "
+            "corpus.release_scopes.active = true for "
+            "(release, jurisdiction, document_class, version) and "
+            "refreshes the materialized count view."
+        ),
+    )
+    publish_cmd.add_argument("--jurisdiction", required=True)
+    publish_cmd.add_argument("--doc-type", required=True, dest="doc_type")
+    publish_cmd.add_argument(
+        "--version",
+        help="Pin to a specific version. If omitted, picks the most recent row.",
+    )
+    publish_cmd.add_argument("--release", default="current")
+    publish_cmd.add_argument(
+        "--supabase-url",
+        default=os.environ.get("AXIOM_SUPABASE_URL", DEFAULT_AXIOM_SUPABASE_URL),
+    )
+    publish_cmd.add_argument("--skip-refresh", action="store_true")
+    publish_cmd.add_argument("--service-key-env", default=DEFAULT_SERVICE_KEY_ENV)
+    publish_cmd.add_argument("--access-token-env", default=DEFAULT_ACCESS_TOKEN_ENV)
+    publish_cmd.set_defaults(func=_cmd_publish_scope)
+
+    unpublish_cmd = sub.add_parser(
+        "unpublish",
+        help=(
+            "Mark one corpus scope version as hidden (active=false). "
+            "Inverse of `publish`."
+        ),
+    )
+    unpublish_cmd.add_argument("--jurisdiction", required=True)
+    unpublish_cmd.add_argument("--doc-type", required=True, dest="doc_type")
+    unpublish_cmd.add_argument("--version")
+    unpublish_cmd.add_argument("--release", default="current")
+    unpublish_cmd.add_argument(
+        "--supabase-url",
+        default=os.environ.get("AXIOM_SUPABASE_URL", DEFAULT_AXIOM_SUPABASE_URL),
+    )
+    unpublish_cmd.add_argument("--skip-refresh", action="store_true")
+    unpublish_cmd.add_argument("--service-key-env", default=DEFAULT_SERVICE_KEY_ENV)
+    unpublish_cmd.add_argument("--access-token-env", default=DEFAULT_ACCESS_TOKEN_ENV)
+    unpublish_cmd.set_defaults(func=_cmd_unpublish_scope)
+
+    list_unpublished_cmd = sub.add_parser(
+        "list-unpublished",
+        help=(
+            "List release_scopes version rows with active=false. These are "
+            "staged or explicitly unpublished release rows, not a full "
+            "visibility audit of every provision row."
+        ),
+    )
+    list_unpublished_cmd.add_argument("--release", default="current")
+    list_unpublished_cmd.add_argument(
+        "--supabase-url",
+        default=os.environ.get("AXIOM_SUPABASE_URL", DEFAULT_AXIOM_SUPABASE_URL),
+    )
+    list_unpublished_cmd.add_argument("--service-key-env", default=DEFAULT_SERVICE_KEY_ENV)
+    list_unpublished_cmd.add_argument("--access-token-env", default=DEFAULT_ACCESS_TOKEN_ENV)
+    list_unpublished_cmd.set_defaults(func=_cmd_list_unpublished)
 
     verify_release_coverage_cmd = sub.add_parser(
         "verify-release-coverage",

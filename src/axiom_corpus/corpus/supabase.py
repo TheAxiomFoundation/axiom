@@ -34,6 +34,7 @@ SUPABASE_PROVISIONS_COLUMNS = (
     "source_url",
     "source_path",
     "citation_path",
+    "version",
     "rulespec_path",
     "has_rulespec",
     "source_document_id",
@@ -54,6 +55,7 @@ class SupabaseLoadReport:
     existing_id_count: int = 0
     refreshed: bool = False
     refresh_error: str | None = None
+    auto_registered_scopes: tuple[dict[str, object], ...] = ()
 
     def to_mapping(self) -> dict[str, object]:
         return {
@@ -64,6 +66,7 @@ class SupabaseLoadReport:
             "existing_id_count": self.existing_id_count,
             "refreshed": self.refreshed,
             "refresh_error": self.refresh_error,
+            "auto_registered_scopes": [dict(s) for s in self.auto_registered_scopes],
         }
 
 
@@ -159,7 +162,7 @@ def verify_release_coverage(
 
     Reads two PostgREST views:
       * ``navigation_node_counts`` — per (jurisdiction, doc_type) row counts
-        derived from corpus.navigation_nodes
+        derived from active-release navigation rows
       * ``current_provision_counts`` — per (jurisdiction, document_class)
         row counts from corpus.current_provisions
 
@@ -214,8 +217,9 @@ def _fetch_navigation_node_counts(
     We do this server-side because corpus.navigation_nodes is ~2.4M rows
     and PostgREST caps responses at 1000 — paginating the whole table
     would take thousands of round trips. The RPC
-    ``corpus.get_navigation_node_counts`` returns ~70 rows in one call.
-    See migration 20260512170000_navigation_node_counts_rpc.sql.
+    ``corpus.get_navigation_node_counts`` returns ~70 current-release rows
+    in one call. See migrations 20260512170000_navigation_node_counts_rpc.sql
+    and 20260513101000_version_aware_navigation_nodes.sql.
     """
     # POST RPC resolves the schema from Content-Profile, not Accept-Profile.
     # Without it PostgREST defaults to `public` and returns 404 for the
@@ -271,9 +275,33 @@ def _fetch_current_provision_counts(
     )
 
 
-def deterministic_provision_id(citation_path: str) -> str:
-    """Return the stable UUID used by existing `corpus.provisions` ingests."""
-    return str(uuid5(NAMESPACE_URL, f"axiom:{citation_path}"))
+def deterministic_provision_id(citation_path: str, version: str | None = None) -> str:
+    """Return the stable UUID used by `corpus.provisions` ingests.
+
+    Historical callers passed only a citation path, so that form intentionally
+    keeps the old UUID. Supabase loads now pass a release version as well so
+    the same citation can exist in multiple staged/published versions.
+    """
+    normalized_version = _normalize_version(version)
+    if normalized_version is None:
+        return str(uuid5(NAMESPACE_URL, f"axiom:{citation_path}"))
+    identity = json.dumps(
+        ["axiom", normalized_version, citation_path],
+        separators=(",", ":"),
+    )
+    return str(uuid5(NAMESPACE_URL, identity))
+
+
+def _normalize_version(version: str | None) -> str | None:
+    if version is None:
+        return None
+    normalized = str(version).strip()
+    return normalized or None
+
+
+def _release_document_class(document_class: str | None) -> str:
+    normalized = str(document_class or "").strip()
+    return normalized or "unknown"
 
 
 def _uuid_or_none(value: str | None) -> str | None:
@@ -285,12 +313,30 @@ def _uuid_or_none(value: str | None) -> str | None:
         return None
 
 
-def provision_to_supabase_row(record: ProvisionRecord) -> dict[str, object]:
+def provision_to_supabase_row(
+    record: ProvisionRecord,
+    *,
+    versioned_ids: bool = True,
+) -> dict[str, object]:
     """Project a normalized provision record into the `corpus.provisions` shape."""
-    provision_id = record.id or deterministic_provision_id(record.citation_path)
+    version = _normalize_version(record.version)
+    legacy_provision_id = deterministic_provision_id(record.citation_path)
+    if versioned_ids and version is not None and (
+        record.id is None or record.id == legacy_provision_id
+    ):
+        provision_id = deterministic_provision_id(record.citation_path, version)
+    else:
+        provision_id = record.id or legacy_provision_id
     parent_id = record.parent_id
     if parent_id is None and record.parent_citation_path:
-        parent_id = deterministic_provision_id(record.parent_citation_path)
+        parent_id = deterministic_provision_id(
+            record.parent_citation_path,
+            version if versioned_ids else None,
+        )
+    elif versioned_ids and version is not None and record.parent_citation_path:
+        legacy_parent_id = deterministic_provision_id(record.parent_citation_path)
+        if parent_id == legacy_parent_id:
+            parent_id = deterministic_provision_id(record.parent_citation_path, version)
     source_document_id = _uuid_or_none(record.source_document_id)
     identifiers = dict(record.identifiers or {})
     if record.source_document_id is not None and source_document_id is None:
@@ -308,6 +354,7 @@ def provision_to_supabase_row(record: ProvisionRecord) -> dict[str, object]:
         "source_url": record.source_url,
         "source_path": record.source_path,
         "citation_path": record.citation_path,
+        "version": version,
         "rulespec_path": record.rulespec_path,
         "has_rulespec": bool(record.has_rulespec) if record.has_rulespec is not None else False,
         "source_document_id": source_document_id,
@@ -320,9 +367,13 @@ def provision_to_supabase_row(record: ProvisionRecord) -> dict[str, object]:
     return row
 
 
-def iter_supabase_rows(records: Iterable[ProvisionRecord]) -> Iterator[dict[str, object]]:
+def iter_supabase_rows(
+    records: Iterable[ProvisionRecord],
+    *,
+    versioned_ids: bool = True,
+) -> Iterator[dict[str, object]]:
     for record in records:
-        yield provision_to_supabase_row(record)
+        yield provision_to_supabase_row(record, versioned_ids=versioned_ids)
 
 
 def write_supabase_rows_jsonl(path: str | Path, records: Iterable[ProvisionRecord]) -> int:
@@ -384,8 +435,28 @@ def sync_release_scopes_to_supabase(
     refresh: bool = True,
     dry_run: bool = False,
     allow_refresh_failure: bool = False,
+    exclusive: bool = False,
 ) -> SupabaseReleaseScopeSyncReport:
-    """Replace the active Supabase release-scope set for a release manifest."""
+    """Sync the Supabase release-scope set from a release manifest.
+
+    Default behavior (``exclusive=False``) is **upsert-incremental**: each
+    scope in the manifest is upserted (insert-or-update) into
+    ``corpus.release_scopes`` with ``active=true``. Scopes already in the
+    table but NOT in the manifest are left untouched. Safe to run from a
+    feature branch whose manifest is a subset of production state.
+
+    ``exclusive=True`` opts into the older "deactivate all then reinsert"
+    semantics: every existing active row for ``release.name`` is marked
+    inactive first, then the manifest's rows are inserted active. Use only
+    when you specifically want to enforce that the manifest is the complete
+    set of active scopes for the release — typically not what you want from
+    a branch that does not have full coverage of production.
+
+    The historical default was ``exclusive=True``. That behavior caused a
+    silent unpromotion of ``us-wa/regulation`` on 2026-05-12 when a feature
+    branch's manifest was used to sync (the WAC scope existed on a
+    different branch). The new default eliminates this class of regression.
+    """
     if chunk_size <= 0:
         raise ValueError("chunk_size must be positive")
 
@@ -404,11 +475,12 @@ def sync_release_scopes_to_supabase(
         chunk_count = (len(rows) + chunk_size - 1) // chunk_size
 
     if not dry_run:
-        deactivate_release_scope_rows(
-            release_name=release.name,
-            service_key=service_key,
-            rest_url=rest_url,
-        )
+        if exclusive:
+            deactivate_release_scope_rows(
+                release_name=release.name,
+                service_key=service_key,
+                rest_url=rest_url,
+            )
         for chunk in _chunked(iter(rows), chunk_size):
             upsert_release_scope_rows(chunk, service_key=service_key, rest_url=rest_url)
 
@@ -526,8 +598,24 @@ def load_provisions_to_supabase(
     allow_refresh_failure: bool = False,
     preserve_existing_ids: bool = False,
     progress_stream: TextIO | None = None,
+    auto_register_scopes: bool = True,
+    auto_publish: bool = True,
+    release_name: str = "current",
 ) -> SupabaseLoadReport:
-    """Upsert normalized provision records into `corpus.provisions`."""
+    """Upsert normalized provision records into `corpus.provisions`.
+
+    By default, also ensures a row in ``corpus.release_scopes`` exists for
+    each distinct ``(jurisdiction, document_class, version)`` triple in the
+    loaded records, with ``active=True`` so the data is immediately visible
+    via ``corpus.current_provisions``. This eliminates the silent-invisibility
+    bug class where data was loaded but invisible because nobody added a
+    matching release row.
+
+    Pass ``auto_publish=False`` to stage the load (rows created but
+    invisible — flip later via ``axiom-corpus-ingest publish``). Pass
+    ``auto_register_scopes=False`` to skip release_scopes management
+    entirely (legacy behavior; not recommended).
+    """
     if chunk_size <= 0:
         raise ValueError("chunk_size must be positive")
 
@@ -555,10 +643,35 @@ def load_provisions_to_supabase(
             _record_with_existing_ids(record, existing_ids) for record in materialized_records
         )
 
+    release_scope_keys: set[tuple[str, str, str]] = set()
+
+    def _capture_release_scope_keys(
+        source: Iterable[ProvisionRecord],
+    ) -> Iterator[ProvisionRecord]:
+        for record in source:
+            version = _normalize_version(record.version)
+            if auto_register_scopes and version is None:
+                raise ValueError(
+                    "ProvisionRecord.version is required when auto-registering "
+                    "Supabase release scopes; pass --no-auto-register only for "
+                    "explicit legacy/migration loads."
+                )
+            if version is not None:
+                release_scope_keys.add(
+                    (
+                        record.jurisdiction,
+                        _release_document_class(record.document_class),
+                        version,
+                    )
+                )
+            yield record
+
+    records_iter = _capture_release_scope_keys(records_iter)
+
     rows_loaded = 0
     chunk_count = 0
     rest_url = _rest_url(supabase_url)
-    row_iter = iter_supabase_rows(records_iter)
+    row_iter = iter_supabase_rows(records_iter, versioned_ids=not preserve_existing_ids)
     for chunk in _chunked(row_iter, chunk_size):
         chunk_count += 1
         if not dry_run:
@@ -571,6 +684,26 @@ def load_provisions_to_supabase(
                 file=progress_stream,
                 flush=True,
             )
+
+    # Auto-register release_scopes rows after the provisions upsert succeeds.
+    auto_registered: tuple[dict[str, object], ...] = ()
+    if auto_register_scopes and not dry_run and release_scope_keys:
+        auto_registered = ensure_release_scopes_for_loaded_data(
+            release_scope_keys,
+            release_name=release_name,
+            active=auto_publish,
+            service_key=service_key,
+            rest_url=rest_url,
+        )
+        if progress_stream is not None:
+            for row in auto_registered:
+                state = "published" if row.get("active") is True else "staged (unpublished)"
+                print(
+                    f"release scope ready: {row['jurisdiction']}/"
+                    f"{row['document_class']} v{row['version']} → {state}",
+                    file=progress_stream,
+                    flush=True,
+                )
 
     refreshed = False
     refresh_error = None
@@ -591,6 +724,7 @@ def load_provisions_to_supabase(
         existing_id_count=existing_id_count,
         refreshed=refreshed,
         refresh_error=refresh_error,
+        auto_registered_scopes=auto_registered,
     )
 
 
@@ -810,6 +944,271 @@ def upsert_supabase_rows(
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")[:500]
         raise RuntimeError(f"upsert failed {exc.code}: {body}") from exc
+
+
+def set_release_scope_active(
+    *,
+    jurisdiction: str,
+    document_class: str,
+    active: bool,
+    release_name: str = "current",
+    version: str | None = None,
+    service_key: str,
+    supabase_url: str = DEFAULT_AXIOM_SUPABASE_URL,
+    refresh: bool = True,
+) -> dict[str, object]:
+    """Flip the ``active`` flag on a single release_scopes row.
+
+    If ``version`` is None, picks the most recent row for (release_name,
+    jurisdiction, document_class) by ``synced_at`` descending. Raises if no
+    matching row exists.
+
+    Returns the affected row's contents as a dict, plus the refresh result.
+    """
+    rest_url = _rest_url(supabase_url)
+    auth = {
+        "apikey": service_key,
+        "Authorization": f"Bearer {service_key}",
+        "Accept-Profile": "corpus",
+        "User-Agent": USER_AGENT,
+    }
+
+    if version is None:
+        # Find the most recent row for this (release_name, jurisdiction, doc_class).
+        query = urllib.parse.urlencode({
+            "release_name": f"eq.{release_name}",
+            "jurisdiction": f"eq.{jurisdiction}",
+            "document_class": f"eq.{document_class}",
+            "select": "version,synced_at,active",
+            "order": "synced_at.desc",
+            "limit": 1,
+        })
+        req = urllib.request.Request(
+            f"{rest_url}/release_scopes?{query}",
+            headers=auth,
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            rows = json.loads(resp.read())
+        if not rows:
+            raise RuntimeError(
+                f"no release_scopes row found for "
+                f"({release_name}, {jurisdiction}, {document_class}); "
+                f"load data first or pass --version to disambiguate"
+            )
+        version = rows[0]["version"]
+
+    # PATCH the target row.
+    query = urllib.parse.urlencode({
+        "release_name": f"eq.{release_name}",
+        "jurisdiction": f"eq.{jurisdiction}",
+        "document_class": f"eq.{document_class}",
+        "version": f"eq.{version}",
+    })
+    req = urllib.request.Request(
+        f"{rest_url}/release_scopes?{query}",
+        data=json.dumps({"active": active}).encode(),
+        method="PATCH",
+        headers={
+            **auth,
+            "Content-Type": "application/json",
+            "Content-Profile": "corpus",
+            "Prefer": "return=representation",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        result = json.loads(resp.read())
+    if not result:
+        raise RuntimeError(
+            f"PATCH affected zero rows: ({release_name}, {jurisdiction}, "
+            f"{document_class}, {version})"
+        )
+
+    refreshed = False
+    refresh_error: str | None = None
+    if refresh:
+        try:
+            refresh_corpus_analytics(service_key=service_key, rest_url=rest_url)
+            refreshed = True
+        except (TimeoutError, urllib.error.HTTPError, urllib.error.URLError, RuntimeError) as exc:
+            refresh_error = str(exc)
+
+    return {
+        "scope": result[0],
+        "refreshed": refreshed,
+        "refresh_error": refresh_error,
+    }
+
+
+def list_release_scopes(
+    *,
+    release_name: str = "current",
+    active: bool | None = None,
+    service_key: str,
+    supabase_url: str = DEFAULT_AXIOM_SUPABASE_URL,
+) -> tuple[dict[str, object], ...]:
+    """List release_scopes rows, optionally filtered by active state."""
+    rest_url = _rest_url(supabase_url)
+    params: dict[str, str] = {
+        "release_name": f"eq.{release_name}",
+        "select": "release_name,jurisdiction,document_class,version,active,synced_at",
+        "order": "jurisdiction.asc,document_class.asc,synced_at.desc",
+    }
+    if active is not None:
+        params["active"] = f"is.{str(active).lower()}"
+
+    req = urllib.request.Request(
+        f"{rest_url}/release_scopes?{urllib.parse.urlencode(params)}",
+        headers={
+            "apikey": service_key,
+            "Authorization": f"Bearer {service_key}",
+            "Accept-Profile": "corpus",
+            "User-Agent": USER_AGENT,
+        },
+    )
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        rows = json.loads(resp.read())
+    if not isinstance(rows, list):
+        return ()
+    return tuple(row for row in rows if isinstance(row, dict))
+
+
+def ensure_release_scopes_for_loaded_data(
+    release_scope_keys: Iterable[tuple[str, str, str]],
+    *,
+    release_name: str = "current",
+    active: bool = True,
+    service_key: str,
+    rest_url: str,
+) -> tuple[dict[str, object], ...]:
+    """Idempotently ensure a release_scopes row exists for each loaded scope.
+
+    Uses ``Prefer: resolution=ignore-duplicates``: if a row already exists
+    for ``(release_name, jurisdiction, document_class, version)``, this
+    function leaves it alone — including its ``active`` flag. State
+    changes always require an explicit ``axiom-corpus-ingest publish`` /
+    ``unpublish`` invocation, never a re-load.
+
+    This protects against the surprise that a re-load with ``--stage``
+    would silently demote a previously-published scope (or that a re-load
+    without ``--stage`` would silently undo an explicit unpublish).
+    Re-loads of existing scopes become no-ops at the release_scopes layer.
+
+    Default ``active=True`` for newly-inserted rows matches the design
+    choice that loading new data should publish it by default. Callers
+    wanting to stage explicitly pass ``active=False``.
+    """
+    keys = tuple(sorted(set(release_scope_keys)))
+    if not keys:
+        return ()
+
+    synced_at = datetime.now(UTC).isoformat()
+    rows = [
+        {
+            "release_name": release_name,
+            "jurisdiction": jurisdiction,
+            "document_class": document_class,
+            "version": version,
+            "active": active,
+            "synced_at": synced_at,
+        }
+        for jurisdiction, document_class, version in keys
+    ]
+    insert_release_scope_rows_ignore_duplicates(
+        rows, service_key=service_key, rest_url=rest_url
+    )
+    return tuple(
+        fetch_release_scope_row(
+            release_name=release_name,
+            jurisdiction=jurisdiction,
+            document_class=document_class,
+            version=version,
+            service_key=service_key,
+            rest_url=rest_url,
+        )
+        for jurisdiction, document_class, version in keys
+    )
+
+
+def fetch_release_scope_row(
+    *,
+    release_name: str,
+    jurisdiction: str,
+    document_class: str,
+    version: str,
+    service_key: str,
+    rest_url: str,
+) -> dict[str, object]:
+    """Fetch the persisted release_scopes row after an ignore-duplicates insert."""
+    query = urllib.parse.urlencode(
+        {
+            "release_name": f"eq.{release_name}",
+            "jurisdiction": f"eq.{jurisdiction}",
+            "document_class": f"eq.{document_class}",
+            "version": f"eq.{version}",
+            "select": "release_name,jurisdiction,document_class,version,active,synced_at",
+            "limit": "1",
+        }
+    )
+    req = urllib.request.Request(
+        f"{rest_url}/release_scopes?{query}",
+        headers={
+            "apikey": service_key,
+            "Authorization": f"Bearer {service_key}",
+            "Accept": "application/json",
+            "Accept-Profile": "corpus",
+            "User-Agent": USER_AGENT,
+        },
+    )
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        rows = json.loads(resp.read())
+    if not isinstance(rows, list) or not rows or not isinstance(rows[0], dict):
+        raise RuntimeError(
+            "release-scope insert/readback failed for "
+            f"({release_name}, {jurisdiction}, {document_class}, {version})"
+        )
+    return dict(rows[0])
+
+
+def insert_release_scope_rows_ignore_duplicates(
+    rows: list[dict[str, object]],
+    *,
+    service_key: str,
+    rest_url: str,
+) -> None:
+    """Insert release_scopes rows; skip any row that conflicts on the unique
+    key (release_name, jurisdiction, document_class, version).
+
+    Sister function to ``upsert_release_scope_rows`` which uses
+    ``resolution=merge-duplicates``. The auto-register-on-load flow uses
+    this ignore-duplicates variant so that re-loads don't silently flip
+    the ``active`` flag on existing rows.
+    """
+    if not rows:
+        return
+    req = urllib.request.Request(
+        (
+            f"{rest_url}/release_scopes?"
+            "on_conflict=release_name,jurisdiction,document_class,version"
+        ),
+        data=json.dumps(rows).encode("utf-8"),
+        headers={
+            "apikey": service_key,
+            "Authorization": f"Bearer {service_key}",
+            "Content-Type": "application/json",
+            "Prefer": "resolution=ignore-duplicates,return=minimal",
+            "Content-Profile": "corpus",
+            "User-Agent": USER_AGENT,
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=180) as resp:
+            resp.read()
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")[:500]
+        raise RuntimeError(
+            f"release-scope ignore-duplicates insert failed {exc.code}: {body}"
+        ) from exc
 
 
 def deactivate_release_scope_rows(
